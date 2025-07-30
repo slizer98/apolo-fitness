@@ -1,0 +1,43 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+ @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap'); 
+
+@layer base {
+  html {
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+    body {
+    @apply bg-apolo-dark text-white;
+  }
+} 
+
+ @layer components {
+  .btn-primary {
+    @apply bg-apolo-primary hover:bg-apolo-secondary text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-300;
+  }
+  
+  .btn-secondary {
+    @apply border-2 border-apolo-primary text-apolo-primary hover:bg-apolo-primary hover:text-white font-semibold py-3 px-6 rounded-lg transition-all duration-300;
+  }
+  
+  .nav-link {
+    @apply text-white hover:text-apolo-primary transition-colors duration-300 font-medium;
+  }
+  
+  .nav-link-active {
+    @apply text-apolo-primary font-semibold;
+  }
+}
+
+@layer components {
+  /* .tippy-box[data-theme="apolo-theme"] engloba todo el tooltip */
+  .tippy-box[data-theme~='apolo-theme'] {
+    @apply bg-apolo-dark text-apolo-primary rounded-lg shadow-lg;
+  }
+  /* estilo de la flecha */
+  .tippy-box[data-theme~='apolo-theme'] .tippy-arrow {
+    @apply fill-apolo-dark;
+  }
+}
