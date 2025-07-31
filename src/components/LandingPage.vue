@@ -33,7 +33,7 @@
           </a>
           <router-link
             to="/login"
-            class="bg-[#C47A3B] hover:bg-[#B8692F] text-black font-bold py-3 px-6 rounded-lg text-base"
+            class="bg-apolo-primary hover:bg-[#B8692F] text-black font-bold py-3 px-6 rounded-lg text-base"
           >
             ÁGORA
           </router-link>
@@ -72,7 +72,7 @@
         <router-link
           to="/login"
           @click.native="closeMobileMenu"
-          class="block mt-2 bg-[#C47A3B] text-black font-bold py-3 px-6 rounded-lg text-center text-base"
+          class="block mt-2 bg-apolo-primary text-black font-bold py-3 px-6 rounded-lg text-center text-base"
         >
           ÁGORA
         </router-link>
@@ -96,7 +96,7 @@
             </h1>
             <button
               @click="handleJoinNow"
-              class="mt-4 inline-block bg-[#C47A3B] hover:bg-[#B8692F] text-black font-semibold py-3 px-8 rounded-lg text-base sm:text-lg tracking-wide transform hover:scale-105 shadow-lg"
+              class="mt-4 inline-block bg-apolo-primary hover:bg-[#B8692F] text-black font-semibold py-3 px-8 rounded-lg text-base sm:text-lg tracking-wide transform hover:scale-105 shadow-lg"
             >
               ÚNETE AHORA
             </button>
@@ -172,7 +172,7 @@
             >
               <!-- Badge "Más beneficios" -->
               <div class="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                <span class="bg-[#C47A3B] text-black font-bold py-2 px-6 rounded-full text-sm">
+                <span class="bg-apolo-primary text-black font-bold py-2 px-6 rounded-full text-sm">
                   Más beneficios
                 </span>
               </div>
@@ -193,42 +193,27 @@
 
                 <button
                   @click="handleSubscribe('olimpo')"
-                  class="w-full font-serif bg-[#C47A3B] hover:bg-[#B8692F] text-black font-bold py-4 px-6 rounded-lg transition-colors duration-300 text-lg mb-8"
+                  class="w-full font-serif bg-apolo-primary hover:bg-[#B8692F] text-black font-bold py-4 px-6 rounded-lg transition-colors duration-300 text-lg mb-8"
                 >
                   INSCRÍBETE AHORA
                 </button>
 
                 <div class="space-y-4">
                   <div class="flex items-center text-white">
-                    <svg class="w-5 h-5 text-apolo-primary mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                      <path fill-rule="evenodd"
-                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                        clip-rule="evenodd"></path>
-                    </svg>
+                    
+                    <img src="../assets/images/check.png" class="w-5 text-apolo-primary mr-3 flex-shrink-0" alt="escudo con paloma de check en el centro">
                     <span>Acceso a todos los gimnasios</span>
                   </div>
                   <div class="flex items-center text-white">
-                    <svg class="w-5 h-5 text-apolo-primary mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                      <path fill-rule="evenodd"
-                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                        clip-rule="evenodd"></path>
-                    </svg>
+                    <img src="../assets/images/check.png" class="w-5 text-apolo-primary mr-3 flex-shrink-0" alt="escudo con paloma de check en el centro">
                     <span>Clases grupales ilimitadas</span>
                   </div>
                   <div class="flex items-center text-white">
-                    <svg class="w-5 h-5 text-apolo-primary mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                      <path fill-rule="evenodd"
-                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                        clip-rule="evenodd"></path>
-                    </svg>
+                    <img src="../assets/images/check.png" class="w-5 text-apolo-primary mr-3 flex-shrink-0" alt="escudo con paloma de check en el centro">
                     <span>Entrenador personal incluido</span>
                   </div>
                   <div class="flex items-center text-white">
-                    <svg class="w-5 h-5 text-apolo-primary mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                      <path fill-rule="evenodd"
-                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                        clip-rule="evenodd"></path>
-                    </svg>
+                    <img src="../assets/images/check.png" class="w-5 text-apolo-primary mr-3 flex-shrink-0" alt="escudo con paloma de check en el centro">
                     <span>Acceso 24/7</span>
                   </div>
                 </div>
@@ -261,26 +246,18 @@
 
                 <button
                   @click="handleSubscribe('apolo')"
-                  class="w-full font-serif bg-[#C47A3B] hover:bg-[#B8692F] text-black font-bold py-4 px-6 rounded-lg transition-colors duration-300 text-lg mb-8"
+                  class="w-full font-serif bg-apolo-primary hover:bg-[#B8692F] text-black font-bold py-4 px-6 rounded-lg transition-colors duration-300 text-lg mb-8"
                 >
                   INSCRÍBETE AHORA
                 </button>
 
                 <div class="space-y-4">
                   <div class="flex items-center text-white">
-                    <svg class="w-5 h-5 text-apolo-primary mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                      <path fill-rule="evenodd"
-                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                        clip-rule="evenodd"></path>
-                    </svg>
+                    <img src="../assets/images/check.png" class="w-5 text-apolo-primary mr-3 flex-shrink-0" alt="escudo con paloma de check en el centro">
                     <span>Acceso a un gimnasio</span>
                   </div>
                   <div class="flex items-center text-white">
-                    <svg class="w-5 h-5 text-apolo-primary mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                      <path fill-rule="evenodd"
-                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                        clip-rule="evenodd"></path>
-                    </svg>
+                    <img src="../assets/images/check.png" class="w-5 text-apolo-primary mr-3 flex-shrink-0" alt="escudo con paloma de check en el centro">
                     <span>Clases grupales básicas</span>
                   </div>
                 </div>
@@ -318,7 +295,7 @@
               href="https://facebook.com/apolofitnesscenter" 
               target="_blank"
               rel="noopener noreferrer"
-              class="w-10 h-10 bg-[#C47A3B] hover:bg-[#B8692F] rounded-full flex items-center justify-center transition-colors duration-300 transform hover:scale-110"
+              class="w-10 h-10 bg-apolo-primary hover:bg-[#B8692F] rounded-full flex items-center justify-center transition-colors duration-300 transform hover:scale-110"
             >
               <i class="fa-brands fa-facebook text-black font-bold text-xl"></i>
             </a>
@@ -326,7 +303,7 @@
               href="https://instagram.com/apolofitnesscenter" 
               target="_blank"
               rel="noopener noreferrer"
-              class="w-10 h-10 bg-[#C47A3B] hover:bg-[#B8692F] rounded-full flex items-center justify-center transition-colors duration-300 transform hover:scale-110"
+              class="w-10 h-10 bg-apolo-primary hover:bg-[#B8692F] rounded-full flex items-center justify-center transition-colors duration-300 transform hover:scale-110"
             >
               <i class="fa-brands fa-instagram text-black font-bold text-xl"></i>
             </a>
