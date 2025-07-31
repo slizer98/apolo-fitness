@@ -9,6 +9,9 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@fontsource/cinzel": "^5.2.6",
+    "@fontsource/eb-garamond": "^5.2.6",
+    "@fontsource/inter": "^5.2.6",
     "@fortawesome/fontawesome-free": "^7.0.0",
     "@tailwindcss/forms": "^0.5.10",
     "autoprefixer": "^10.4.21",

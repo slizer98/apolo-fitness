@@ -7,6 +7,16 @@ import '@fortawesome/fontawesome-free/css/all.min.css'
 import VueTippy  from 'vue-tippy'
 import 'tippy.js/dist/tippy.css'
 
+import '@fontsource/inter/300.css';
+import '@fontsource/inter/400.css';
+import '@fontsource/inter/500.css';
+import '@fontsource/inter/700.css';
+import '@fontsource/cinzel/400.css';
+import '@fontsource/cinzel/700.css';
+import '@fontsource/eb-garamond/400.css';       
+import '@fontsource/eb-garamond/400-italic.css';
+import '@fontsource/eb-garamond/700.css';  
+
 const app = createApp(App)
 const pinia = createPinia()
 app.use(VueTippy, {

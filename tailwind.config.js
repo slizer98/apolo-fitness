@@ -16,7 +16,9 @@ export default {
         }
       },
       fontFamily: {
-        'sans': ['Inter', 'system-ui', 'sans-serif'],
+        sans: ['Inter', 'ui-sans-serif', 'system-ui'],
+        serif: ['Cinzel', 'ui-serif', 'Georgia'],
+        garamond: ['"EB Garamond"', 'serif'],
       }
     },
   },

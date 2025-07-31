@@ -2,17 +2,16 @@
 @tailwind components;
 @tailwind utilities;
 
- @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap'); 
+ /* @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');  */
 
-@layer base {
+/* @layer base {
   html {
     font-family: 'Inter', system-ui, sans-serif;
-  }
-    body {
+ 
+}  */
+body {
     @apply bg-apolo-dark text-white;
   }
-} 
-
  @layer components {
   .btn-primary {
     @apply bg-apolo-primary hover:bg-apolo-secondary text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-300;

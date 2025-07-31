@@ -73,6 +73,7 @@
                   focus:outline-none
                   focus:border-apolo-gray-dark 
                   focus:ring-0"
+            placeholder="Contraseña"
           />
           <button
             type="button"
