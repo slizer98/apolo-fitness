@@ -25,37 +25,31 @@ const routes = [
   },
   {
     path: '/:pathMatch(.*)*',
-    redirect: '/'
+    redirect: { name: 'Home' } // redirige dentro de la base (`/apolo/`)
   }
 ]
 
 const router = createRouter({
-  history: createWebHistory(),
+  history: createWebHistory(import.meta.env.BASE_URL),
   routes
 })
 
 // Navigation guards
 router.beforeEach((to, from, next) => {
   const authStore = useAuthStore()
-  
-  // Verificar autenticación al cargar
   authStore.checkAuth()
-  
+
   const isAuthenticated = authStore.isLoggedIn
   const requiresAuth = to.meta.requiresAuth
   const requiresGuest = to.meta.requiresGuest
 
   if (requiresAuth && !isAuthenticated) {
-    // Ruta protegida sin autenticación -> redirigir a login
-    next('/login')
+    next({ name: 'Login' })
   } else if (requiresGuest && isAuthenticated) {
-    // Ruta de invitado con autenticación -> redirigir a dashboard
-    next('/dashboard')
+    next({ name: 'Dashboard' })
   } else {
-    // Permitir navegación
     next()
   }
 })
 
 export default router
-

@@ -1,5 +1,34 @@
 <template>
-  <div class="min-h-screen bg-black flex items-center justify-center px-4 py-8">
+  <div class="min-h-screen bg-black flex items-center justify-center px-4 py-8 relative">
+    <!-- Ventana de credenciales de prueba (esquina superior derecha) -->
+    <div
+      v-if="showInfoBox"
+      class="fixed top-4 right-4 z-50 w-72 bg-gray-900 bg-opacity-95 text-white rounded-lg shadow-xl border border-gray-700 overflow-hidden"
+    >
+      <div class="flex items-center justify-between px-3 py-2 border-b border-gray-700">
+        <div class="text-xs font-semibold">Credenciales de prueba</div>
+        <button
+          @click="closeInfoBox"
+          aria-label="Cerrar"
+          class="text-gray-400 hover:text-white text-lg leading-none"
+        >
+          ×
+        </button>
+      </div>
+      <div class="px-3 py-2 text-xs space-y-2">
+        <div class="flex flex-col gap-1">
+          <div class="font-medium">Admin</div>
+          <div class="truncate">
+            <span class="font-semibold">Email:</span> admin@apolo.com
+          </div>
+          <div class="truncate">
+            <span class="font-semibold">Pass:</span> admin123
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Contenedor principal -->
     <div class="w-full max-w-md space-y-2">
       <!-- Logo y botón atrás -->
       <div class="relative py-4">
@@ -33,25 +62,26 @@
       </div>
 
       <!-- Formulario -->
-       <form @submit.prevent="handleLogin" class="space-y-4 pt-8">
+      <form @submit.prevent="handleLogin" class="space-y-4 pt-8">
         <!-- Campo de email -->
         <div class="space-y-1">
-         <input
+          <input
             v-model="email"
             type="text"
             id="email"
             class="w-full
                   bg-transparent
-                  border-0             
-                  border-b-2          
+                  border-0
+                  border-b-2
                   border-apolo-gray-dark
                   text-white
                   placeholder-apolo-gray-light
                   py-3 px-0
                   focus:outline-none
-                  focus:border-apolo-gray-dark  
-                  focus:ring-0"        
+                  focus:border-apolo-gray-dark
+                  focus:ring-0"
             placeholder="Correo electrónico"
+            aria-label="Correo electrónico"
           />
           <p v-if="emailError" class="text-apolo-primary text-sm">{{ emailError }}</p>
         </div>
@@ -71,9 +101,10 @@
                   placeholder-apolo-gray-light
                   py-3 px-0 pr-16
                   focus:outline-none
-                  focus:border-apolo-gray-dark 
+                  focus:border-apolo-gray-dark
                   focus:ring-0"
             placeholder="Contraseña"
+            aria-label="Contraseña"
           />
           <button
             type="button"
@@ -84,6 +115,29 @@
           </button>
           <p v-if="passwordError" class="text-apolo-primary text-sm">{{ passwordError }}</p>
         </div>
+
+        <!-- Error general -->
+        <div v-if="loginError" class="text-center text-apolo-primary text-sm">
+          {{ loginError }}
+        </div>
+
+        <!-- Botón de login -->
+        <button
+          type="submit"
+          class="w-full mt-2 flex items-center justify-center gap-2 bg-apolo-primary hover:bg-apolo-secondary text-black font-semibold py-3 rounded-lg transition transform hover:scale-105 disabled:opacity-60"
+          :disabled="isLoading"
+          aria-label="Iniciar sesión"
+        >
+          <span v-if="isLoading" class="flex items-center">
+            <svg class="animate-spin h-5 w-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor"
+                d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z">
+              </path>
+            </svg>
+          </span>
+          <span>{{ isLoading ? 'Iniciando...' : 'Iniciar sesión' }}</span>
+        </button>
       </form>
 
       <!-- Enlaces adicionales -->
@@ -109,17 +163,31 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import apoloImage from '@/assets/images/apolo-name.png'
+import { useAuthStore } from '../stores/auth'
 
 const router = useRouter()
+const authStore = useAuthStore()
+
 const email = ref('')
 const password = ref('')
 const showPassword = ref(false)
 const emailError = ref('')
 const passwordError = ref('')
 const loginError = ref('')
+const isLoading = ref(false)
+
+// Info box (credenciales) visibility
+const showInfoBox = ref(true)
+
+onMounted(() => {
+  const stored = localStorage.getItem('apolo_show_info_box')
+  if (stored === 'false') {
+    showInfoBox.value = false
+  }
+})
 
 // Expresión regular simple para validar email
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -128,13 +196,18 @@ function togglePassword() {
   showPassword.value = !showPassword.value
 }
 
+function closeInfoBox() {
+  showInfoBox.value = false
+  localStorage.setItem('apolo_show_info_box', 'false')
+}
+
 async function handleLogin() {
   // reset errores
   emailError.value = ''
   passwordError.value = ''
   loginError.value = ''
 
-  // validaciones personalizadas
+  // validaciones
   if (!email.value) {
     emailError.value = 'El correo es obligatorio'
   } else if (!emailPattern.test(email.value)) {
@@ -149,17 +222,23 @@ async function handleLogin() {
     return
   }
 
-  // Aquí llamas a tu API real...
-  // Simulación de fallo de login:
-  const fakeSuccess = false
+  isLoading.value = true
+  try {
+    const result = await authStore.login({
+      email: email.value.trim(),
+      password: password.value
+    })
 
-  if (!fakeSuccess) {
-    loginError.value = 'Correo o contraseña incorrectos'
-    return
+    if (!result.success) {
+      loginError.value = result.error || 'Error en el login'
+      return
+    }
+
+    // redirige al dashboard cuando el login fue exitoso
+    router.push({ name: 'Dashboard' })
+  } finally {
+    isLoading.value = false
   }
-
-  // si el login es exitoso:
-  router.push('/dashboard')
 }
 </script>
 
@@ -181,5 +260,4 @@ input {
     letter-spacing: 0.05em;
   }
 }
-
 </style>
