@@ -1,6 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
-import LandingPage from '../components/LandingPage.vue'
+import HomePage from '../components/landing/HomePage.vue'
 import LoginPage from '../components/LoginPage.vue'
 import Dashboard from '../components/Dashboard.vue'
 
@@ -8,7 +8,7 @@ const routes = [
   {
     path: '/',
     name: 'Home',
-    component: LandingPage,
+    component:HomePage,
     meta: { requiresGuest: true }
   },
   {
