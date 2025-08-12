@@ -1,78 +1,133 @@
-import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
+// src/stores/auth.js
+import { defineStore } from "pinia";
+import { ref, computed } from "vue";
+import api from "@/api/services";
+import { TOKEN_STORAGE_KEY } from "@/api/http";
 
-export const useAuthStore = defineStore('auth', () => {
-  // State
-  const user = ref(null)
-  const isAuthenticated = ref(false)
+/** Decodifica un JWT sin verificar firma (solo para leer payload en cliente) */
+function decodeJWT(token) {
+  try {
+    const payload = token.split(".")[1];
+    const json = atob(payload.replace(/-/g, "+").replace(/_/g, "/"));
+    return JSON.parse(decodeURIComponent(escape(json)));
+  } catch {
+    return null;
+  }
+}
 
-  // Getters
-  const currentUser = computed(() => user.value)
-  const isLoggedIn = computed(() => isAuthenticated.value)
+export const useAuthStore = defineStore("auth", () => {
+  // STATE
+  const access = ref(null);
+  const refresh = ref(null);
+  const user = ref(null); // perfil mínimo (derivado del token)
+  const loading = ref(false);
 
-  // Actions
-  const login = async (credentials) => {
+  // GETTERS
+  const isAuthenticated = computed(() => !!access.value);
+  const currentUser = computed(() => user.value);
+  const tokenInfo = computed(() => (access.value ? decodeJWT(access.value) : null));
+  const tokenExpiresAt = computed(() => (tokenInfo.value?.exp ? tokenInfo.value.exp * 1000 : null));
+
+  // HELPERS
+  function loadFromStorage() {
     try {
-      // Simular autenticación con credenciales predefinidas
-      const validCredentials = [
-        { email: 'admin@apolo.com', password: 'admin123', role: 'admin', name: 'Administrador' },
-        { email: 'user@apolo.com', password: 'user123', role: 'user', name: 'Usuario Demo' }
-      ]
+      const raw = localStorage.getItem(TOKEN_STORAGE_KEY);
+      if (!raw) return;
+      const data = JSON.parse(raw);
+      access.value = data.access || null;
+      refresh.value = data.refresh || null;
 
-      const foundUser = validCredentials.find(
-        u => u.email === credentials.email && u.password === credentials.password
-      )
-
-      if (foundUser) {
+      // reconstruye user básico desde el access si existe
+      if (access.value) {
+        const info = decodeJWT(access.value);
         user.value = {
-          id: Date.now(),
-          name: foundUser.name,
-          email: foundUser.email,
-          role: foundUser.role
-        }
-        isAuthenticated.value = true
-        
-        // Guardar en localStorage
-        localStorage.setItem('apolo_user', JSON.stringify(user.value))
-        localStorage.setItem('apolo_authenticated', 'true')
-        
-        return { success: true, user: user.value }
-      } else {
-        throw new Error('Credenciales inválidas')
+          id: info?.user_id ?? info?.id ?? null,
+          username: info?.username ?? null,
+        };
       }
-    } catch (error) {
-      return { success: false, error: error.message }
+    } catch {
+      // noop
     }
   }
 
-  const logout = () => {
-    user.value = null
-    isAuthenticated.value = false
-    localStorage.removeItem('apolo_user')
-    localStorage.removeItem('apolo_authenticated')
+  function persist() {
+    localStorage.setItem(
+      TOKEN_STORAGE_KEY,
+      JSON.stringify({ access: access.value, refresh: refresh.value })
+    );
   }
 
-  const checkAuth = () => {
-    const savedUser = localStorage.getItem('apolo_user')
-    const savedAuth = localStorage.getItem('apolo_authenticated')
-    
-    if (savedUser && savedAuth === 'true') {
-      user.value = JSON.parse(savedUser)
-      isAuthenticated.value = true
+  function clear() {
+    access.value = null;
+    refresh.value = null;
+    user.value = null;
+    localStorage.removeItem(TOKEN_STORAGE_KEY);
+  }
+
+  // ACTIONS
+  async function login({ username, password }) {
+    loading.value = true;
+    try {
+      // Tu endpoint real: POST /token/  -> { access, refresh }
+      const tokens = await api.auth.login({ username, password });
+      access.value = tokens.access;
+      refresh.value = tokens.refresh;
+      persist();
+
+      // Derivar user básico del access
+      const info = decodeJWT(access.value);
+      user.value = {
+        id: info?.user_id ?? info?.id ?? null,
+        username: info?.username ?? username ?? null,
+      };
+
+      return { success: true, user: user.value };
+    } catch (err) {
+      const msg = err.response?.data?.detail || "Usuario o contraseña inválidos";
+      return { success: false, error: msg };
+    } finally {
+      loading.value = false;
     }
   }
 
-  // Inicializar autenticación al cargar
-  checkAuth()
+  function logout() {
+    api.auth.logout(); // limpia tokens en http utils
+    clear();
+  }
+
+  /** Inicializa estado desde localStorage al arrancar la app */
+  function init() {
+    loadFromStorage();
+  }
+
+  /** (Opcional) Forzar refresh manual si alguna vista lo requiere */
+  async function refreshAccess() {
+    if (!refresh.value) return { success: false, error: "No hay refresh token" };
+    try {
+      const { access: newAccess } = await api.auth.refresh(refresh.value);
+      access.value = newAccess;
+      persist();
+      const info = decodeJWT(newAccess);
+      user.value = {
+        id: info?.user_id ?? info?.id ?? null,
+        username: info?.username ?? user.value?.username ?? null,
+      };
+      return { success: true };
+    } catch (e) {
+      clear();
+      return { success: false, error: "No se pudo refrescar la sesión" };
+    }
+  }
+
+  // AUTO-INIT
+  init();
 
   return {
-    user,
-    isAuthenticated,
-    currentUser,
-    isLoggedIn,
-    login,
-    logout,
-    checkAuth
-  }
-})
-
+    // state
+    access, refresh, user, loading,
+    // getters
+    isAuthenticated, currentUser, tokenInfo, tokenExpiresAt,
+    // actions
+    login, logout, init, refreshAccess,
+  };
+});

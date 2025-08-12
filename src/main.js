@@ -5,6 +5,7 @@ import App from './App.vue'
 import './style.css'
 import '@fortawesome/fontawesome-free/css/all.min.css'
 import VueTippy  from 'vue-tippy'
+import { useAuthStore } from "@/stores/auth";
 import 'tippy.js/dist/tippy.css'
 
 import '@fontsource/inter/300.css';
@@ -34,6 +35,8 @@ app.use(VueTippy, {
 })
 app.use(pinia)
 app.use(router)
+
+useAuthStore().init();
 
 app.mount('#app')
 

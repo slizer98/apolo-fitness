@@ -1,14 +1,15 @@
+// src/router/index.js
 import { createRouter, createWebHistory } from 'vue-router'
-import { useAuthStore } from '../stores/auth'
-import HomePage from '../components/landing/HomePage.vue'
-import LoginPage from '../components/LoginPage.vue'
-import Dashboard from '../components/Dashboard.vue'
+import { useAuthStore } from '@/stores/auth'
+import HomePage from '@/components/landing/HomePage.vue'
+import LoginPage from '@/components/LoginPage.vue'
+import Dashboard from '@/components/Dashboard.vue'
 
 const routes = [
   {
     path: '/',
     name: 'Home',
-    component:HomePage,
+    component: HomePage,
     meta: { requiresGuest: true }
   },
   {
@@ -25,7 +26,7 @@ const routes = [
   },
   {
     path: '/:pathMatch(.*)*',
-    redirect: { name: 'Home' } // redirige dentro de la base (`/apolo/`)
+    redirect: { name: 'Home' }
   }
 ]
 
@@ -34,12 +35,15 @@ const router = createRouter({
   routes
 })
 
-// Navigation guards
-router.beforeEach((to, from, next) => {
+// Guards
+router.beforeEach(async (to, from, next) => {
   const authStore = useAuthStore()
-  authStore.checkAuth()
 
-  const isAuthenticated = authStore.isLoggedIn
+  // Asegura estado desde localStorage / refresh si aplica
+  await authStore.init()
+
+  // Usa el getter del store (ajusta a tu nombre real: isAuthenticated o isLoggedIn)
+  const isAuthenticated = authStore.isAuthenticated // o authStore.isLoggedIn si dejaste alias
   const requiresAuth = to.meta.requiresAuth
   const requiresGuest = to.meta.requiresGuest
 
