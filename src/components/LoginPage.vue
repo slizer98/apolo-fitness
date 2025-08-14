@@ -102,19 +102,21 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import Navbar from '@/components/landing/Navbar.vue'
 import apoloImage from '@/assets/images/apolo-name.png'
 import { useAuthStore } from '@/stores/auth'
-import  api  from "@/api/services";
+import { useWorkspaceStore } from '@/stores/workspace'
 
+const route = useRoute()
 const router = useRouter()
-const authStore = useAuthStore()
+const auth = useAuthStore()
+const ws = useWorkspaceStore() // <-- NECESARIO
 
+// form state...
 const usernameOrEmail = ref('')
 const password = ref('')
 const showPassword = ref(false)
-
 const usernameError = ref('')
 const passwordError = ref('')
 const loginError = ref('')
@@ -122,55 +124,45 @@ const isLoading = ref(false)
 const showInfoBox = ref(true)
 
 onMounted(() => {
-  if (authStore.isAuthenticated) {
-    router.push({ name: 'Dashboard' })
+  if (auth.isAuthenticated) {
+    router.replace({ name: 'Dashboard' })
     return
   }
   const stored = localStorage.getItem('apolo_show_info_box')
   if (stored === 'false') showInfoBox.value = false
 })
 
-function togglePassword() {
-  showPassword.value = !showPassword.value
-}
+function togglePassword(){ showPassword.value = !showPassword.value }
+function closeInfoBox(){ showInfoBox.value = false; localStorage.setItem('apolo_show_info_box','false') }
 
-function closeInfoBox() {
-  showInfoBox.value = false
-  localStorage.setItem('apolo_show_info_box', 'false')
-}
-
-async function handleLogin() {
+async function handleLogin () {
   usernameError.value = ''
   passwordError.value = ''
   loginError.value = ''
-
   if (!usernameOrEmail.value) usernameError.value = 'El usuario o correo es obligatorio'
   if (!password.value)       passwordError.value = 'La contraseña es obligatoria'
   if (usernameError.value || passwordError.value) return
 
   isLoading.value = true
   try {
-    // El store llama a api.auth.login -> POST /token/ { username, password }
-    const result = await api.auth.login({
-      username: usernameOrEmail.value.trim(), // puede ser 'root' o 'correo'
-      password: password.value
-    })
-    console.log(usernameOrEmail.value.trim(), password.value)
-    console.log(result)
-    if (!result.success) {
-      // Backend típico: {detail: "..."} o errores de validación
-      loginError.value = result.error || 'Usuario o contraseña inválidos'
-      return
-    }
+    // ✅ Usa el store para que persista tokens y user
+    const res = await auth.login({ username: usernameOrEmail.value.trim(), password: password.value })
+    if (!res.success) { loginError.value = res.error || 'Usuario o contraseña inválidos'; return }
 
-    router.push({ name: 'Dashboard' })
+    // ✅ Carga perfil y FIJA EMPRESA (llama a api.system.setEmpresa internamente)
+    try { await ws.initFromProfile() } catch {}
+
+    // ✅ Respeta redirect si venías de /app/...
+    const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : null
+    router.replace(redirect || { name: 'Dashboard' })
   } catch (e) {
-    loginError.value = 'No se pudo iniciar sesión'
+    loginError.value = e?.response?.data?.detail || 'No se pudo iniciar sesión'
   } finally {
     isLoading.value = false
   }
 }
 </script>
+
 
 <style scoped>
 input::placeholder { color: #9CA3AF; }

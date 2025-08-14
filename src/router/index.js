@@ -1,59 +1,117 @@
 // src/router/index.js
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-import HomePage from '@/components/landing/HomePage.vue'
+import { useWorkspaceStore } from '@/stores/workspace'
+
+// Públicas
+import HomePage  from '@/components/landing/HomePage.vue'
 import LoginPage from '@/components/LoginPage.vue'
-import Dashboard from '@/components/Dashboard.vue'
+
+// Layout protegido
+const AppLayout       = () => import('@/layouts/AppLayout.vue')
+
+// Vistas protegidas (lazy)
+const Dashboard       = () => import('@/components/Dashboard.vue')
+const ClientesLista   = () => import('@/views/clientes/ClientesLista.vue')
+const ClienteCrear    = () => import('@/views/clientes/ClienteCrear.vue')
+// const ClienteEditar = () => import('@/views/clientes/ClienteEditar.vue') // cuando lo tengas
+const PlanesLista     = () => import('@/views/planes/PlanesLista.vue')
+const PlanCrear = () => import('@/views/planes/PlanCrear.vue')
+
+const UsuariosEmpresa = () => import('@/views/usuarios/UsuariosEmpresa.vue')
+const Configuraciones = () => import('@/views/config/Configuraciones.vue')
+const Perfil          = () => import('@/views/cuenta/Perfil.vue')
 
 const routes = [
+  // Públicas
+  { path: '/landing', name: 'Home',  component: HomePage,  meta: { requiresGuest: true } },
+  { path: '/login',   name: 'Login', component: LoginPage, meta: { requiresGuest: true } },
+
+  // Protegidas envueltas por el layout
   {
-    path: '/',
-    name: 'Home',
-    component: HomePage,
-    meta: { requiresGuest: true }
+    path: '/app',
+    component: AppLayout,
+    meta: { requiresAuth: true },
+    children: [
+      { path: 'dashboard', name: 'Dashboard', component: Dashboard },
+
+      // Clientes
+      { path: 'clientes',       name: 'ClientesLista', component: ClientesLista, meta: { perms: ['clientes:read'] } },
+      { path: 'clientes/nuevo', name: 'ClienteCrear',  component: ClienteCrear,  meta: { perms: ['clientes:create'] } },
+      // { path: 'clientes/:id/editar', name: 'ClienteEditar', component: ClienteEditar, props: true, meta: { perms: ['clientes:update'] } },
+
+      // Planes
+      { path: 'planes', name: 'PlanesLista', component: PlanesLista, meta: { perms: ['planes:read'] } },
+      { path: 'planes/nuevo', name: 'PlanCrear', component: PlanCrear, meta: { perms: ['planes:create'] } },
+      // Administración
+      { path: 'usuarios', name: 'UsuariosEmpresa', component: UsuariosEmpresa, meta: { perms: ['usuarios:manage'] } },
+      { path: 'config',   name: 'Configuraciones', component: Configuraciones, meta: { perms: ['config:manage'] } },
+
+      // Cuenta
+      { path: 'perfil', name: 'Perfil', component: Perfil },
+
+      // default child
+      { path: '', redirect: { name: 'Dashboard' } },
+    ],
   },
-  {
-    path: '/login',
-    name: 'Login',
-    component: LoginPage,
-    meta: { requiresGuest: true }
-  },
-  {
-    path: '/dashboard',
-    name: 'Dashboard',
-    component: Dashboard,
-    meta: { requiresAuth: true }
-  },
-  {
-    path: '/:pathMatch(.*)*',
-    redirect: { name: 'Home' }
-  }
+
+  // Atajos para URLs antiguas (compat)
+  { path: '/dashboard',      redirect: { name: 'Dashboard' } },
+  { path: '/clientes',       redirect: { name: 'ClientesLista' } },
+  { path: '/clientes/nuevo', redirect: { name: 'ClienteCrear' } },
+  { path: '/planes',         redirect: { name: 'PlanesLista' } },
+  { path: '/usuarios',       redirect: { name: 'UsuariosEmpresa' } },
+  { path: '/config',         redirect: { name: 'Configuraciones' } },
+  { path: '/perfil',         redirect: { name: 'Perfil' } },
+
+  // Raíz -> dashboard (guard decidirá login si no hay sesión)
+  { path: '/', redirect: '/dashboard' },
+
+  // 404
+  { path: '/:pathMatch(.*)*', redirect: '/dashboard' },
 ]
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
-  routes
+  routes,
+  scrollBehavior() { return { top: 0 } },
 })
 
-// Guards
+// ===== Guards =====
 router.beforeEach(async (to, from, next) => {
-  const authStore = useAuthStore()
+  const auth = useAuthStore()
+  auth.init?.()
 
-  // Asegura estado desde localStorage / refresh si aplica
-  await authStore.init()
+  const isAuthenticated = auth.isAuthenticated
+  const requiresAuth  = !!to.matched.find(r => r.meta?.requiresAuth)
+  const requiresGuest = !!to.matched.find(r => r.meta?.requiresGuest)
 
-  // Usa el getter del store (ajusta a tu nombre real: isAuthenticated o isLoggedIn)
-  const isAuthenticated = authStore.isAuthenticated // o authStore.isLoggedIn si dejaste alias
-  const requiresAuth = to.meta.requiresAuth
-  const requiresGuest = to.meta.requiresGuest
-
-  if (requiresAuth && !isAuthenticated) {
-    next({ name: 'Login' })
-  } else if (requiresGuest && isAuthenticated) {
-    next({ name: 'Dashboard' })
-  } else {
-    next()
+  // Público: impide acceder a login/landing si ya está logueado
+  if (requiresGuest && isAuthenticated) {
+    return next({ name: 'Dashboard' })
   }
+
+  if (requiresAuth) {
+    if (!isAuthenticated) {
+      // Guarda a dónde quería ir para redirigir tras login
+      return next({ name: 'Login', query: { redirect: to.fullPath } })
+    }
+
+    // Asegura empresa (perfil -> header X-Empresa-Id) en rutas protegidas
+    const ws = useWorkspaceStore()
+    try { await ws.ensureEmpresaSet() } catch {}
+
+    // === RBAC por ruta (opcional si creaste src/rbac/permissions.js) ===
+    const needsPerms = to.matched.flatMap(r => r.meta?.perms || [])
+    if (needsPerms.length) {
+      const { buildAbility } = await import('@/rbac/permissions')
+      const ability = buildAbility({ role: ws.rol, isSuperuser: !!ws.isSuperuser })
+      const ok = needsPerms.every(p => ability.has('*') || ability.has(p))
+      if (!ok) return next({ name: 'Dashboard' })
+    }
+  }
+
+  next()
 })
 
 export default router

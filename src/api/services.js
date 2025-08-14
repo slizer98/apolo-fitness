@@ -13,6 +13,13 @@ function getTokens() {
   }
 }
 
+const accounts = {
+  perfil() {
+    // GET /accounts/perfil/ → { username, empresa: {id,nombre}, sucursal: {id,nombre}, rol }
+    return http.get("accounts/perfil/");
+  },
+};
+
 /**
  * AUTH
  */
@@ -285,7 +292,7 @@ const planes = {
   precios: {
     create(payload) {
       // { plan, esquema, tipo, precio, numero_visitas, usuario }
-      return http.post("/planes/precios/", payload);
+      return http.post("planes/precios/", payload);
     },
     // si luego agregas list/get-by-plan:
     // listByPlan(planId) { return http.get(`/planes/${planId}/precios/`); }
@@ -294,7 +301,7 @@ const planes = {
   restricciones: {
     create(payload) {
       // { plan, dia, hora_inicio, hora_fin, usuario }
-      return http.post("/planes/restricciones/", payload);
+      return http.post("planes/restricciones/", payload);
     },
     // listByPlan(planId) { return http.get(`/planes/${planId}/restricciones/`); }
   },
@@ -302,6 +309,7 @@ const planes = {
 
 const api = {
   auth,
+  accounts,
   system,
   empresas,
   sucursales,
