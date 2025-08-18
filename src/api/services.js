@@ -15,9 +15,16 @@ function getTokens() {
 
 const accounts = {
   perfil() {
-    // GET /accounts/perfil/ → { username, empresa: {id,nombre}, sucursal: {id,nombre}, rol }
     return http.get("accounts/perfil/");
   },
+  usuarios: {
+    list(params) { return http.get("accounts/usuarios/", { params }); },
+    retrieve(id) { return http.get(`accounts/usuarios/${id}/`); },
+    create(payload) { return http.post("accounts/usuarios/", payload); },
+    update(id, payload) { return http.put(`accounts/usuarios/${id}/`, payload); },
+    patch(id, payload) { return http.patch(`accounts/usuarios/${id}/`, payload); },
+    delete(id) { return http.delete(`accounts/usuarios/${id}/`); },
+  }
 };
 
 /**
@@ -269,43 +276,30 @@ const valoresConfiguracion = {
 /**
  * PLANES
  */
+// src/api/services.js
+// ...
 const planes = {
-  list(params) {
-    return http.get("planes/", { params });
-  },
-  retrieve(id) {
-    return http.get(`planes/${id}/`);
-  },
-  create(payload) {
-    return http.post("planes/", payload);
-  },
-  update(id, payload) {
-    return http.put(`planes/${id}/`, payload);
-  },
-  patch(id, payload) {
-    return http.patch(`planes/${id}/`, payload);
-  },
-  delete(id) {
-    return http.delete(`planes/${id}/`);
-  },
+  list(params) { return http.get("planes/", { params }); },
+  retrieve(id) { return http.get(`planes/${id}/`); },
+  create(payload) { return http.post("planes/", payload); },
+  update(id, payload) { return http.put(`planes/${id}/`, payload); },
+  patch(id, payload) { return http.patch(`planes/${id}/`, payload); },
+  delete(id) { return http.delete(`planes/${id}/`); },
 
   precios: {
-    create(payload) {
-      // { plan, esquema, tipo, precio, numero_visitas, usuario }
-      return http.post("planes/precios/", payload);
-    },
-    // si luego agregas list/get-by-plan:
-    // listByPlan(planId) { return http.get(`/planes/${planId}/precios/`); }
+    create(payload) { return http.post("planes/precios/", payload); },
+    list(params) { return http.get("planes/precios/", { params }); },          // <- NUEVO (filtra por plan)
+    delete(id) { return http.delete(`planes/precios/${id}/`); },               // <- NUEVO
   },
 
   restricciones: {
-    create(payload) {
-      // { plan, dia, hora_inicio, hora_fin, usuario }
-      return http.post("planes/restricciones/", payload);
-    },
-    // listByPlan(planId) { return http.get(`/planes/${planId}/restricciones/`); }
+    create(payload) { return http.post("planes/restricciones/", payload); },
+    list(params) { return http.get("planes/restricciones/", { params }); },    // <- NUEVO (filtra por plan)
+    delete(id) { return http.delete(`planes/restricciones/${id}/`); },         // <- NUEVO
   },
-};
+}
+// ...
+
 
 const api = {
   auth,

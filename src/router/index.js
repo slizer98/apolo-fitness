@@ -16,6 +16,7 @@ const ClientesLista   = () => import('@/views/clientes/ClientesLista.vue')
 const ClienteCrear    = () => import('@/views/clientes/ClienteCrear.vue')
 // const ClienteEditar = () => import('@/views/clientes/ClienteEditar.vue') // cuando lo tengas
 const PlanesLista     = () => import('@/views/planes/PlanesLista.vue')
+const PlanDetalle = () => import('@/views/planes/PlanDetalle.vue')
 const PlanCrear = () => import('@/views/planes/PlanCrear.vue')
 
 const UsuariosEmpresa = () => import('@/views/usuarios/UsuariosEmpresa.vue')
@@ -42,6 +43,7 @@ const routes = [
 
       // Planes
       { path: 'planes', name: 'PlanesLista', component: PlanesLista, meta: { perms: ['planes:read'] } },
+       { path: 'planes/:id', name: 'PlanDetalle', component: PlanDetalle, props: true, meta: { perms: ['planes:read'] } },
       { path: 'planes/nuevo', name: 'PlanCrear', component: PlanCrear, meta: { perms: ['planes:create'] } },
       // Administración
       { path: 'usuarios', name: 'UsuariosEmpresa', component: UsuariosEmpresa, meta: { perms: ['usuarios:manage'] } },

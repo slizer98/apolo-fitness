@@ -1,7 +1,9 @@
 <template>
   <div class="p-4 text-white">
+    <!-- Header -->
     <div class="flex items-center justify-between mb-4">
       <h1 class="text-2xl font-light">Planes</h1>
+
       <button
         @click="openNew"
         class="bg-apolo-primary text-black px-4 py-2 rounded hover:bg-apolo-secondary transition"
@@ -14,11 +16,11 @@
     <div class="mb-4 flex flex-wrap gap-2">
       <input
         v-model="q"
-        @keyup.enter="fetch"
+        @keyup.enter="fetchList"
         placeholder="Buscar plan…"
         class="bg-gray-900 border border-gray-700 rounded px-3 py-2 w-64"
       />
-      <button @click="fetch" class="bg-gray-800 border border-gray-700 px-4 py-2 rounded hover:bg-gray-700">
+      <button @click="fetchList" class="bg-gray-800 border border-gray-700 px-4 py-2 rounded hover:bg-gray-700">
         Buscar
       </button>
       <button @click="resetFilters" class="bg-gray-800 border border-gray-700 px-4 py-2 rounded hover:bg-gray-700">
@@ -52,14 +54,24 @@
         </div>
 
         <p class="text-gray-300 text-sm mt-1 line-clamp-2">{{ p.descripcion }}</p>
-        <p v-if="p.desde || p.hasta" class="text-[11px] text-gray-400 mt-2">Vigencia: {{ formatRange(p.desde, p.hasta) }}</p>
-        <p v-if="p.visitas_gratis" class="text-[11px] text-gray-400 mt-1">Visitas gratis: {{ p.visitas_gratis }}</p>
+        <p v-if="p.desde || p.hasta" class="text-[11px] text-gray-400 mt-2">
+          Vigencia: {{ formatRange(p.desde, p.hasta) }}
+        </p>
+        <p v-if="p.visitas_gratis" class="text-[11px] text-gray-400 mt-1">
+          Visitas gratis: {{ p.visitas_gratis }}
+        </p>
 
         <div class="mt-3 flex items-center justify-end gap-2">
-          <button @click="openEdit(p)" class="px-2 py-1 rounded border border-gray-700 bg-gray-800/60 hover:bg-gray-700">
-            Editar
+          <button
+            @click="goGestionar(p)"
+            class="px-2 py-1 rounded border border-gray-700 bg-gray-800/60 hover:bg-gray-700"
+          >
+            Gestionar
           </button>
-          <button @click="remove(p)" class="px-2 py-1 rounded border border-red-800 bg-red-900/40 hover:bg-red-800">
+          <button
+            @click="remove(p)"
+            class="px-2 py-1 rounded border border-red-800 bg-red-900/40 hover:bg-red-800"
+          >
             Eliminar
           </button>
         </div>
@@ -70,24 +82,32 @@
 
     <!-- Paginación simple -->
     <div class="mt-4 flex items-center gap-2">
-      <button :disabled="page<=1" @click="prev" class="px-3 py-1 rounded bg-gray-800/60 border border-gray-700 disabled:opacity-50">
+      <button
+        :disabled="page<=1"
+        @click="prev"
+        class="px-3 py-1 rounded bg-gray-800/60 border border-gray-700 disabled:opacity-50"
+      >
         Anterior
       </button>
       <span class="text-gray-300">Página {{ page }}</span>
-      <button :disabled="!hasMore" @click="next" class="px-3 py-1 rounded bg-gray-800/60 border border-gray-700 disabled:opacity-50">
+      <button
+        :disabled="!hasMore"
+        @click="next"
+        class="px-3 py-1 rounded bg-gray-800/60 border border-gray-700 disabled:opacity-50"
+      >
         Siguiente
       </button>
       <span v-if="count!==null" class="text-gray-500 text-sm">({{ count }} resultados)</span>
     </div>
 
-    <!-- Modal Crear/Editar -->
+    <!-- Modal Crear (sólo creación base del plan) -->
     <div
       v-if="showModal"
       class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4"
     >
       <div class="w-full max-w-2xl bg-gray-950 border border-gray-800 rounded-2xl shadow-xl">
         <div class="px-4 py-3 border-b border-gray-800 flex items-center justify-between">
-          <h3 class="text-lg">{{ isEditing ? 'Editar plan' : 'Nuevo plan' }}</h3>
+          <h3 class="text-lg">Nuevo plan</h3>
           <button @click="closeModal" class="text-gray-400 hover:text-white">✕</button>
         </div>
 
@@ -99,7 +119,7 @@
               <p v-if="errors.nombre" class="text-red-400 text-xs mt-1">{{ errors.nombre }}</p>
             </div>
 
-            <div class="flex items-center gap-2">
+            <div class="flex items-center gap-2 mt-6 sm:mt-0">
               <input id="multi" type="checkbox" v-model="form.acceso_multisucursal" class="h-4 w-4 rounded border-gray-700 bg-gray-900" />
               <label for="multi" class="text-sm text-gray-300">Acceso multisucursal</label>
             </div>
@@ -142,10 +162,9 @@
             <textarea v-model="form.descripcion" rows="3" class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2"></textarea>
           </div>
 
-          <!-- Aviso empresa -->
-          <!-- <p v-if="empresaWarning" class="text-yellow-400 text-sm">
+          <p v-if="empresaWarning" class="text-yellow-400 text-sm">
             {{ empresaWarning }}
-          </p> -->
+          </p>
 
           <div class="flex items-center justify-end gap-2 pt-1">
             <button type="button" @click="closeModal" class="px-4 py-2 rounded border border-gray-700 bg-gray-800/60 hover:bg-gray-700">
@@ -153,12 +172,16 @@
             </button>
             <button
               type="submit"
-              :disabled="saving"
+              :disabled="saving || !canSubmit"
               class="px-4 py-2 rounded bg-apolo-primary text-black hover:bg-apolo-secondary disabled:opacity-60"
             >
               {{ saving ? 'Guardando…' : 'Guardar' }}
             </button>
           </div>
+
+          <p v-if="saveHint" class="text-[12px] text-gray-400 pt-1">
+            Después podrás <strong>Gestionar</strong> este plan para agregar <em>Precios</em> y <em>Restricciones</em>.
+          </p>
         </form>
       </div>
     </div>
@@ -167,14 +190,16 @@
 
 <script setup>
 import { ref, onMounted, computed } from 'vue'
+import { useRouter } from 'vue-router'
 import api from '@/api/services'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useAuthStore } from '@/stores/auth'
 
-// opciones "comunes" para tipo de plan (puedes ajustar a tu catálogo real)
-const TIPO_PLAN_OPTS = ['mensual', 'semanal', 'anual', 'por_visitas']
+const router = useRouter()
+const ws = useWorkspaceStore()
+const auth = useAuthStore()
 
-// listado
+// listado/estado
 const loading = ref(true)
 const rows = ref([])
 const page = ref(1)
@@ -182,40 +207,71 @@ const pageSize = 12
 const count = ref(null)
 const q = ref('')
 
-const hasMore = computed(() => (count.value === null ? rows.value.length === pageSize : count.value > page.value * pageSize))
+// paginación
+const hasMore = computed(() =>
+  count.value === null ? rows.value.length === pageSize : count.value > page.value * pageSize
+)
 
-onMounted(fetch)
+onMounted(fetchList)
 
-async function fetch () {
+async function fetchList() {
   loading.value = true
   try {
     const params = { page: page.value, page_size: pageSize, ordering: '-id', search: q.value }
     const { data } = await api.planes.list(params)
     rows.value = data?.results || data || []
     count.value = data?.count ?? null
+  } catch (e) {
+    console.error(e)
+    alert(e?.response?.data?.detail || 'Error al cargar planes')
   } finally {
     loading.value = false
   }
 }
-function resetFilters () { q.value = ''; page.value = 1; fetch() }
-function next () { if (hasMore.value) { page.value++; fetch() } }
-function prev () { if (page.value > 1) { page.value--; fetch() } }
 
-function formatDate (d) { try { return new Date(d).toLocaleDateString('es-MX') } catch { return d || '—' } }
-function formatRange (a, b) {
+function resetFilters() {
+  q.value = ''
+  page.value = 1
+  fetchList()
+}
+function next() {
+  if (hasMore.value) {
+    page.value++
+    fetchList()
+  }
+}
+function prev() {
+  if (page.value > 1) {
+    page.value--
+    fetchList()
+  }
+}
+
+// navegación
+function goGestionar(p) {
+  router.push({ name: 'PlanDetalle', params: { id: p.id } })
+}
+
+// utilidades
+function formatDate(d) {
+  try {
+    return new Date(d).toLocaleDateString('es-MX')
+  } catch {
+    return d || '—'
+  }
+}
+function formatRange(a, b) {
   const fa = a ? formatDate(a) : '—'
   const fb = b ? formatDate(b) : '—'
   if (!a && !b) return '—'
   return `${fa} → ${fb}`
 }
 
-// modal/form
+// ===== Modal Crear Plan =====
 const showModal = ref(false)
-const isEditing = ref(false)
 const saving = ref(false)
 const errors = ref({})
 const form = ref({
-  id: null,
   nombre: '',
   descripcion: '',
   acceso_multisucursal: false,
@@ -226,16 +282,15 @@ const form = ref({
   hasta: '',
 })
 
-const ws = useWorkspaceStore()
-console.log(ws.empresaId)
-const auth = useAuthStore()
-// const empresaWarning = computed(() => (!ws.empresaId ? 'No hay empresa activa. No se podrá guardar.' : ''))
+const TIPO_PLAN_OPTS = ['mensual', 'semanal', 'anual', 'por_visitas'] // ajusta a tu catálogo real
 
-function openNew () {
-  isEditing.value = false
+const empresaWarning = computed(() => (!ws.empresaId ? 'No hay empresa activa. No se podrá guardar.' : ''))
+const canSubmit = computed(() => !!ws.empresaId && !!form.value.nombre?.trim() && !!form.value.tipo_plan)
+const saveHint = computed(() => true)
+
+function openNew() {
   errors.value = {}
   form.value = {
-    id: null,
     nombre: '',
     descripcion: '',
     acceso_multisucursal: false,
@@ -247,80 +302,78 @@ function openNew () {
   }
   showModal.value = true
 }
-function openEdit (p) {
-  isEditing.value = true
-  errors.value = {}
-  form.value = {
-    id: p.id,
-    nombre: p.nombre || '',
-    descripcion: p.descripcion || '',
-    acceso_multisucursal: !!p.acceso_multisucursal,
-    tipo_plan: p.tipo_plan || '',
-    preventa: !!p.preventa,
-    visitas_gratis: Number(p.visitas_gratis) || 0,
-    desde: p.desde || '',
-    hasta: p.hasta || '',
-  }
-  showModal.value = true
+function closeModal() {
+  showModal.value = false
 }
-function closeModal () { showModal.value = false }
 
-function validate () {
+function isDate(str){ return !str || /^\d{4}-\d{2}-\d{2}$/.test(str) }
+function validate() {
   const e = {}
   if (!form.value.nombre?.trim()) e.nombre = 'El nombre es obligatorio'
   if (!form.value.tipo_plan) e.tipo_plan = 'El tipo de plan es obligatorio'
   if (!ws.empresaId) e.empresa = 'No hay empresa activa'
+  if (form.value.desde && !isDate(form.value.desde)) e.desde = 'Formato de fecha inválido (YYYY-MM-DD)'
+  if (form.value.hasta && !isDate(form.value.hasta)) e.hasta = 'Formato de fecha inválido (YYYY-MM-DD)'
+  if (form.value.desde && form.value.hasta && form.value.desde > form.value.hasta) e.hasta = 'La fecha fin debe ser >= inicio'
   errors.value = e
   return Object.keys(e).length === 0
 }
 
-async function save () {
+async function save() {
   if (!validate()) return
   saving.value = true
   try {
     const payload = {
-      // obligatorios/esperados por tu API
-      empresa: ws.empresaId,                           // ← requerido (según Postman)
+      empresa: Number(ws.empresaId),                           // OBLIGATORIO
       nombre: form.value.nombre.trim(),
       tipo_plan: form.value.tipo_plan,
       preventa: !!form.value.preventa,
       visitas_gratis: Number(form.value.visitas_gratis) || 0,
-      // opcionales / metadatos
       descripcion: form.value.descripcion?.trim() || '',
       acceso_multisucursal: !!form.value.acceso_multisucursal,
       desde: form.value.desde || null,
       hasta: form.value.hasta || null,
-      // si tu API lo usa (tu tabla lo tiene); si lo infiere del token, puedes omitirlo
-      usuario: auth.user?.id || null,
+      // opcional si tu API lo usa; si no, quítalo
+      usuario: auth.user?.id || auth.tokenInfo?.user_id || null,
     }
-
-    if (isEditing.value && form.value.id) {
-      await api.planes.update(form.value.id, payload)
-    } else {
-      await api.planes.create(payload)
-    }
-
+    const { data: created } = await api.planes.create(payload)
     closeModal()
-    await fetch()
+    await fetchList()
+    // Tip UX: abrir gestión directamente
+    if (created?.id) {
+      router.push({ name: 'PlanDetalle', params: { id: created.id } })
+    }
   } catch (e) {
-    alert(e.response?.data?.detail || 'Error al guardar')
+    console.error(e)
+    const data = e?.response?.data
+    if (data && typeof data === 'object') {
+      // mapea errores básicos del backend al formulario
+      if (data.nombre) errors.value.nombre = Array.isArray(data.nombre) ? data.nombre[0] : String(data.nombre)
+      if (data.tipo_plan) errors.value.tipo_plan = Array.isArray(data.tipo_plan) ? data.tipo_plan[0] : String(data.tipo_plan)
+      if (data.empresa) errors.value.empresa = Array.isArray(data.empresa) ? data.empresa[0] : String(data.empresa)
+    }
+    alert(data?.detail || 'Error al guardar plan')
   } finally {
     saving.value = false
   }
 }
 
-async function remove (p) {
+// eliminar
+async function remove(p) {
   if (!confirm(`Eliminar plan "${p.nombre}"?`)) return
   try {
     await api.planes.delete(p.id)
-    if (rows.value.length === 1 && page.value > 1) { page.value -= 1 }
-    await fetch()
+    if (rows.value.length === 1 && page.value > 1) {
+      page.value -= 1
+    }
+    await fetchList()
   } catch (e) {
-    alert(e.response?.data?.detail || 'No se pudo eliminar')
+    console.error(e)
+    alert(e?.response?.data?.detail || 'No se pudo eliminar')
   }
 }
 </script>
 
 <style scoped>
-/* opcional: estilos mínimos */
+/* opcional */
 </style>

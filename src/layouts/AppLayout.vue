@@ -84,6 +84,8 @@
       </main>
     </div>
   </div>
+  <Toasts />
+  <ConfirmDialog />
 </template>
 
 <script setup>
@@ -93,6 +95,8 @@ import { useWorkspaceStore } from '@/stores/workspace'
 import { useAuthStore } from '@/stores/auth'
 import api from '@/api/services'
 import apoloImage from '@/assets/images/apolo-name.png'
+import Toasts from '@/components/ui/Toasts.vue'
+import ConfirmDialog from '@/components/ui/ConfirmDialog.vue'
 
 const route = useRoute()
 const router = useRouter()
