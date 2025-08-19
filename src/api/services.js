@@ -292,14 +292,91 @@ const planes = {
     delete(id) { return http.delete(`planes/precios/${id}/`); },               // <- NUEVO
   },
 
-  restricciones: {
-    create(payload) { return http.post("planes/restricciones/", payload); },
-    list(params) { return http.get("planes/restricciones/", { params }); },    // <- NUEVO (filtra por plan)
-    delete(id) { return http.delete(`planes/restricciones/${id}/`); },         // <- NUEVO
-  },
+  // restricciones: {
+  //   create(payload) { return http.post("planes/restricciones/", payload); },
+  //   list(params) { return http.get("planes/restricciones/", { params }); },    // <- NUEVO (filtra por plan)
+  //   delete(id) { return http.delete(`planes/restricciones/${id}/`); },         // <- NUEVO
+  // },
 }
-// ...
+const planesRestricciones = {
+  list(params){ return http.get("planes/restricciones/", { params }) },
+  retrieve(id){ return http.get(`planes/restricciones/${id}/`) },
+  create(payload){ return http.post("planes/restricciones/", payload) },
+  update(id, payload){ return http.put(`planes/restricciones/${id}/`, payload) },
+  patch(id, payload){ return http.patch(`planes/restricciones/${id}/`, payload) },
+  delete(id){ return http.delete(`planes/restricciones/${id}/`) },
+};
+const servicios = {
+  list(params){ return http.get("servicios/", { params }) },
+  retrieve(id){ return http.get(`servicios/${id}/`) },
+  create(payload){ return http.post("servicios/", payload) },
+  update(id, payload){ return http.put(`servicios/${id}/`, payload) },
+  patch(id, payload){ return http.patch(`servicios/${id}/`, payload) },
+  delete(id){ return http.delete(`servicios/${id}/`) },
+}
 
+const beneficios = {
+  list(params){ return http.get("beneficios/", { params }) },
+  retrieve(id){ return http.get(`beneficios/${id}/`) },
+  create(payload){ return http.post("beneficios/", payload) },
+  update(id, payload){ return http.put(`beneficios/${id}/`, payload) },
+  patch(id, payload){ return http.patch(`beneficios/${id}/`, payload) },
+  delete(id){ return http.delete(`beneficios/${id}/`) },
+}
+
+const planesServicios = {
+  list(params){ return http.get("planes/servicios/", { params }) },
+  create(payload){ return http.post("planes/servicios/", payload) },
+  update(id, payload){ return http.put(`planes/servicios/${id}/`, payload) },
+  patch(id, payload){ return http.patch(`planes/servicios/${id}/`, payload) },
+  delete(id){ return http.delete(`planes/servicios/${id}/`) },
+}
+
+const planesBeneficios = {
+  list(params){ return http.get("planes/beneficios/", { params }) },
+  create(payload){ return http.post("planes/beneficios/", payload) },
+  update(id, payload){ return http.put(`planes/beneficios/${id}/`, payload) },
+  patch(id, payload){ return http.patch(`planes/beneficios/${id}/`, payload) },
+  delete(id){ return http.delete(`planes/beneficios/${id}/`) },
+}
+
+const disciplinas = {
+  list(params){ return http.get("disciplinas/", { params }) },
+  retrieve(id){ return http.get(`disciplinas/${id}/`) },
+  create(payload){ return http.post("disciplinas/", payload) },
+  update(id, payload){ return http.put(`disciplinas/${id}/`, payload) },
+  patch(id, payload){ return http.patch(`disciplinas/${id}/`, payload) },
+  delete(id){ return http.delete(`disciplinas/${id}/`) },
+}
+
+const disciplinasPlanes = {
+  list(params){ return http.get("disciplinas/planes/", { params }) },
+  create(payload){ return http.post("disciplinas/planes/", payload) },
+  update(id, payload){ return http.put(`disciplinas/planes/${id}/`, payload) },
+  patch(id, payload){ return http.patch(`disciplinas/planes/${id}/`, payload) },
+  delete(id){ return http.delete(`disciplinas/planes/${id}/`) },
+}
+
+const horariosDisciplinas = {
+  list(params){ return http.get("disciplinas/horarios/", { params }) },
+  create(payload){ return http.post("disciplinas/horarios/", payload) },
+  update(id, payload){ return http.put(`disciplinas/horarios/${id}/`, payload) },
+  patch(id, payload){ return http.patch(`disciplinas/horarios/${id}/`, payload) },
+  delete(id){ return http.delete(`disciplinas/horarios/${id}/`) },
+}
+
+const altasPlan = {
+  list(params){ return http.get("planes/altas/", { params }) },
+  create(payload){ return http.post("planes/altas/", payload) },
+  update(id, payload){ return http.put(`planes/altas/${id}/`, payload) },
+  patch(id, payload){ return http.patch(`planes/altas/${id}/`, payload) },
+  delete(id){ return http.delete(`planes/altas/${id}/`) },
+}
+
+const accesos = {
+  list(params){ return http.get("accesos/", { params }) },
+  create(payload){ return http.post("accesos/", payload) },
+}
 
 const api = {
   auth,
@@ -311,7 +388,11 @@ const api = {
   clientes,
   configuraciones,
   valoresConfiguracion,
-  planes,
+  planes, planesRestricciones,
+  servicios, beneficios,
+  planesServicios, planesBeneficios,
+  disciplinas, disciplinasPlanes, horariosDisciplinas,
+  altasPlan, accesos,
   // exporta helpers por si los necesitas en UI
   _helpers: { saveTokens, getTokens, clearTokens, setEmpresa: system.setEmpresa },
 };
