@@ -31,6 +31,7 @@
         </div>
         <p class="text-gray-300 text-sm mt-1 line-clamp-2">{{ p.descripcion }}</p>
         <p v-if="p.desde || p.hasta" class="text-[11px] text-gray-400 mt-2">Vigencia: {{ formatRange(p.desde, p.hasta) }}</p>
+        
 
         <div class="mt-3 flex items-center justify-end gap-2">
           <button @click="goManage(p)" class="px-2 py-1 rounded border border-gray-700 bg-gray-800/60 hover:bg-gray-700">Gestionar</button>

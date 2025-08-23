@@ -14,13 +14,20 @@ const AppLayout       = () => import('@/layouts/AppLayout.vue')
 const Dashboard       = () => import('@/components/Dashboard.vue')
 const ClientesLista   = () => import('@/views/clientes/ClientesLista.vue')
 const ClienteCrear    = () => import('@/views/clientes/ClienteCrear.vue')
-// const ClienteEditar = () => import('@/views/clientes/ClienteEditar.vue') // cuando lo tengas
+const ClienteEditar = () => import('@/views/clientes/ClienteEditar.vue') 
+const ClienteDetalle = () => import('@/views/clientes/ClienteDetalle.vue') 
 const PlanesLista     = () => import('@/views/planes/PlanesLista.vue')
 const PlanDetalle = () => import('@/views/planes/PlanDetalle.vue')
 const PlanCrear = () => import('@/views/planes/PlanCrear.vue')
-
+const PlanEditar = () => import('@/views/planes/PlanEditar.vue')
+const ServiciosLista   = () => import('@/views/servicios/ServiciosLista.vue')
+const DisciplinasLista   = () => import('@/views/disciplinas/DisciplinasLista.vue')
+const BeneficiosLista  = () => import('@/views/beneficios/BeneficiosLista.vue')
+const MembresiasLista = () => import('@/views/membresias/MembresiasLista.vue')
+const MembresiaCrear  = () => import('@/views/membresias/MembresiaCrear.vue')
 const UsuariosEmpresa = () => import('@/views/usuarios/UsuariosEmpresa.vue')
 const Configuraciones = () => import('@/views/config/Configuraciones.vue')
+const UiConfigurator = () => import('@/views/config/UiConfigurator.vue')
 const Perfil          = () => import('@/views/cuenta/Perfil.vue')
 
 const routes = [
@@ -39,16 +46,25 @@ const routes = [
       // Clientes
       { path: 'clientes',       name: 'ClientesLista', component: ClientesLista, meta: { perms: ['clientes:read'] } },
       { path: 'clientes/nuevo', name: 'ClienteCrear',  component: ClienteCrear,  meta: { perms: ['clientes:create'] } },
-      // { path: 'clientes/:id/editar', name: 'ClienteEditar', component: ClienteEditar, props: true, meta: { perms: ['clientes:update'] } },
+      { path: 'clientes/:id',        name: 'ClienteDetalle',component:ClienteDetalle,  props: true },
+      { path: 'clientes/:id/editar', name: 'ClienteEditar',  component: ClienteEditar, props: true },
+
 
       // Planes
       { path: 'planes', name: 'PlanesLista', component: PlanesLista, meta: { perms: ['planes:read'] } },
-       { path: 'planes/:id', name: 'PlanDetalle', component: PlanDetalle, props: true, meta: { perms: ['planes:read'] } },
+      { path: 'planes/:id', name: 'PlanDetalle', component: PlanDetalle, props: true, meta: { perms: ['planes:read'] } },
       { path: 'planes/nuevo', name: 'PlanCrear', component: PlanCrear, meta: { perms: ['planes:create'] } },
+      { path: 'planes/:id/editar', name: 'PlanEditar', component: PlanEditar, meta: { perms: ['planes:update'] }, props: true },
+      { path: 'servicios',  name: 'ServiciosLista',  component: ServiciosLista,  meta: { perms: ['planes:read'] } },
+      { path: 'beneficios', name: 'BeneficiosLista', component: BeneficiosLista, meta: { perms: ['planes:read'] } },
+      { path: 'disciplinas', name: 'DisciplinasLista', component: DisciplinasLista, meta: { perms: ['planes:read'] } },
+      { path: 'membresias',       name: 'MembresiasLista', component: MembresiasLista, meta: { perms: ['membresias:read'] } },
+      { path: 'membresias/nueva', name: 'MembresiaCrear',  component: MembresiaCrear,  meta: { perms: ['membresias:create'] } },
       // Administración
       { path: 'usuarios', name: 'UsuariosEmpresa', component: UsuariosEmpresa, meta: { perms: ['usuarios:manage'] } },
       { path: 'config',   name: 'Configuraciones', component: Configuraciones, meta: { perms: ['config:manage'] } },
-
+      // Config
+      { path: 'config/ui', name: 'UiConfigurator', component: UiConfigurator, meta: { perms: ['config:manage'] } },
       // Cuenta
       { path: 'perfil', name: 'Perfil', component: Perfil },
 

@@ -176,107 +176,73 @@ const clientes = {
     return http.delete(`clientes/${id}/`);
   },
 
-  // Datos de contacto
   datosContacto: {
-    create(payload) {
-      // { cliente, tipo, valor }
-      return http.post("clientes/datos-contacto/", payload);
-    },
+    create(payload) { return http.post("clientes/datos-contacto/", payload); },
     getByCliente(clienteId) {
-      return http.get(`clientes/datos-contacto/${clienteId}`);
+      return http.get("clientes/datos-contacto/", { params: { cliente: clienteId, ordering: "-id", page_size: 100 } });
     },
   },
 
-  // Datos fiscales
   datosFiscales: {
-    create(payload) {
-      return http.post("clientes/datos-fiscales/", payload);
-    },
+    create(payload) { return http.post("clientes/datos-fiscales/", payload); },
     getByCliente(clienteId) {
-      return http.get(`clientes/datos-fiscales/${clienteId}`);
+      // OneToOne en tu modelo -> el backend devolverá [] o [obj]
+      return http.get("clientes/datos-fiscales/", { params: { cliente: clienteId } });
     },
   },
 
-  // Convenios
   convenios: {
-    create(payload) {
-      return http.post("clientes/convenios/", payload);
-    },
+    create(payload) { return http.post("clientes/convenios/", payload); },
     getByCliente(clienteId) {
-      return http.get(`clientes/convenios/${clienteId}`);
+      return http.get("clientes/convenios/", { params: { cliente: clienteId, ordering: "-id", page_size: 100 } });
+    },
+  },
+
+  datosAdicionales: {
+    create(payload) { return http.post("clientes/datos-adicionales/", payload); },
+    getByCliente(clienteId) {
+      return http.get("clientes/datos-adicionales/", { params: { cliente: clienteId, ordering: "-id", page_size: 200 } });
+    },
+  },
+
+  clienteSucursales: {
+    create(payload) { return http.post("clientes/sucursales/", payload); },
+    getByCliente(clienteId) {
+      return http.get("clientes/sucursales/", { params: { cliente: clienteId, ordering: "-id", page_size: 50 } });
     },
   },
 
   // Características (catálogo por empresa o global)
   caracteristicas: {
-    list(params) {
-      return http.get("clientes/caracteristicas/", { params });
-    },
-    retrieve(id) {
-      return http.get(`clientes/caracteristicas/${id}`);
-    },
-    create(payload) {
-      return http.post("clientes/caracteristicas/", payload);
-    },
-    update(id, payload) {
-      return http.put(`clientes/caracteristicas/${id}/`, payload);
-    },
-    patch(id, payload) {
-      return http.patch(`clientes/caracteristicas/${id}/`, payload);
-    },
-    delete(id) {
-      return http.delete(`clientes/caracteristicas/${id}/`);
-    },
+    list(params) { return http.get("clientes/caracteristicas/", { params }); },
+    retrieve(id) { return http.get(`clientes/caracteristicas/${id}/`); },
+    create(payload) { return http.post("clientes/caracteristicas/", payload); },
+    update(id, payload) { return http.put(`clientes/caracteristicas/${id}/`, payload); },
+    patch(id, payload) { return http.patch(`clientes/caracteristicas/${id}/`, payload); },
+    delete(id) { return http.delete(`clientes/caracteristicas/${id}/`); },
   },
 
-  // Datos adicionales por cliente
-  datosAdicionales: {
-    create(payload) {
-      return http.post("clientes/datos-adicionales/", payload);
-    },
-    getByCliente(clienteId) {
-      return http.get(`clientes/datos-adicionales/${clienteId}`);
-    },
-  },
 
-  // Relación cliente - sucursal
-  clienteSucursales: {
-    create(payload) {
-      return http.post("clientes/sucursales/", payload);
-    },
-    getByCliente(clienteId) {
-      return http.get(`clientes/sucursales/${clienteId}`);
-    },
-  },
 };
 
 /**
  * CONFIGURACIÓN
  */
 const configuraciones = {
-  create(payload) {
-    // { nombre, tipo_dato, descripcion }
-    return http.post("configuraciones/", payload);
-  },
-  list(params) {
-    return http.get("configuraciones/", { params });
-  },
-};
+  create(payload) { return http.post("configuraciones/", payload) },
+  list(params)    { return http.get("configuraciones/", { params }) },
+}
 
 const valoresConfiguracion = {
-  create(payload) {
-    // { configuracion, empresa, valor }
-    return http.post("valores-configuracion/", payload);
-  },
-  getPorEmpresa(empresaId) {
-    return http.get(`valores-configuracion/por-empresa/${empresaId}/`);
-  },
-};
+  create(payload) { return http.post("valores-configuracion/", payload) },
+  list(params)    { return http.get("valores-configuracion/", { params }) }, // <-- para UiConfigurator
+  getPorEmpresa(empresaId) { return http.get(`valores-configuracion/por-empresa/${empresaId}/`) }, // <-- para store
+}
+
 
 /**
  * PLANES
  */
-// src/api/services.js
 // ...
 const planes = {
   list(params) { return http.get("planes/", { params }); },

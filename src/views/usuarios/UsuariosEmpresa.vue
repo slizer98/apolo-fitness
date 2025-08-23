@@ -300,7 +300,7 @@ async function preloadSucursales(){
     sucursales.value = []
   }
 }
-const rolOptions = ['Gerente','Recepcionista','Contabilidad','Auditor']
+const rolOptions = ['Gerente','Recepcionista','Contabilidad','Auditor', 'Instructor']
 
 // ===== Modal/Form =====
 const showModal = ref(false)

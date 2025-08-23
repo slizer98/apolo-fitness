@@ -3,7 +3,6 @@
     <div class="flex items-center justify-between mb-4">
       <h1 class="text-2xl font-light">Clientes</h1>
 
-      <!-- Enlaza a ClienteCrear -->
       <RouterLink :to="{ name: 'ClienteCrear' }"
         class="bg-apolo-primary text-black px-4 py-2 rounded hover:bg-apolo-secondary transition">
         + Nuevo
@@ -43,15 +42,21 @@
           <td class="py-2 text-gray-300">{{ c.email || '—' }}</td>
           <td class="py-2 text-gray-300">{{ c.sucursal_nombre || '—' }}</td>
           <td class="py-2 text-gray-300">{{ formatDate(c.fecha_alta || c.created) }}</td>
-          <td class="py-2 text-right flex items-center justify-end gap-2">
-            <!-- Opcional: enlazar a ClienteEditar (lo prepararemos después) -->
-            <!-- <RouterLink :to="{ name: 'ClienteEditar', params: { id: c.id } }"
-              class="px-2 py-1 rounded border border-gray-700 bg-gray-800/60 hover:bg-gray-700">
-              Editar
-            </RouterLink> -->
-            <button @click="remove(c)" class="px-2 py-1 rounded border border-red-800 bg-red-900/40 hover:bg-red-800">
-              Eliminar
-            </button>
+          <td class="py-2">
+            <div class="flex items-center justify-end gap-2">
+              <RouterLink :to="{ name: 'ClienteDetalle', params: { id: c.id } }"
+                class="px-2 py-1 rounded border border-gray-700 bg-gray-800/60 hover:bg-gray-700">
+                Ver
+              </RouterLink>
+              <RouterLink :to="{ name: 'ClienteEditar', params: { id: c.id } }"
+                class="px-2 py-1 rounded border border-gray-700 bg-gray-800/60 hover:bg-gray-700">
+                Editar
+              </RouterLink>
+              <button @click="confirmDelete(c)"
+                class="px-2 py-1 rounded border border-red-800 bg-red-900/40 hover:bg-red-800">
+                Eliminar
+              </button>
+            </div>
           </td>
         </tr>
         <tr v-if="!rows.length">
@@ -67,6 +72,19 @@
       <button :disabled="!hasMore" @click="next" class="px-3 py-1 rounded bg-gray-800/60 border border-gray-700 disabled:opacity-50">Siguiente</button>
       <span v-if="count!==null" class="text-gray-500 text-sm">({{ count }} resultados)</span>
     </div>
+
+    <!-- Modal confirmar eliminación -->
+    <div v-if="showConfirm" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" @click="showConfirm=false"></div>
+      <div class="relative w-full max-w-md rounded-2xl border border-gray-800 bg-gray-950 p-5 shadow-2xl">
+        <h3 class="text-lg font-medium mb-2">Eliminar cliente</h3>
+        <p class="text-gray-300">¿Seguro que deseas eliminar <span class="font-semibold">{{ fullName(pendingDelete) }}</span>?</p>
+        <div class="mt-4 flex items-center justify-end gap-2">
+          <button class="px-4 py-2 rounded border border-gray-700 bg-gray-800/60 hover:bg-gray-700" @click="showConfirm=false">Cancelar</button>
+          <button class="px-4 py-2 rounded bg-red-600 hover:bg-red-700" @click="remove()">Eliminar</button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -81,6 +99,9 @@ const page = ref(1)
 const pageSize = 10
 const count = ref(null)
 const q = ref('')
+
+const showConfirm = ref(false)
+const pendingDelete = ref(null)
 
 const hasMore = computed(() => count.value === null ? rows.value.length === pageSize : count.value > page.value * pageSize)
 
@@ -102,14 +123,18 @@ function prev(){ if(page.value>1){ page.value--; fetch() } }
 function fullName(c){ return [c.nombre, c.apellidos].filter(Boolean).join(' ') }
 function formatDate(d){ try{ return new Date(d).toLocaleDateString('es-MX') }catch{ return d||'—' } }
 
-async function remove(c){
-  if(!confirm(`Eliminar cliente "${fullName(c)}"?`)) return
+function confirmDelete(c){
+  pendingDelete.value = c
+  showConfirm.value = true
+}
+async function remove(){
   try{
-    await api.clientes.delete(c.id)
+    await api.clientes.delete(pendingDelete.value.id)
     if(rows.value.length === 1 && page.value > 1){ page.value -= 1 }
     await fetch()
-  } catch(e){
-    alert(e.response?.data?.detail || 'No se pudo eliminar')
+  } finally {
+    showConfirm.value = false
+    pendingDelete.value = null
   }
 }
 </script>
