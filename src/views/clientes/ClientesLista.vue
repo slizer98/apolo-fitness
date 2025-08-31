@@ -3,16 +3,23 @@
     <div class="flex items-center justify-between mb-4">
       <h1 class="text-2xl font-light">Clientes</h1>
 
-      <RouterLink :to="{ name: 'ClienteCrear' }"
-        class="bg-apolo-primary text-black px-4 py-2 rounded hover:bg-apolo-secondary transition">
+      <!-- Abrir modal de alta -->
+      <button
+        @click="openCrear()"
+        class="bg-apolo-primary text-black px-4 py-2 rounded hover:bg-apolo-secondary transition"
+      >
         + Nuevo
-      </RouterLink>
+      </button>
     </div>
 
     <!-- Filtros -->
     <div class="mb-4 flex flex-wrap gap-2">
-      <input v-model="q" @keyup.enter="fetch" placeholder="Buscar nombre/correo…"
-             class="bg-gray-900 border border-gray-700 rounded px-3 py-2 w-64" />
+      <input
+        v-model="q"
+        @keyup.enter="fetch"
+        placeholder="Buscar nombre/correo…"
+        class="bg-gray-900 border border-gray-700 rounded px-3 py-2 w-64"
+      />
       <button @click="fetch" class="bg-gray-800 border border-gray-700 px-4 py-2 rounded hover:bg-gray-700">
         Buscar
       </button>
@@ -37,28 +44,80 @@
         </tr>
       </thead>
       <tbody>
-        <tr v-for="c in rows" :key="c.id" class="border-t border-gray-800/80 hover:bg-gray-900/40">
+        <tr
+          v-for="c in rows"
+          :key="c.id"
+          class="border-t border-gray-800/80 hover:bg-gray-900/40"
+        >
           <td class="py-2">{{ fullName(c) }}</td>
           <td class="py-2 text-gray-300">{{ c.email || '—' }}</td>
           <td class="py-2 text-gray-300">{{ c.sucursal_nombre || '—' }}</td>
-          <td class="py-2 text-gray-300">{{ formatDate(c.fecha_alta || c.created) }}</td>
+          <td class="py-2 text-gray-300">{{ formatDate(c.fecha_alta || c.created_at || c.created) }}</td>
           <td class="py-2">
-            <div class="flex items-center justify-end gap-2">
-              <RouterLink :to="{ name: 'ClienteDetalle', params: { id: c.id } }"
-                class="px-2 py-1 rounded border border-gray-700 bg-gray-800/60 hover:bg-gray-700">
-                Ver
-              </RouterLink>
-              <RouterLink :to="{ name: 'ClienteEditar', params: { id: c.id } }"
-                class="px-2 py-1 rounded border border-gray-700 bg-gray-800/60 hover:bg-gray-700">
-                Editar
-              </RouterLink>
-              <button @click="confirmDelete(c)"
-                class="px-2 py-1 rounded border border-red-800 bg-red-900/40 hover:bg-red-800">
-                Eliminar
+            <!-- Menú de 3 puntos (con contenedor marcado para click-outside) -->
+            <div
+              class="relative flex justify-end"
+              data-menu-root
+            >
+              <button
+                class="px-2 py-1 rounded hover:bg-gray-800"
+                @click.stop="toggleMenu(c.id)"
+                :aria-expanded="openMenuId===c.id"
+                aria-haspopup="menu"
+              >
+                ⋯
               </button>
+
+              <div
+                v-if="openMenuId===c.id"
+                class="absolute right-0 mt-1 w-48 bg-gray-950 border border-gray-800 rounded-xl shadow-xl p-1 z-20"
+                role="menu"
+              >
+                <RouterLink
+                  :to="{ name: 'ClienteEditar', params: { id: c.id } }"
+                  class="block px-3 py-2 rounded-lg hover:bg-gray-900/70"
+                  role="menuitem"
+                  @click="closeMenu"
+                >
+                  Editar datos básicos
+                </RouterLink>
+
+                <button
+                  class="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-900/70"
+                  role="menuitem"
+                  @click="openContacto(c)"
+                >
+                  Datos de contacto
+                </button>
+
+                <button
+                  class="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-900/70"
+                  role="menuitem"
+                  @click="openFiscales(c)"
+                >
+                  Datos fiscales
+                </button>
+
+                <button
+                  class="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-900/70"
+                  role="menuitem"
+                  @click="openSucursal(c)"
+                >
+                  Asignar a sucursal
+                </button>
+
+                <button
+                  class="w-full text-left px-3 py-2 rounded-lg hover:bg-red-900/40"
+                  role="menuitem"
+                  @click="remove(c)"
+                >
+                  Eliminar
+                </button>
+              </div>
             </div>
           </td>
         </tr>
+
         <tr v-if="!rows.length">
           <td colspan="5" class="py-6 text-center text-gray-400">Sin resultados</td>
         </tr>
@@ -73,25 +132,47 @@
       <span v-if="count!==null" class="text-gray-500 text-sm">({{ count }} resultados)</span>
     </div>
 
-    <!-- Modal confirmar eliminación -->
-    <div v-if="showConfirm" class="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" @click="showConfirm=false"></div>
-      <div class="relative w-full max-w-md rounded-2xl border border-gray-800 bg-gray-950 p-5 shadow-2xl">
-        <h3 class="text-lg font-medium mb-2">Eliminar cliente</h3>
-        <p class="text-gray-300">¿Seguro que deseas eliminar <span class="font-semibold">{{ fullName(pendingDelete) }}</span>?</p>
-        <div class="mt-4 flex items-center justify-end gap-2">
-          <button class="px-4 py-2 rounded border border-gray-700 bg-gray-800/60 hover:bg-gray-700" @click="showConfirm=false">Cancelar</button>
-          <button class="px-4 py-2 rounded bg-red-600 hover:bg-red-700" @click="remove()">Eliminar</button>
-        </div>
-      </div>
-    </div>
+    <!-- Modales -->
+    <ClienteCrearModal
+      v-if="showCrear"
+      @close="closeCrear"
+      @saved="onAnySaved"
+    />
+
+    <DatosFiscalesModal
+      v-if="showFiscales"
+      :cliente-id="currentCliente?.id"
+      :cliente-nombre="fullName(currentCliente)"
+      @close="closeFiscales"
+      @saved="onAnySaved"
+    />
+    <DatoContactoModal
+      v-if="showContacto"
+      :cliente-id="currentCliente?.id"
+      :cliente-nombre="fullName(currentCliente)"
+      @close="closeContacto"
+      @saved="onAnySaved"
+    />
+    <ClienteSucursalModal
+      v-if="showSucursal"
+      :cliente-id="currentCliente?.id"
+      :cliente-nombre="fullName(currentCliente)"
+      @close="closeSucursal"
+      @saved="onAnySaved"
+    />
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, onBeforeUnmount, computed } from 'vue'
 import { RouterLink } from 'vue-router'
 import api from '@/api/services'
+
+// Modales
+import ClienteCrearModal from '@/views/clientes/modals/ClienteCrearModal.vue'
+import DatosFiscalesModal from '@/views/clientes/modals/DatosFiscalesModal.vue'
+import DatoContactoModal from '@/views/clientes/modals/DatoContactoModal.vue'
+import ClienteSucursalModal from '@/views/clientes/modals/ClienteSucursalModal.vue'
 
 const loading = ref(true)
 const rows = ref([])
@@ -100,41 +181,91 @@ const pageSize = 10
 const count = ref(null)
 const q = ref('')
 
-const showConfirm = ref(false)
-const pendingDelete = ref(null)
+const openMenuId = ref(null)
 
-const hasMore = computed(() => count.value === null ? rows.value.length === pageSize : count.value > page.value * pageSize)
+const hasMore = computed(() =>
+  count.value === null ? rows.value.length === pageSize : count.value > page.value * pageSize
+)
 
-onMounted(fetch)
+onMounted(() => {
+  fetch()
+  document.addEventListener('click', onDocClick)
+  document.addEventListener('keydown', onEsc)
+})
+onBeforeUnmount(() => {
+  document.removeEventListener('click', onDocClick)
+  document.removeEventListener('keydown', onEsc)
+})
 
-async function fetch() {
+async function fetch () {
   loading.value = true
   try {
-    const { data } = await api.clientes.list({ search: q.value, page: page.value, page_size: pageSize, ordering: '-id' })
+    const { data } = await api.clientes.list({
+      search: q.value,
+      page: page.value,
+      page_size: pageSize,
+      ordering: '-id'
+    })
     rows.value = data?.results || data || []
     count.value = data?.count ?? null
   } finally {
     loading.value = false
   }
 }
-function resetFilters(){ q.value=''; page.value=1; fetch() }
-function next(){ if(hasMore.value){ page.value++; fetch() } }
-function prev(){ if(page.value>1){ page.value--; fetch() } }
-function fullName(c){ return [c.nombre, c.apellidos].filter(Boolean).join(' ') }
-function formatDate(d){ try{ return new Date(d).toLocaleDateString('es-MX') }catch{ return d||'—' } }
 
-function confirmDelete(c){
-  pendingDelete.value = c
-  showConfirm.value = true
+function resetFilters () { q.value = ''; page.value = 1; fetch() }
+function next () { if (hasMore.value) { page.value++; fetch() } }
+function prev () { if (page.value > 1) { page.value--; fetch() } }
+function fullName (c) { return [c?.nombre, c?.apellidos].filter(Boolean).join(' ') }
+function formatDate (d) { try { return new Date(d).toLocaleDateString('es-MX') } catch { return d || '—' } }
+
+function toggleMenu (id) { openMenuId.value = openMenuId.value === id ? null : id }
+function closeMenu () { openMenuId.value = null }
+function onDocClick (e) {
+  // Cierra si el click no ocurrió dentro de algún contenedor etiquetado
+  const insideMenu = e.target.closest?.('[data-menu-root]')
+  if (!insideMenu) closeMenu()
 }
-async function remove(){
-  try{
-    await api.clientes.delete(pendingDelete.value.id)
-    if(rows.value.length === 1 && page.value > 1){ page.value -= 1 }
+function onEsc (e) {
+  if (e.key === 'Escape') closeMenu()
+}
+
+// Modales
+const showCrear = ref(false)
+const showFiscales = ref(false)
+const showContacto = ref(false)
+const showSucursal = ref(false)
+const currentCliente = ref(null)
+
+function openCrear () { showCrear.value = true }
+function closeCrear () { showCrear.value = false }
+
+function openFiscales (c) { currentCliente.value = c; showFiscales.value = true; closeMenu() }
+function openContacto (c) { currentCliente.value = c; showContacto.value = true; closeMenu() }
+function openSucursal (c) { currentCliente.value = c; showSucursal.value = true; closeMenu() }
+
+function closeFiscales () { showFiscales.value = false }
+function closeContacto () { showContacto.value = false }
+function closeSucursal () { showSucursal.value = false }
+
+async function remove (c) {
+  closeMenu()
+  if (!confirm(`Eliminar cliente "${fullName(c)}"?`)) return
+  try {
+    await api.clientes.delete(c.id)
+    if (rows.value.length === 1 && page.value > 1) page.value -= 1
     await fetch()
-  } finally {
-    showConfirm.value = false
-    pendingDelete.value = null
+  } catch (e) {
+    console.error(e)
   }
+}
+
+async function onAnySaved () {
+  // Cierra cualquier modal abierto y refresca
+  showCrear.value = false
+  showFiscales.value = false
+  showContacto.value = false
+  showSucursal.value = false
+  await fetch()
 }
 </script>

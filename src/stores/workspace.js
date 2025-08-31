@@ -1,99 +1,114 @@
+// src/stores/workspace.js
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import api from '@/api/services'
-import { getEmpresaId as httpGetEmpresaId, setEmpresaId as httpSetEmpresaId } from '@/api/http'
 
 export const useWorkspaceStore = defineStore('workspace', () => {
-  // Estado
-  const empresaId     = ref(httpGetEmpresaId() || null)
-  const empresaNombre = ref(null)
-  const sucursalId    = ref(null)
-  const sucursalNombre= ref(null)
-  const rol           = ref(null)         // string normalizado
-  const permisos      = ref({})           // objeto libre
-  const isSuperuser   = ref(false)
-  const initialized   = ref(false)
+  // ===== State =====
+  const empresaId = ref(null)
+  const empresaNombre = ref('')
+  const sucursalId = ref(null)
+  const sucursalNombre = ref('')
+  const rol = ref(null)
+  const isSuperuser = ref(false)
+  const initialized = ref(false)
 
-  // Si ya había empresa persistida, fija header al montar el store
-  if (empresaId.value) {
-    httpSetEmpresaId(empresaId.value)
-  }
+  // Cache de sucursales de la empresa activa (para el selector)
+  const sucursales = ref([])
 
-  // Helpers internos
-  function _normRole(r) { return (r || '').toString().trim().toLowerCase() }
-
-  /** Inicializa desde /accounts/perfil/ */
-  async function initFromProfile() {
+  // ===== Init desde perfil =====
+  async function initFromProfile () {
     const { data: pr } = await api.accounts.perfil()
 
-    // Flags globales
+    // Tu endpoint trae ..._activa (preferente). Fallback a empresa/sucursal plano.
+    const emp = pr?.empresa_activa || pr?.empresa
+    const suc = pr?.sucursal_activa || pr?.sucursal
+
+    empresaId.value = emp?.id ?? null
+    empresaNombre.value = emp?.nombre ?? ''
+    sucursalId.value = suc?.id ?? null
+    sucursalNombre.value = suc?.nombre ?? ''
+    rol.value = pr?.rol_activo || pr?.rol || null
     isSuperuser.value = !!(pr?.is_superuser || pr?.is_staff)
 
-    // 1) Preferir “activos” del backend
-    if (pr?.empresa_activa?.id) {
-      empresaId.value     = pr.empresa_activa.id
-      empresaNombre.value = pr.empresa_activa.nombre || null
-      httpSetEmpresaId(empresaId.value)              // <- fija y persiste X-Empresa-Id
-    }
-    if (pr?.sucursal_activa?.id) {
-      sucursalId.value     = pr.sucursal_activa.id
-      sucursalNombre.value = pr.sucursal_activa.nombre || null
-    }
-    if (pr?.rol_activo) {
-      rol.value = _normRole(pr.rol_activo)
-    }
-    if (pr?.permisos_activos) {
-      permisos.value = pr.permisos_activos || {}
-    }
+    // Header global X-Empresa-Id (el backend solo lo respeta para superuser)
+    if (empresaId.value) api.system.setEmpresa(empresaId.value)
 
-    // 2) Fallback si el backend no mandó “activos”
-    if (!empresaId.value && Array.isArray(pr?.asignaciones) && pr.asignaciones.length) {
-      const a = pr.asignaciones.find(x => x.is_active) || pr.asignaciones[0]
-      if (a?.empresa_id) {
-        empresaId.value     = a.empresa_id
-        empresaNombre.value = a.empresa_nombre || null
-        httpSetEmpresaId(empresaId.value)
-      }
-      if (a?.sucursal_id) {
-        sucursalId.value     = a.sucursal_id
-        sucursalNombre.value = a.sucursal_nombre || null
-      }
-      if (!rol.value && a?.rol) rol.value = _normRole(a.rol)
-      if (!Object.keys(permisos.value || {}).length && a?.permisos) {
-        permisos.value = a.permisos || {}
-      }
-    }
-
+    await loadSucursales()
     initialized.value = true
-    return { empresaId: empresaId.value, sucursalId: sucursalId.value, rol: rol.value }
   }
 
-  /** Garantiza que haya empresa fijada en header (útil en guard del router) */
-  async function ensureEmpresaSet() {
+  async function ensureEmpresaSet () {
     if (!initialized.value) {
       try { await initFromProfile() } catch { initialized.value = true }
     }
-    // Si por algo aún no hay empresa en memoria pero sí en storage, la re-fijamos
-    if (!empresaId.value) {
-      const stored = httpGetEmpresaId()
-      if (stored) {
-        empresaId.value = stored
-        httpSetEmpresaId(stored)
-      }
+  }
+
+  // ===== Catálogo sucursales para la empresa activa =====
+  async function loadSucursales () {
+    if (!empresaId.value) { sucursales.value = []; return }
+    try {
+      const { data } = await api.sucursales.list({
+        empresa: empresaId.value,
+        ordering: 'nombre',
+        page_size: 200
+      })
+      sucursales.value = data?.results || data || []
+    } catch {
+      sucursales.value = []
     }
   }
 
-  // (Opcional) Si algún día necesitas cambiar manualmente empresa/sucursal activas:
-  function setEmpresaLocal(id, nombre=null) {
-    empresaId.value = id ? Number(id) : null
-    empresaNombre.value = nombre
-    httpSetEmpresaId(empresaId.value)
+  // ===== Cambios de empresa/sucursal (solo superuser) =====
+  async function changeEmpresa (newEmpresaId, newEmpresaNombre = '') {
+    if (!isSuperuser.value) return // bloqueo para no-superuser
+    const idNum = newEmpresaId ? Number(newEmpresaId) : null
+    if (idNum === empresaId.value) return
+
+    empresaId.value = idNum
+    empresaNombre.value = newEmpresaNombre || empresaNombre.value
+
+    // Header para siguientes requests (el backend lo respeta si eres superuser)
+    api.system.setEmpresa(idNum)
+
+    // Al cambiar empresa, reset de sucursal y recarga catálogo
+    sucursalId.value = null
+    sucursalNombre.value = ''
+    await loadSucursales()
   }
+
+  function changeSucursal (newSucursalId, newSucursalNombre = '') {
+    if (!isSuperuser.value) return // bloqueo para no-superuser
+    sucursalId.value = newSucursalId ? Number(newSucursalId) : null
+    sucursalNombre.value = newSucursalNombre || sucursalNombre.value
+  }
+
+  // ===== Alias internos (compatibilidad con código previo) =====
+  async function setEmpresa (id, name = '') {
+    // mismo comportamiento que changeEmpresa (y mismo bloqueo)
+    return changeEmpresa(id, name)
+  }
+  function setSucursal (id, name = '') {
+    // mismo comportamiento que changeSucursal (y mismo bloqueo)
+    return changeSucursal(id, name)
+  }
+
+  // ===== Helpers reactivity keys (útiles para watch en vistas) =====
+  const empresaKey = computed(() => empresaId.value || 'no-emp')
+  const sucursalKey = computed(() => `${empresaKey.value}:${sucursalId.value || 'no-suc'}`)
 
   return {
     // state
-    empresaId, empresaNombre, sucursalId, sucursalNombre, rol, permisos, isSuperuser, initialized,
+    empresaId, empresaNombre, sucursalId, sucursalNombre, sucursales,
+    rol, isSuperuser, initialized,
+
+    // getters
+    empresaKey, sucursalKey,
+
     // actions
-    initFromProfile, ensureEmpresaSet, setEmpresaLocal,
+    initFromProfile, ensureEmpresaSet, loadSucursales,
+    changeEmpresa, changeSucursal,
+    // alias de compat
+    setEmpresa, setSucursal,
   }
 })

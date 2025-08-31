@@ -2,15 +2,24 @@
   <div class="p-4 text-white">
     <div class="flex items-center justify-between mb-4">
       <h1 class="text-2xl font-light">Servicios</h1>
-      <button @click="openNew" class="bg-apolo-primary text-black px-4 py-2 rounded hover:bg-apolo-secondary transition">
+      <button
+        @click="openNew"
+        class="bg-apolo-primary text-black px-4 py-2 rounded hover:bg-apolo-secondary transition"
+        :disabled="!empresaId"
+        :title="!empresaId ? 'Selecciona/activa una empresa para crear' : ''"
+      >
         + Nuevo
       </button>
     </div>
 
     <!-- Filtros -->
     <div class="mb-4 flex flex-wrap gap-2">
-      <input v-model="q" @keyup.enter="fetch" placeholder="Buscar servicio…"
-             class="bg-gray-900 border border-gray-700 rounded px-3 py-2 w-64" />
+      <input
+        v-model="q"
+        @keyup.enter="fetch"
+        placeholder="Buscar servicio…"
+        class="bg-gray-900 border border-gray-700 rounded px-3 py-2 w-64"
+      />
       <button @click="fetch" class="bg-gray-800 border border-gray-700 px-4 py-2 rounded hover:bg-gray-700">
         Buscar
       </button>
@@ -33,14 +42,28 @@
         </tr>
       </thead>
       <tbody>
-        <tr v-for="s in rows" :key="s.id" class="border-t border-gray-800/80 hover:bg-gray-900/40">
+        <tr
+          v-for="s in rows"
+          :key="s.id"
+          class="border-t border-gray-800/80 hover:bg-gray-900/40"
+        >
           <td class="py-2">{{ s.nombre }}</td>
           <td class="py-2 text-gray-300">{{ s.descripcion || '—' }}</td>
           <td class="py-2 text-gray-300">{{ s.icono || '—' }}</td>
           <td class="py-2">
             <div class="flex items-center justify-end gap-2">
-              <button @click="openEdit(s)" class="px-2 py-1 rounded border border-gray-700 bg-gray-800/60 hover:bg-gray-700">Editar</button>
-              <button @click="confirmRemove(s)" class="px-2 py-1 rounded border border-red-800 bg-red-900/40 hover:bg-red-800">Eliminar</button>
+              <button
+                @click="openEdit(s)"
+                class="px-2 py-1 rounded border border-gray-700 bg-gray-800/60 hover:bg-gray-700"
+              >
+                Editar
+              </button>
+              <button
+                @click="confirmRemove(s)"
+                class="px-2 py-1 rounded border border-red-800 bg-red-900/40 hover:bg-red-800"
+              >
+                Eliminar
+              </button>
             </div>
           </td>
         </tr>
@@ -52,14 +75,30 @@
 
     <!-- Paginación -->
     <div class="mt-4 flex items-center gap-2">
-      <button :disabled="page<=1" @click="prev" class="px-3 py-1 rounded bg-gray-800/60 border border-gray-700 disabled:opacity-50">Anterior</button>
+      <button
+        :disabled="page<=1"
+        @click="prev"
+        class="px-3 py-1 rounded bg-gray-800/60 border border-gray-700 disabled:opacity-50"
+      >
+        Anterior
+      </button>
       <span class="text-gray-300">Página {{ page }}</span>
-      <button :disabled="!hasMore" @click="next" class="px-3 py-1 rounded bg-gray-800/60 border border-gray-700 disabled:opacity-50">Siguiente</button>
+      <button
+        :disabled="!hasMore"
+        @click="next"
+        class="px-3 py-1 rounded bg-gray-800/60 border border-gray-700 disabled:opacity-50"
+      >
+        Siguiente
+      </button>
       <span v-if="count!==null" class="text-gray-500 text-sm">({{ count }} resultados)</span>
     </div>
 
     <!-- Modal Crear/Editar -->
-    <div v-if="showModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+    <div
+      v-if="showModal"
+      class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+      @click.self="closeModal"
+    >
       <div class="w-full max-w-xl bg-gray-950 border border-gray-800 rounded-2xl shadow-xl">
         <div class="px-4 py-3 border-b border-gray-800 flex items-center justify-between">
           <h3 class="text-lg">{{ isEditing ? 'Editar servicio' : 'Nuevo servicio' }}</h3>
@@ -70,23 +109,44 @@
           <div class="grid sm:grid-cols-2 gap-3">
             <div>
               <label class="block text-xs text-gray-400 mb-1">Nombre *</label>
-              <input v-model="form.nombre" class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2" />
+              <input
+                v-model="form.nombre"
+                class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2"
+              />
               <p v-if="errors.nombre" class="text-red-400 text-xs mt-1">{{ errors.nombre }}</p>
             </div>
             <div>
               <label class="block text-xs text-gray-400 mb-1">Icono (opcional)</label>
-              <input v-model="form.icono" placeholder="fa-dumbbell" class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2" />
+              <input
+                v-model="form.icono"
+                placeholder="fa-dumbbell"
+                class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2"
+              />
             </div>
           </div>
 
           <div>
             <label class="block text-xs text-gray-400 mb-1">Descripción</label>
-            <textarea v-model="form.descripcion" rows="3" class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2"></textarea>
+            <textarea
+              v-model="form.descripcion"
+              rows="3"
+              class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2"
+            ></textarea>
           </div>
 
           <div class="flex items-center justify-end gap-2 pt-1">
-            <button type="button" @click="closeModal" class="px-4 py-2 rounded border border-gray-700 bg-gray-800/60 hover:bg-gray-700">Cancelar</button>
-            <button type="submit" :disabled="saving" class="px-4 py-2 rounded bg-apolo-primary text-black hover:bg-apolo-secondary disabled:opacity-60">
+            <button
+              type="button"
+              @click="closeModal"
+              class="px-4 py-2 rounded border border-gray-700 bg-gray-800/60 hover:bg-gray-700"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              :disabled="saving"
+              class="px-4 py-2 rounded bg-apolo-primary text-black hover:bg-apolo-secondary disabled:opacity-60"
+            >
               {{ saving ? 'Guardando…' : 'Guardar' }}
             </button>
           </div>
@@ -95,20 +155,39 @@
     </div>
 
     <!-- Confirmación -->
-    <div v-if="confirm.open" class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+    <div
+      v-if="confirm.open"
+      class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+      @click.self="confirm.open=false"
+    >
       <div class="w-full max-w-sm bg-gray-950 border border-gray-800 rounded-2xl shadow-xl p-4">
         <h3 class="text-lg mb-2">Confirmar</h3>
-        <p class="text-sm text-gray-300">¿Eliminar el servicio <span class="font-semibold">{{ confirm.target?.nombre }}</span>?</p>
+        <p class="text-sm text-gray-300">
+          ¿Eliminar el servicio <span class="font-semibold">{{ confirm.target?.nombre }}</span>?
+        </p>
         <div class="mt-4 flex items-center justify-end gap-2">
-          <button @click="confirm.open=false" class="px-4 py-2 rounded border border-gray-700 bg-gray-800/60 hover:bg-gray-700">Cancelar</button>
-          <button @click="remove()" class="px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700">Eliminar</button>
+          <button
+            @click="confirm.open=false"
+            class="px-4 py-2 rounded border border-gray-700 bg-gray-800/60 hover:bg-gray-700"
+          >
+            Cancelar
+          </button>
+          <button
+            @click="remove()"
+            class="px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700"
+          >
+            Eliminar
+          </button>
         </div>
       </div>
     </div>
 
     <!-- Toast -->
     <transition name="fade">
-      <div v-if="toast.show" class="fixed bottom-4 right-4 bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm shadow-xl z-50">
+      <div
+        v-if="toast.show"
+        class="fixed bottom-4 right-4 bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm shadow-xl z-50"
+      >
         {{ toast.message }}
       </div>
     </transition>
@@ -118,6 +197,10 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import api from '@/api/services'
+import { useWorkspaceStore } from '@/stores/workspace'
+
+const ws = useWorkspaceStore()
+const empresaId = computed(() => ws.empresaId)
 
 const loading = ref(true)
 const rows = ref([])
@@ -126,7 +209,9 @@ const pageSize = 12
 const count = ref(null)
 const q = ref('')
 
-const hasMore = computed(() => count.value === null ? rows.value.length === pageSize : count.value > page.value * pageSize)
+const hasMore = computed(() =>
+  count.value === null ? rows.value.length === pageSize : count.value > page.value * pageSize
+)
 
 const showModal = ref(false)
 const isEditing = ref(false)
@@ -137,79 +222,105 @@ const form = ref({ id:null, nombre:'', descripcion:'', icono:'' })
 const confirm = ref({ open:false, target:null })
 
 const toast = ref({ show:false, message:'' })
-function showToast(msg){ toast.value={ show:true, message:msg }; setTimeout(()=>toast.value.show=false, 1800) }
+function showToast (msg) {
+  toast.value = { show:true, message: msg }
+  setTimeout(() => (toast.value.show = false), 1800)
+}
 
 onMounted(fetch)
 
-async function fetch() {
+async function fetch () {
   loading.value = true
   try {
-    const { data } = await api.servicios.list({ search: q.value, page: page.value, page_size: pageSize, ordering: '-id' })
+    const { data } = await api.servicios.list({
+      search: q.value,
+      page: page.value,
+      page_size: pageSize,
+      ordering: '-id'
+    })
     rows.value = data?.results || data || []
     count.value = data?.count ?? null
   } finally {
     loading.value = false
   }
 }
-function resetFilters(){ q.value=''; page.value=1; fetch() }
-function next(){ if(hasMore.value){ page.value++; fetch() } }
-function prev(){ if(page.value>1){ page.value--; fetch() } }
 
-function openNew(){
+function resetFilters () { q.value = ''; page.value = 1; fetch() }
+function next () { if (hasMore.value) { page.value++; fetch() } }
+function prev () { if (page.value > 1) { page.value--; fetch() } }
+
+function openNew () {
   isEditing.value = false
   errors.value = {}
   form.value = { id:null, nombre:'', descripcion:'', icono:'' }
   showModal.value = true
 }
-function openEdit(s){
+function openEdit (s) {
   isEditing.value = true
   errors.value = {}
-  form.value = { id: s.id, nombre: s.nombre || '', descripcion: s.descripcion || '', icono: s.icono || '' }
+  form.value = {
+    id: s.id,
+    nombre: s.nombre || '',
+    descripcion: s.descripcion || '',
+    icono: s.icono || ''
+  }
   showModal.value = true
 }
-function closeModal(){ showModal.value = false }
+function closeModal () { showModal.value = false }
 
-function validate(){
+function validate () {
   const e = {}
-  if(!form.value.nombre?.trim()) e.nombre = 'El nombre es obligatorio'
+  if (!form.value.nombre?.trim()) e.nombre = 'El nombre es obligatorio'
+  if (!empresaId.value && !isEditing.value) {
+    e.empresa = 'No hay empresa activa. Selecciona una antes de crear.'
+  }
   errors.value = e
   return Object.keys(e).length === 0
 }
 
-async function save(){
-  if(!validate()) return
+async function save () {
+  if (!validate()) {
+    if (errors.value.empresa) showToast(errors.value.empresa)
+    return
+  }
   saving.value = true
-  try{
+  try {
     const payload = {
       nombre: form.value.nombre.trim(),
       descripcion: form.value.descripcion?.trim() || '',
       icono: form.value.icono?.trim() || ''
     }
-    if(isEditing.value && form.value.id){
+    if (isEditing.value && form.value.id) {
+      // para update NO es necesario enviar empresa
       await api.servicios.update(form.value.id, payload)
       showToast('Servicio actualizado')
     } else {
-      await api.servicios.create(payload)
+      // para create SÍ enviamos empresa
+      await api.servicios.create({ ...payload, empresa: empresaId.value })
       showToast('Servicio creado')
     }
     closeModal()
     await fetch()
-  } catch(e){
-    showToast(e?.response?.data?.detail || 'Error al guardar')
+  } catch (e) {
+    const msg = e?.response?.data?.detail
+      || e?.response?.data?.empresa?.[0]
+      || e?.response?.data?.nombre?.[0]
+      || 'Error al guardar'
+    showToast(msg)
   } finally {
     saving.value = false
   }
 }
 
-function confirmRemove(s){ confirm.value = { open:true, target: s } }
-async function remove(){
-  try{
+function confirmRemove (s) { confirm.value = { open:true, target: s } }
+async function remove () {
+  try {
     await api.servicios.delete(confirm.value.target.id)
     confirm.value = { open:false, target:null }
-    if(rows.value.length === 1 && page.value > 1){ page.value -= 1 }
+    if (rows.value.length === 1 && page.value > 1) page.value -= 1
     await fetch()
     showToast('Servicio eliminado')
-  } catch(e){
+  } catch (e) {
     showToast(e?.response?.data?.detail || 'No se pudo eliminar')
   }
 }
