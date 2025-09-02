@@ -1,11 +1,14 @@
 <template>
   <!-- Overlay -->
-  <div class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-start justify-center p-4 overflow-y-auto">
+  <div
+    class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-start justify-center p-4 overflow-y-auto"
+    @click.self="onClose"
+  >
     <div class="w-full max-w-3xl bg-gray-950 border border-gray-800 rounded-2xl shadow-2xl">
       <!-- Header -->
       <div class="px-5 py-4 border-b border-gray-800 flex items-center justify-between">
         <h3 class="text-lg">Nuevo plan</h3>
-        <button @click="onClose" class="text-gray-400 hover:text-white">✕</button>
+        <button @click="onClose" class="text-gray-400 hover:text-white" aria-label="Cerrar">✕</button>
       </div>
 
       <!-- Form -->
@@ -46,7 +49,6 @@
 
           <div v-if="form.tipo_plan==='tiempo'">
             <label class="block text-xs text-gray-400 mb-1">Periodicidad *</label>
-            <!-- Nota: el backend acepta 'semanal' y 'mensual' (y 'sesiones'); evitamos bimestral para no romper enums -->
             <select v-model="form.periodicidad" class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2"
                     :class="{'border-red-600': errors.periodicidad}">
               <option disabled value="">Selecciona…</option>
@@ -118,7 +120,6 @@
             </div>
             <div>
               <label class="block text-[11px] text-gray-400 mb-1">Tipo *</label>
-              <!-- forzamos relación: si el plan es por sesiones, el tipo es 'sesiones'; si es por tiempo, el tipo viene de periodicidad -->
               <input :value="precioTipo(p)" disabled
                      class="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1.5 text-gray-400" />
             </div>
@@ -202,7 +203,7 @@
       <div class="w-full max-w-lg bg-gray-950 border border-gray-800 rounded-2xl shadow-2xl">
         <div class="px-5 py-3 border-b border-gray-800 flex items-center justify-between">
           <h3 class="text-lg">Agregar beneficios</h3>
-          <button @click="closeBeneficios" class="text-gray-400 hover:text-white">✕</button>
+          <button @click="closeBeneficios" class="text-gray-400 hover:text-white" aria-label="Cerrar beneficios">✕</button>
         </div>
         <div class="p-5 space-y-3">
           <div v-if="loading.beneficios" class="grid gap-2">
@@ -229,9 +230,13 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, reactive, onMounted, onUnmounted, watch, computed } from 'vue'
+import { useRouter, RouterLink } from 'vue-router'
 import api from '@/api/services'
+import { useWorkspaceStore } from '@/stores/workspace'
+
+const ws = useWorkspaceStore()
+const empresaId = computed(() => ws.empresaId)
 
 const emit = defineEmits(['close','saved'])
 const router = useRouter()
@@ -272,11 +277,30 @@ onMounted(async () => {
   addPrecioRow()
   // cierra menús al hacer click fuera
   document.addEventListener('click', onDocClick)
+  // cerrar con ESC
+  document.addEventListener('keydown', onKeydown)
 })
+
+onUnmounted(() => {
+  document.removeEventListener('click', onDocClick)
+  document.removeEventListener('keydown', onKeydown)
+})
+
+function onKeydown(e) {
+  if (e.key === 'Escape') onClose()
+}
 
 function onClose(){
   document.removeEventListener('click', onDocClick)
-  emit('close')
+  emit('close') // por si se usa como modal controlado
+
+  // Como esta pantalla vive en una ruta (RouterLink a PlanCrear),
+  // navegamos para "cerrar" si nadie escucha el emit:
+  if (history.state && history.state.back !== null) {
+    router.back()
+  } else {
+    router.push({ name: 'Planes' }) // Ajusta al nombre real de la lista
+  }
 }
 
 // ---------- cargar catálogos ----------
@@ -380,7 +404,8 @@ async function save () {
       preventa: !!form.preventa,
       desde: form.desde || null,
       hasta: form.hasta || null,
-      visitas_gratis: 0,                        // puedes exponer luego
+      visitas_gratis: 0,
+      empresa: empresaId.value
     }
     const { data: created } = await api.planes.create(payloadPlan)
     const planId = created?.id
@@ -417,12 +442,14 @@ async function save () {
       await Promise.all(beneficiosSeleccionados.value.map(bid => api.planesBeneficios.create({
         plan: planId,
         beneficio: bid,
-        // si tu backend acepta vigencias, puedes añadir:
-        // vigencia_inicio: null, vigencia_fin: null
       })))
     }
 
     emit('saved', created)
+    // Cerrar tras guardar (ruta)
+    onClose()
+    // Si prefieres ir al detalle en lugar de cerrar:
+    // router.push({ name: 'PlanDetalle', params: { id: created.id } })
   } catch (e) {
     console.error(e)
   } finally {
@@ -437,7 +464,6 @@ function cryptoRandom(){ try { return crypto.randomUUID() } catch { return Strin
 watch(() => form.tipo_plan, (tp) => {
   if (tp === 'sesiones') {
     form.periodicidad = ''
-    // empuja #visitas por defecto en filas de precio
     precios.value.forEach(p => { if (!p.numero_visitas) p.numero_visitas = form.numero_sesiones || '' })
   } else if (tp === 'tiempo') {
     form.numero_sesiones = ''

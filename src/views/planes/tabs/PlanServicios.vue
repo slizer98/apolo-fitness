@@ -1,388 +1,384 @@
 <template>
   <div class="text-white">
-    <!-- Encabezado -->
-    <div class="flex items-center justify-between mb-3">
-      <h2 class="text-lg font-medium">Servicios del plan</h2>
-      <div class="flex items-center gap-2">
-        <input
-          v-model="q"
-          @keyup.enter="fetchAll"
-          placeholder="Buscar servicio…"
-          class="bg-gray-900 border border-gray-700 rounded px-3 py-1.5 text-sm w-56"
-        />
-        <button
-          @click="openBeneficiosModal"
-          class="px-3 py-1.5 rounded border border-gray-700 bg-gray-800/60 hover:bg-gray-700 text-sm"
-        >
-          Administrar beneficios del plan
-        </button>
-      </div>
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-xl font-medium">Servicios del plan</h2>
+      <div class="text-sm text-gray-400">Plan #{{ planId }}</div>
     </div>
 
-    <!-- Lista -->
-    <div v-if="loading" class="grid gap-2">
+    <!-- Filtros -->
+    <div class="mb-3 flex flex-wrap gap-2">
+      <input
+        v-model="q"
+        @keyup.enter="fetchServicios"
+        placeholder="Buscar servicio…"
+        class="bg-gray-900 border border-gray-700 rounded px-3 py-2 w-64"
+      />
+      <button @click="fetchServicios" class="bg-gray-800 border border-gray-700 px-4 py-2 rounded hover:bg-gray-700">
+        Buscar
+      </button>
+      <button @click="resetFilters" class="bg-gray-800 border border-gray-700 px-4 py-2 rounded hover:bg-gray-700">
+        Limpiar
+      </button>
+    </div>
+
+    <!-- Lista / loading -->
+    <div v-if="loading" class="space-y-2">
       <div class="animate-pulse h-10 bg-gray-800/60 rounded" v-for="i in 6" :key="i"></div>
     </div>
 
-    <div v-else class="grid gap-2">
+    <div v-else class="space-y-3">
       <div
-        v-for="s in serviciosFiltrados"
+        v-for="s in serviciosEmpresa"
         :key="s.id"
-        class="flex items-center justify-between gap-3 rounded-xl border border-gray-800 bg-gray-900/60 px-3 py-2"
-        data-row-root
+        class="rounded-xl border border-gray-800 bg-gray-900/60 p-3"
+        data-service-root
       >
-        <div class="flex items-center gap-3">
-          <!-- Check activo si ya está linkeado -->
-          <input
-            type="checkbox"
-            class="h-4 w-4 rounded border-gray-700 bg-gray-900"
-            :checked="!!linksByServicioId.get(s.id)"
-            @change="toggleServicio(s)"
-          />
-          <div>
-            <div class="font-medium leading-tight">{{ s.nombre || s.Nombre_Servicio || 'Servicio' }}</div>
-            <div class="text-xs text-gray-400 line-clamp-1">
-              {{ s.descripcion || s.Descripcion || '—' }}
+        <div class="flex items-start justify-between gap-3">
+          <div class="flex items-start gap-3">
+            <input
+              type="checkbox"
+              class="mt-1 h-4 w-4 rounded border-gray-700 bg-gray-900"
+              :checked="isServicioChecked(s.id)"
+              @change="toggleServicio(s)"
+            />
+            <div>
+              <div class="font-medium leading-tight">
+                <i v-if="s.icono" :class="['fa', s.icono, 'mr-2', 'opacity-80']"></i>
+                {{ s.nombre }}
+              </div>
+              <div class="text-sm text-gray-300 mt-0.5">{{ s.descripcion || '—' }}</div>
+
+              <!-- Chips de beneficios del servicio (globales) -->
+              <div v-if="beneficiosByServicio[s.id]?.length" class="mt-2 flex flex-wrap gap-2">
+                <span
+                  v-for="b in beneficiosByServicio[s.id]"
+                  :key="b.id"
+                  class="text-[11px] px-2 py-0.5 rounded-full bg-apolo-primary/20 text-apolo-primary border border-apolo-primary/30"
+                >
+                  {{ b.nombre }}
+                </span>
+              </div>
             </div>
           </div>
-        </div>
 
-        <div class="flex items-center gap-2">
-          <!-- Precio cuando está enlazado -->
-          <template v-if="linksByServicioId.get(s.id)">
-            <label class="text-xs text-gray-400">Precio</label>
-            <input
-              :value="formatPrecioInput(linksByServicioId.get(s.id)?.precio)"
-              @input="onPrecioInput($event, s.id)"
-              @blur="persistPrecio(s.id)"
-              inputmode="decimal"
-              placeholder="0.00"
-              class="w-28 bg-gray-900 border border-gray-700 rounded px-2 py-1 text-sm text-right"
-            />
-          </template>
-
-          <!-- Menú de tres puntos -->
-          <div class="relative" @keydown.escape="closeMenu(s.id)">
+          <!-- Menú ⋯ solo si el servicio está activo en el plan -->
+          <div class="relative" v-if="isServicioChecked(s.id)">
             <button
               class="px-2 py-1 rounded hover:bg-gray-800"
               @click.stop="toggleMenu(s.id)"
               :aria-expanded="openMenuId===s.id"
               aria-haspopup="menu"
+              data-menu-btn
             >
               ⋯
             </button>
+
             <div
               v-if="openMenuId===s.id"
-              class="absolute right-0 mt-1 w-48 bg-gray-950 border border-gray-800 rounded-xl shadow-xl p-1 z-20"
+              class="absolute right-0 mt-1 w-64 bg-gray-950 border border-gray-800 rounded-xl shadow-xl p-1 z-20"
               role="menu"
+              data-menu-panel
             >
               <button
                 class="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-900/70"
                 role="menuitem"
-                @click="openBeneficiosModal(); closeMenu(s.id)"
+                @click="openBeneficiosModal(s)"
               >
-                Administrar beneficios del plan
-              </button>
-              <button
-                v-if="linksByServicioId.get(s.id)"
-                class="w-full text-left px-3 py-2 rounded-lg hover:bg-red-900/40"
-                role="menuitem"
-                @click="desenlazarServicio(s)"
-              >
-                Quitar del plan
+                Gestionar beneficios del servicio
               </button>
             </div>
           </div>
         </div>
       </div>
 
-      <div v-if="!serviciosFiltrados.length" class="text-center text-gray-400 py-6">
-        No hay servicios (o no hay coincidencias).
+      <div v-if="!serviciosEmpresa.length" class="text-center text-gray-400 py-6">
+        No hay servicios dados de alta en la empresa.
       </div>
     </div>
 
-    <!-- Modal Beneficios -->
+    <!-- Modal Beneficios (para un servicio globalmente) -->
     <div
       v-if="showBeneficios"
       class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4"
-      @click.self="showBeneficios=false"
+      @click.self="closeBeneficios"
     >
-      <div class="w-full max-w-xl bg-gray-950 border border-gray-800 rounded-2xl shadow-xl">
+      <div class="w-full max-w-2xl bg-gray-950 border border-gray-800 rounded-2xl shadow-xl">
         <div class="px-4 py-3 border-b border-gray-800 flex items-center justify-between">
-          <h3 class="text-lg">Beneficios del plan</h3>
-          <button @click="showBeneficios=false" class="text-gray-400 hover:text-white">✕</button>
+          <h3 class="text-lg">
+            Beneficios para: <span class="font-semibold">{{ currentServicio?.nombre }}</span>
+          </h3>
+          <button @click="closeBeneficios" class="text-gray-400 hover:text-white">✕</button>
         </div>
 
-        <div class="p-4 space-y-3">
-          <div class="flex items-center gap-2">
+        <div class="p-4">
+          <!-- Buscar beneficios -->
+          <div class="mb-3 flex gap-2">
             <input
-              v-model="qBeneficios"
-              @keyup.enter="filterBeneficios"
+              v-model="qBenef"
+              @keyup.enter="fetchBeneficiosEmpresa"
               placeholder="Buscar beneficio…"
-              class="bg-gray-900 border border-gray-700 rounded px-3 py-2 text-sm flex-1"
+              class="bg-gray-900 border border-gray-700 rounded px-3 py-2 w-64"
             />
-            <button
-              @click="filterBeneficios"
-              class="px-3 py-2 rounded border border-gray-700 bg-gray-800/60 hover:bg-gray-700 text-sm"
-            >
+            <button @click="fetchBeneficiosEmpresa" class="bg-gray-800 border border-gray-700 px-4 py-2 rounded hover:bg-gray-700">
               Buscar
+            </button>
+            <button @click="resetBenefFilters" class="bg-gray-800 border border-gray-700 px-4 py-2 rounded hover:bg-gray-700">
+              Limpiar
             </button>
           </div>
 
-          <div v-if="loadingBeneficios" class="grid gap-2">
-            <div class="animate-pulse h-8 bg-gray-800/60 rounded" v-for="i in 5" :key="i"></div>
+          <!-- Listado de beneficios -->
+          <div v-if="loadingBenef" class="space-y-2">
+            <div class="animate-pulse h-8 bg-gray-800/60 rounded" v-for="i in 6" :key="i"></div>
           </div>
-
-          <div v-else class="grid gap-2 max-h-80 overflow-auto pr-1">
+          <div v-else class="space-y-1 max-h-72 overflow-auto pr-1">
             <label
-              v-for="b in beneficiosFiltrados"
+              v-for="b in beneficiosEmpresa"
               :key="b.id"
-              class="flex items-center justify-between gap-3 px-3 py-2 rounded-lg border border-gray-800 bg-gray-900/50"
+              class="flex items-center gap-2 px-2 py-2 rounded hover:bg-gray-900/40"
             >
-              <div>
-                <div class="font-medium leading-tight">{{ b.nombre || b.Nombre_beneficio }}</div>
-                <div class="text-xs text-gray-400 line-clamp-1">{{ b.descripcion || b.Descripcion || '—' }}</div>
-              </div>
               <input
                 type="checkbox"
                 class="h-4 w-4 rounded border-gray-700 bg-gray-900"
-                :checked="!!beneficiosSet.has(b.id)"
-                @change="toggleBeneficio(b)"
+                :value="b.id"
+                v-model="selectedBeneficiosIds"
               />
+              <div>
+                <div class="text-sm font-medium">{{ b.nombre }}</div>
+                <div class="text-xs text-gray-400">{{ b.descripcion || '—' }}</div>
+              </div>
             </label>
 
-            <div v-if="!beneficiosFiltrados.length" class="text-center text-gray-400 py-6">
-              No hay beneficios (o no hay coincidencias).
+            <div v-if="!beneficiosEmpresa.length" class="text-center text-gray-400 py-4">
+              No hay beneficios registrados para la empresa.
             </div>
           </div>
         </div>
 
         <div class="px-4 pb-4 flex items-center justify-end gap-2">
-          <button @click="showBeneficios=false" class="px-4 py-2 rounded border border-gray-700 bg-gray-800/60 hover:bg-gray-700">
-            Cerrar
+          <button @click="closeBeneficios" class="px-4 py-2 rounded border border-gray-700 bg-gray-800/60 hover:bg-gray-700">
+            Cancelar
+          </button>
+          <button
+            @click="saveBeneficios"
+            :disabled="savingBenef"
+            class="px-4 py-2 rounded bg-apolo-primary text-black hover:bg-apolo-secondary disabled:opacity-60"
+          >
+            {{ savingBenef ? 'Guardando…' : 'Guardar' }}
           </button>
         </div>
       </div>
     </div>
+
+    <!-- Toast -->
+    <transition name="fade">
+      <div v-if="toast.show" class="fixed bottom-4 right-4 bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm shadow-xl z-50">
+        {{ toast.message }}
+      </div>
+    </transition>
   </div>
 </template>
 
 <script setup>
-/**
- * Reemplaza tu archivo por este.
- * Props: planId (Number | String)
- * Endpoints usados: servicios, planesServicios, beneficios, planesBeneficios (api/services.js).
- */
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import api from '@/api/services'
 
+// Props
 const props = defineProps({
-  planId: { type: [Number, String], required: true }
+  planId: { type: Number, required: true },
 })
 
-/* ===== Estado ===== */
+// ==== Estado base
 const loading = ref(true)
-const servicios = ref([])
-const enlaces = ref([]) // lista de PlanServicio (enlaces)
-const linksByServicioId = computed(() => {
-  const map = new Map()
-  for (const l of enlaces.value) {
-    if (l?.servicio) map.set(l.servicio, l)
-  }
-  return map
-})
-
+const serviciosEmpresa = ref([])
 const q = ref('')
 
-/* Beneficios */
+// relaciones Plan–Servicio (para saber qué está checkeado en el plan)
+const relPlanServicios = ref([]) // [{id, plan, servicio}]
+const relMapServicioId = ref(new Map()) // servicioId -> relId (PlanServicio.id)
+
+// beneficios por servicio (para chips globales)
+const beneficiosByServicio = ref({}) // servicioId -> [{id (beneficio), nombre, relId (ServicioBeneficio.id)}]
+
+// ==== Menu ⋯
+const openMenuId = ref(null)
+function toggleMenu(id){ openMenuId.value = openMenuId.value === id ? null : id }
+function closeMenus(){ openMenuId.value = null }
+
+// ==== Modal Beneficios (por servicio GLOBAL)
 const showBeneficios = ref(false)
-const loadingBeneficios = ref(false)
-const beneficios = ref([])
-const beneficiosSet = ref(new Set()) // ids actualmente enlazados al plan
-const beneficiosRawLinks = ref([]) // objetos PlanBeneficio (para borrar)
-const qBeneficios = ref('')
+const currentServicio = ref(null)
+const beneficiosEmpresa = ref([])
+const qBenef = ref('')
+const loadingBenef = ref(false)
+const savingBenef = ref(false)
+const selectedBeneficiosIds = ref([]) // selección actual en modal
 
-/* ===== Lifecycle ===== */
-onMounted(fetchAll)
-watch(() => props.planId, fetchAll)
+// Toast
+const toast = ref({ show:false, message:'' })
+function showToast(msg){ toast.value={ show:true, message:msg }; setTimeout(()=>toast.value.show=false, 1800) }
 
-/* ===== Computeds ===== */
-const serviciosFiltrados = computed(() => {
-  const term = q.value.trim().toLowerCase()
-  if (!term) return servicios.value
-  return servicios.value.filter(s =>
-    (s.nombre || s.Nombre_Servicio || '').toLowerCase().includes(term) ||
-    (s.descripcion || s.Descripcion || '').toLowerCase().includes(term)
-  )
-})
-const beneficiosFiltrados = computed(() => {
-  const term = qBeneficios.value.trim().toLowerCase()
-  if (!term) return beneficios.value
-  return beneficios.value.filter(b =>
-    (b.nombre || b.Nombre_beneficio || '').toLowerCase().includes(term) ||
-    (b.descripcion || b.Descripcion || '').toLowerCase().includes(term)
-  )
+// ===== Fetch =====
+onMounted(async () => {
+  document.addEventListener('click', onDocClick)
+  await fetchServicios()
+  await fetchRelPlanServicios()
+  await hydrateChipsForAll()
 })
 
-/* ===== Carga ===== */
-async function fetchAll () {
-  if (!props.planId) return
+onUnmounted(() => {
+  document.removeEventListener('click', onDocClick)
+})
+
+function onDocClick(e){
+  const isBtn = e.target.closest?.('[data-menu-btn]')
+  const isPanel = e.target.closest?.('[data-menu-panel]')
+  if (!isBtn && !isPanel) closeMenus()
+}
+
+async function fetchServicios(){
   loading.value = true
-  try {
-    // Servicios de la empresa (trae todos; si hay paginación real, hacer loop)
-    const { data: ds } = await api.servicios.list({ ordering: 'id', page_size: 500 })
-    servicios.value = ds?.results || ds || []
-
-    // Enlaces plan-servicio existentes (para checks y precios)
-    const { data: ls } = await api.planesServicios.list({ plan: props.planId, page_size: 500 })
-    enlaces.value = ls?.results || ls || []
+  try{
+    const { data } = await api.servicios.list({ search: q.value, ordering: 'nombre', page_size: 200 })
+    serviciosEmpresa.value = data?.results || data || []
   } finally {
     loading.value = false
   }
 }
 
-function filterBeneficios () {
-  // el filtro es solo en cliente; si buscas server-side, llama api.beneficios.list({ search: qBeneficios.value })
+function resetFilters(){ q.value=''; fetchServicios() }
+
+async function fetchRelPlanServicios(){
+  const { data } = await api.planesServicios.list({ plan: props.planId, page_size: 500 })
+  const rows = data?.results || data || []
+  relPlanServicios.value = rows
+  const map = new Map()
+  rows.forEach(r => map.set(r.servicio, r.id))
+  relMapServicioId.value = map
 }
 
-/* ===== Checks Servicios ===== */
-async function toggleServicio (s) {
-  const linked = linksByServicioId.value.get(s.id)
-  if (linked) {
-    await desenlazarServicio(s)
-  } else {
-    await enlazarServicio(s)
+function isServicioChecked(servicioId){
+  return relMapServicioId.value.has(servicioId)
+}
+
+async function toggleServicio(s){
+  const checked = isServicioChecked(s.id)
+  try{
+    if (!checked){
+      // crear relación PlanServicio
+      const { data } = await api.planesServicios.create({ plan: props.planId, servicio: s.id })
+      relMapServicioId.value.set(s.id, data?.id)
+      // asegura chips del servicio
+      if (!beneficiosByServicio.value[s.id]) {
+        // carga beneficios globales del servicio
+        await fetchServicioBeneficiosForServicio(s.id)
+      }
+      showToast('Servicio agregado al plan')
+    } else {
+      // eliminar relación del plan
+      const relId = relMapServicioId.value.get(s.id)
+      if (relId){
+        await api.planesServicios.delete(relId)
+        relMapServicioId.value.delete(s.id)
+        showToast('Servicio removido del plan')
+      }
+    }
+  } catch(e){
+    showToast(e?.response?.data?.detail || 'No se pudo actualizar')
   }
 }
 
-async function enlazarServicio (s) {
-  try {
-    // Crea con precio 0 por defecto (ajústalo si tu API necesita string)
-    const payload = { plan: Number(props.planId), servicio: s.id, precio: '0.00' }
-    const { data } = await api.planesServicios.create(payload)
-    // agrega a enlaces
-    enlaces.value = [data, ...enlaces.value]
-  } catch (e) {
-    console.error('No se pudo enlazar servicio', e?.response?.data || e)
+// ===== Beneficios por servicio (GLOBAL) =====
+async function fetchServicioBeneficiosForServicio(servicioId){
+  // GET /servicios/beneficios/?servicio=ID
+  const { data } = await api.servicioBeneficios.list({ servicio: servicioId, page_size: 500 })
+  const rows = data?.results || data || []
+  beneficiosByServicio.value[servicioId] = rows.map(r => ({
+    id: r.beneficio, nombre: r.beneficio_nombre, relId: r.id
+  }))
+  return rows
+}
+
+async function hydrateChipsForAll(){
+  // Para todos los servicios (solo mostramos chips si hay relación global de beneficios)
+  for (const s of serviciosEmpresa.value){
+    await fetchServicioBeneficiosForServicio(s.id)
   }
 }
 
-async function desenlazarServicio (s) {
-  try {
-    const link = linksByServicioId.value.get(s.id)
-    if (!link?.id) return
-    await api.planesServicios.delete(link.id)
-    enlaces.value = enlaces.value.filter(x => x.id !== link.id)
-  } catch (e) {
-    console.error('No se pudo quitar servicio', e?.response?.data || e)
-  }
-}
-
-/* ===== Precio por servicio (inline) ===== */
-const precioDraft = ref(new Map()) // servicioId -> string
-
-function formatPrecioInput (val) {
-  if (val == null) return ''
-  // Normaliza a string con dos decimales si viene número
-  if (typeof val === 'number') return val.toFixed(2)
-  return String(val)
-}
-
-function onPrecioInput (ev, servicioId) {
-  const raw = ev.target.value
-  // Permite solo [0-9 . ,]
-  const cleaned = raw.replace(/[^0-9.,]/g, '').replace(',', '.')
-  precioDraft.value.set(servicioId, cleaned)
-  ev.target.value = cleaned
-}
-
-async function persistPrecio (servicioId) {
-  const link = linksByServicioId.value.get(servicioId)
-  if (!link?.id) return
-  const draft = precioDraft.value.get(servicioId)
-  // Si no hay cambios, no parchar
-  if (draft == null || String(draft) === String(link.precio)) return
-  try {
-    await api.planesServicios.patch(link.id, { precio: String(draft || '0') })
-    // refleja en memoria
-    enlaces.value = enlaces.value.map(x => x.id === link.id ? { ...x, precio: String(draft || '0') } : x)
-  } catch (e) {
-    console.error('No se pudo guardar precio', e?.response?.data || e)
-  } finally {
-    precioDraft.value.delete(servicioId)
-  }
-}
-
-/* ===== Beneficios del plan ===== */
-function openBeneficiosModal () {
+function openBeneficiosModal(servicio){
+  currentServicio.value = servicio
+  selectedBeneficiosIds.value = []
   showBeneficios.value = true
-  loadBeneficios()
+  closeMenus()
+  // Cargar beneficios empresa y selección actual
+  fetchBeneficiosEmpresa().then(() => hydrateSelectionFromRel())
 }
 
-async function loadBeneficios () {
-  loadingBeneficios.value = true
-  try {
-    // catálogo de beneficios
-    const { data: bs } = await api.beneficios.list({ ordering: 'id', page_size: 500 })
-    beneficios.value = bs?.results || bs || []
+function closeBeneficios(){
+  showBeneficios.value = false
+  currentServicio.value = null
+  selectedBeneficiosIds.value = []
+  qBenef.value = ''
+}
 
-    // enlaces plan-beneficio actuales (para checks)
-    const { data: pbs } = await api.planesBeneficios.list({ plan: props.planId, page_size: 500 })
-    beneficiosRawLinks.value = pbs?.results || pbs || []
-    const set = new Set()
-    for (const row of beneficiosRawLinks.value) {
-      if (row?.beneficio) set.add(row.beneficio)
-    }
-    beneficiosSet.value = set
+async function fetchBeneficiosEmpresa(){
+  loadingBenef.value = true
+  try{
+    const { data } = await api.beneficios.list({ search: qBenef.value, ordering: 'nombre', page_size: 500 })
+    beneficiosEmpresa.value = data?.results || data || []
   } finally {
-    loadingBeneficios.value = false
+    loadingBenef.value = false
   }
 }
 
-async function toggleBeneficio (b) {
-  const has = beneficiosSet.value.has(b.id)
-  if (has) {
-    // buscar link para borrar
-    const link = beneficiosRawLinks.value.find(x => x?.beneficio === b.id)
-    if (!link?.id) return
-    try {
-      await api.planesBeneficios.delete(link.id)
-      beneficiosRawLinks.value = beneficiosRawLinks.value.filter(x => x.id !== link.id)
-      beneficiosSet.value.delete(b.id)
-    } catch (e) {
-      console.error('No se pudo quitar beneficio', e?.response?.data || e)
+function resetBenefFilters(){ qBenef.value=''; fetchBeneficiosEmpresa() }
+
+async function hydrateSelectionFromRel(){
+  if (!currentServicio.value) return
+  const rows = await fetchServicioBeneficiosForServicio(currentServicio.value.id)
+  selectedBeneficiosIds.value = rows.map(r => r.beneficio)
+}
+
+async function saveBeneficios(){
+  if (!currentServicio.value) return
+  savingBenef.value = true
+  const servicioId = currentServicio.value.id
+
+  try{
+    const current = await fetchServicioBeneficiosForServicio(servicioId)
+    const currentMap = new Map(current.map(r => [r.beneficio, r.id])) // beneficioId -> relId
+    const desired = new Set(selectedBeneficiosIds.value)
+
+    const ops = []
+
+    // crear los que faltan
+    for (const bId of desired){
+      if (!currentMap.has(bId)){
+        ops.push(api.servicioBeneficios.create({ servicio: servicioId, beneficio: bId }))
+      }
     }
-  } else {
-    try {
-      const payload = { plan: Number(props.planId), beneficio: b.id }
-      const { data } = await api.planesBeneficios.create(payload)
-      beneficiosRawLinks.value.push(data)
-      beneficiosSet.value.add(b.id)
-    } catch (e) {
-      console.error('No se pudo agregar beneficio', e?.response?.data || e)
+    // eliminar los que sobran
+    for (const [bId, relId] of currentMap.entries()){
+      if (!desired.has(bId)){
+        ops.push(api.servicioBeneficios.delete(relId))
+      }
     }
+
+    await Promise.all(ops)
+    await fetchServicioBeneficiosForServicio(servicioId)
+    showToast('Beneficios del servicio actualizados')
+    closeBeneficios()
+  } catch(e){
+    showToast(e?.response?.data?.detail || 'No se pudo guardar')
+  } finally {
+    savingBenef.value = false
   }
 }
-
-/* ===== Cierre de menús de fila ===== */
-const openMenuId = ref(null)
-function toggleMenu (id) { openMenuId.value = openMenuId.value === id ? null : id }
-function closeMenu () { openMenuId.value = null }
-
-function onDocClick (e) {
-  const root = e.target.closest?.('[data-row-root]')
-  if (!root) closeMenu()
-}
-function onEsc (e) {
-  if (e.key === 'Escape') closeMenu()
-}
-
-onMounted(() => {
-  document.addEventListener('click', onDocClick)
-  document.addEventListener('keydown', onEsc)
-})
 </script>
 
 <style scoped>
-/* opcional */
+.fade-enter-active, .fade-leave-active { transition: opacity .15s ease }
+.fade-enter-from, .fade-leave-to { opacity: 0 }
 </style>

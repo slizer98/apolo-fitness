@@ -279,6 +279,7 @@ const servicios = {
   update(id, payload){ return http.put(`servicios/${id}/`, payload) },
   patch(id, payload){ return http.patch(`servicios/${id}/`, payload) },
   delete(id){ return http.delete(`servicios/${id}/`) },
+  
 }
 
 const beneficios = {
@@ -305,7 +306,13 @@ const planesBeneficios = {
   patch(id, payload){ return http.patch(`planes/beneficios/${id}/`, payload) },
   delete(id){ return http.delete(`planes/beneficios/${id}/`) },
 }
-
+const servicioBeneficios = {
+  list(params){ return http.get("servicios/beneficios/", { params }) },                  // ?servicio=ID  (opcional paginado)
+  create(payload){ return http.post("servicios/beneficios/", payload) },                 // { servicio, beneficio, ... }
+  update(id, payload){ return http.put(`servicios/beneficios/${id}/`, payload) },       // si decides editar vigencias/notas
+  patch(id, payload){ return http.patch(`servicios/beneficios/${id}/`, payload) },
+  delete(id){ return http.delete(`servicios/beneficios/${id}/`) },
+};
 const disciplinas = {
   list(params){ return http.get("disciplinas/", { params }) },
   retrieve(id){ return http.get(`disciplinas/${id}/`) },
@@ -355,7 +362,7 @@ const api = {
   configuraciones,
   valoresConfiguracion,
   planes, planesRestricciones,
-  servicios, beneficios,
+  servicios, beneficios, servicioBeneficios,
   planesServicios, planesBeneficios,
   disciplinas, disciplinasPlanes, horariosDisciplinas,
   altasPlan, accesos,

@@ -13,7 +13,7 @@ const AppLayout       = () => import('@/layouts/AppLayout.vue')
 // Vistas protegidas (lazy)
 const Dashboard       = () => import('@/components/Dashboard.vue')
 const ClientesLista   = () => import('@/views/clientes/ClientesLista.vue')
-const ClienteCrear    = () => import('@/views/clientes/ClienteCrear.vue')
+// const ClienteCrear    = () => import('@/views/clientes/ClienteCrear.vue')
 const ClienteEditar = () => import('@/views/clientes/ClienteEditar.vue') 
 const ClienteDetalle = () => import('@/views/clientes/ClienteDetalle.vue') 
 const PlanesLista     = () => import('@/views/planes/PlanesLista.vue')
@@ -45,7 +45,7 @@ const routes = [
 
       // Clientes
       { path: 'clientes',       name: 'ClientesLista', component: ClientesLista, meta: { perms: ['clientes:read'] } },
-      { path: 'clientes/nuevo', name: 'ClienteCrear',  component: ClienteCrear,  meta: { perms: ['clientes:create'] } },
+      // { path: 'clientes/nuevo', name: 'ClienteCrear',  component: ClienteCrear,  meta: { perms: ['clientes:create'] } },
       { path: 'clientes/:id',        name: 'ClienteDetalle',component:ClienteDetalle,  props: true },
       { path: 'clientes/:id/editar', name: 'ClienteEditar',  component: ClienteEditar, props: true },
 
@@ -76,7 +76,7 @@ const routes = [
   // Atajos para URLs antiguas (compat)
   { path: '/dashboard',      redirect: { name: 'Dashboard' } },
   { path: '/clientes',       redirect: { name: 'ClientesLista' } },
-  { path: '/clientes/nuevo', redirect: { name: 'ClienteCrear' } },
+  // { path: '/clientes/nuevo', redirect: { name: 'ClienteCrear' } },
   { path: '/planes',         redirect: { name: 'PlanesLista' } },
   { path: '/usuarios',       redirect: { name: 'UsuariosEmpresa' } },
   { path: '/config',         redirect: { name: 'Configuraciones' } },
