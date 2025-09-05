@@ -5,10 +5,10 @@
         <!-- KPIs -->
         <section>
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <KpiCard title="Clientes" :value="kpis.clientes" :loading="loading.kpis" icon="fa-users" />
-            <KpiCard title="Planes" :value="kpis.planes" :loading="loading.kpis" icon="fa-dumbbell" />
+            <KpiCard title="Clientes"   :value="kpis.clientes"   :loading="loading.kpis" icon="fa-users" />
+            <KpiCard title="Planes"     :value="kpis.planes"     :loading="loading.kpis" icon="fa-dumbbell" />
             <KpiCard title="Sucursales" :value="kpis.sucursales" :loading="loading.kpis" icon="fa-building" />
-            <KpiCard title="Usuarios" :value="kpis.usuarios" :loading="loading.kpis" icon="fa-user-shield" />
+            <KpiCard title="Usuarios"   :value="kpis.usuarios"   :loading="loading.kpis" icon="fa-user-shield" />
           </div>
         </section>
 
@@ -40,7 +40,7 @@
             </div>
           </div>
 
-          <!-- Clientes recientes -->
+          <!-- Clientes recientes (TanStack Table) -->
           <div class="lg:col-span-2">
             <div class="rounded-2xl bg-gradient-to-b from-gray-900/80 to-black border border-gray-800 shadow-xl p-4">
               <div class="flex items-center justify-between mb-3">
@@ -51,28 +51,9 @@
               <div v-if="loading.clientes" class="grid gap-2">
                 <SkeletonRow v-for="i in 5" :key="i" />
               </div>
+
               <div v-else>
-                <table class="w-full text-sm">
-                  <thead class="text-gray-400">
-                    <tr>
-                      <th class="text-left font-normal pb-2">Nombre</th>
-                      <th class="text-left font-normal pb-2">Correo</th>
-                      <th class="text-left font-normal pb-2">Sucursal</th>
-                      <th class="text-left font-normal pb-2">Fecha</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr v-for="c in clientes" :key="c.id" class="border-t border-gray-800/80 hover:bg-gray-900/40">
-                      <td class="py-2">{{ c.nombre }} {{ c.apellidos }}</td>
-                      <td class="py-2 text-gray-300">{{ c.email || '—' }}</td>
-                      <td class="py-2 text-gray-300">{{ c.sucursal_nombre || '—' }}</td>
-                      <td class="py-2 text-gray-300">{{ formatDate(c.fecha_alta) }}</td>
-                    </tr>
-                    <tr v-if="!clientes.length">
-                      <td colspan="4" class="py-6 text-center text-gray-400">Sin registros</td>
-                    </tr>
-                  </tbody>
-                </table>
+                <TableBasic :rows="clientes" :columns="clientesCols" :initialPageSize="5" />
               </div>
             </div>
           </div>
@@ -89,13 +70,24 @@
               <SkeletonCard v-for="i in 4" :key="i" />
             </div>
             <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-              <article v-for="p in planes" :key="p.id" class="rounded-xl border border-gray-800 bg-gray-900/60 p-4 hover:border-apolo-primary/60 transition">
+              <article
+                v-for="p in planes"
+                :key="p.id"
+                class="rounded-xl border border-gray-800 bg-gray-900/60 p-4 hover:border-apolo-primary/60 transition"
+              >
                 <div class="flex items-start justify-between gap-3">
                   <h3 class="font-medium leading-tight">{{ p.nombre }}</h3>
-                  <span v-if="p.acceso_multisucursal" class="text-[10px] px-2 py-0.5 rounded-full bg-apolo-primary/20 text-apolo-primary">Multisucursal</span>
+                  <span
+                    v-if="p.acceso_multisucursal"
+                    class="text-[10px] px-2 py-0.5 rounded-full bg-apolo-primary/20 text-apolo-primary"
+                  >
+                    Multisucursal
+                  </span>
                 </div>
                 <p class="text-gray-300 text-sm mt-1 line-clamp-2">{{ p.descripcion }}</p>
-                <p v-if="p.desde || p.hasta" class="text-[11px] text-gray-400 mt-2">Vigencia: {{ formatRange(p.desde, p.hasta) }}</p>
+                <p v-if="p.desde || p.hasta" class="text-[11px] text-gray-400 mt-2">
+                  Vigencia: {{ formatRange(p.desde, p.hasta) }}
+                </p>
               </article>
             </div>
           </div>
@@ -116,6 +108,9 @@ import KpiCard from '@/components/dashboard/KpiCard.vue'
 import SkeletonRow from '@/components/dashboard/SkeletonRow.vue'
 import SkeletonCard from '@/components/dashboard/SkeletonCard.vue'
 
+import TableBasic from '@/components/TableBasic.vue'
+import { createColumnHelper } from '@tanstack/vue-table'
+
 const auth = useAuthStore()
 const ws = useWorkspaceStore()
 
@@ -132,7 +127,6 @@ onMounted(async () => {
   await refreshAll()
 })
 
-// Reacciona a cambios de empresa/sucursal
 watch(() => [ws.empresaId, ws.sucursalId], () => {
   refreshAll()
 }, { immediate: false })
@@ -151,10 +145,10 @@ async function fetchKPIs() {
       api.usuariosEmpresa.list({ page_size: 1 })
     ])
     kpis.value = {
-      clientes: c?.data?.count ?? (c?.data?.length || 0),
-      planes: p?.data?.count ?? (p?.data?.length || 0),
-      sucursales: s?.data?.count ?? (s?.data?.length || 0),
-      usuarios: u?.data?.count ?? (u?.data?.length || 0)
+      clientes:  c?.data?.count ?? (c?.data?.length || 0),
+      planes:    p?.data?.count ?? (p?.data?.length || 0),
+      sucursales:s?.data?.count ?? (s?.data?.length || 0),
+      usuarios:  u?.data?.count ?? (u?.data?.length || 0)
     }
   } finally { loading.value.kpis = false }
 }
@@ -162,15 +156,14 @@ async function fetchKPIs() {
 async function fetchClientes() {
   loading.value.clientes = true
   try {
-    const { data } = await api.clientes.list({ sucursal: ws.sucursalId, ordering: '-id', page_size: 5 })
+    const { data } = await api.clientes.list({ sucursal: ws.sucursalId, ordering: '-id', page_size: 50 })
     const rows = data?.results || data || []
     clientes.value = rows.map(r => ({
       id: r.id,
-      nombre: r.nombre,
-      apellidos: r.apellidos,
-      email: r.email,
-      sucursal_nombre: r.sucursal_nombre,
-      fecha_alta: r.fecha_alta || r.created
+      nombre: `${r.nombre ?? ''} ${r.apellidos ?? ''}`.trim(),
+      email: r.email || '—',
+      sucursal_nombre: r.sucursal_nombre || '—',
+      fecha: r.fecha_alta || r.created
     }))
   } catch {
     clientes.value = []
@@ -197,6 +190,22 @@ function formatRange(a, b) {
   if (!a && !b) return '—'
   return `${fa} → ${fb}`
 }
+
+/* ====== Columnas TanStack ====== */
+const col = createColumnHelper()
+
+const clientesCols = [
+  col.accessor('nombre', { header: () => 'Nombre' }),
+  col.accessor('email',  { header: () => 'Correo' }),
+  col.accessor('sucursal_nombre', { header: () => 'Sucursal' }),
+  col.accessor('fecha', {
+    header: () => 'Fecha',
+    cell: ({ getValue }) => {
+      const v = getValue()
+      try { return new Date(v).toLocaleDateString('es-MX') } catch { return v ?? '—' }
+    }
+  }),
+]
 </script>
 
 <style scoped>
