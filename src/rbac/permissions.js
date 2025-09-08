@@ -17,7 +17,8 @@ export const ROLE_PERMISSIONS = {
     'reportes:view-basic' // si quieres reportes simples
   ],
   contabilidad: [
-    'clientes:read','fiscales:crud','reportes:view'
+    'clientes:read','fiscales:crud','reportes:view',
+    'productos:read'
   ],
   auditor: [
     'clientes:read','planes:read','config:read','reportes:view'

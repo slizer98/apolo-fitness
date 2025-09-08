@@ -70,11 +70,17 @@
           <button @click="closeModal" class="text-gray-400 hover:text-white">✕</button>
         </div>
 
-        <form @submit.prevent="save" class="p-4 space-y-4">
+        <form @submit.prevent="save" class="p-4 space-y-4" novalidate>
           <div class="grid sm:grid-cols-2 gap-3">
             <div>
               <label class="block text-xs text-gray-400 mb-1">Nombre *</label>
-              <input v-model="form.nombre" class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2" />
+              <input
+                v-model.trim="form.nombre"
+                @blur="form.nombre = (form.nombre || '').trim()"
+                class="w-full bg-gray-900 border rounded px-3 py-2"
+                :class="errors.nombre ? 'border-red-600' : 'border-gray-700'"
+                autocomplete="off"
+              />
               <p v-if="errors.nombre" class="text-red-400 text-xs mt-1">{{ errors.nombre }}</p>
             </div>
             <div>
@@ -90,11 +96,24 @@
           <div class="grid sm:grid-cols-2 gap-3">
             <div>
               <label class="block text-xs text-gray-400 mb-1">Valor</label>
-              <input type="number" step="0.01" v-model.number="form.valor" class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2" />
+              <input
+                type="number"
+                step="0.01"
+                v-model.number="form.valor"
+                :disabled="!form.tipo_descuento"
+                class="w-full bg-gray-900 border rounded px-3 py-2"
+                :class="errors.valor ? 'border-red-600' : 'border-gray-700'"
+              />
+              <p v-if="errors.valor" class="text-red-400 text-xs mt-1">{{ errors.valor }}</p>
             </div>
             <div>
               <label class="block text-xs text-gray-400 mb-1">Unidad (opcional)</label>
-              <input type="number" v-model.number="form.unidad" class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2" />
+              <input
+                type="number"
+                v-model.number="form.unidad"
+                :disabled="!form.tipo_descuento"
+                class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2"
+              />
             </div>
           </div>
 
@@ -135,8 +154,12 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import api from '@/api/services'
+import { useWorkspaceStore } from '@/stores/workspace'
+
+const ws = useWorkspaceStore()
+const empresaId = computed(() => ws.empresaId)
 
 const loading = ref(true)
 const rows = ref([])
@@ -145,7 +168,9 @@ const pageSize = 12
 const count = ref(null)
 const q = ref('')
 
-const hasMore = computed(() => count.value === null ? rows.value.length === pageSize : count.value > page.value * pageSize)
+const hasMore = computed(() =>
+  count.value === null ? rows.value.length === pageSize : count.value > page.value * pageSize
+)
 
 const showModal = ref(false)
 const isEditing = ref(false)
@@ -155,9 +180,14 @@ const form = ref({ id:null, nombre:'', descripcion:'', tipo_descuento:'', valor:
 
 const confirm = ref({ open:false, target:null })
 const toast = ref({ show:false, message:'' })
-function showToast(msg){ toast.value={ show:true, message:msg }; setTimeout(()=>toast.value.show=false, 1800) }
+function showToast(msg){ toast.value={ show:true, message:msg }; setTimeout(()=>toast.value.show=false, 2200) }
 
 onMounted(fetch)
+
+/* Limpia valor/unidad cuando no hay tipo_descuento */
+watch(() => form.value.tipo_descuento, (t) => {
+  if (!t) { form.value.valor = null; form.value.unidad = null }
+})
 
 async function fetch() {
   loading.value = true
@@ -165,6 +195,8 @@ async function fetch() {
     const { data } = await api.beneficios.list({ search: q.value, page: page.value, page_size: pageSize, ordering: '-id' })
     rows.value = data?.results || data || []
     count.value = data?.count ?? null
+  } catch (e) {
+    // opcional: toast de error de carga
   } finally {
     loading.value = false
   }
@@ -196,9 +228,36 @@ function closeModal(){ showModal.value = false }
 
 function validate(){
   const e = {}
-  if(!form.value.nombre?.trim()) e.nombre = 'El nombre es obligatorio'
+  if(!form.value.nombre || !form.value.nombre.trim()){
+    e.nombre = 'El nombre es obligatorio'
+  }
+  if(form.value.tipo_descuento && (form.value.valor === null || form.value.valor === '' || isNaN(form.value.valor))){
+    e.valor = 'Indica el valor del descuento'
+  }
   errors.value = e
   return Object.keys(e).length === 0
+}
+
+function extractApiErrorMessage(err){
+  const data = err?.response?.data
+  if(!data) return 'Error al guardar'
+  // Si DRF devuelve dict de campos
+  if(typeof data === 'object' && !Array.isArray(data)){
+    // pintar errores por campo
+    const e = {}
+    Object.entries(data).forEach(([k,v]) => {
+      if(Array.isArray(v)) e[k] = String(v[0])
+      else if(typeof v === 'string') e[k] = v
+    })
+    // merge a los del front
+    errors.value = { ...errors.value, ...e }
+    // mensaje amigable
+    const first = Object.values(e)[0]
+    if(first) return first
+  }
+  // si vino detail texto
+  if(typeof data?.detail === 'string') return data.detail
+  return 'Error al guardar'
 }
 
 async function save(){
@@ -206,23 +265,26 @@ async function save(){
   saving.value = true
   try{
     const payload = {
-      nombre: form.value.nombre.trim(),
-      descripcion: form.value.descripcion?.trim() || '',
+      nombre: (form.value.nombre || '').trim(),
+      descripcion: (form.value.descripcion || '').trim(),
       tipo_descuento: form.value.tipo_descuento || '',
-      valor: form.value.valor ?? null,
-      unidad: form.value.unidad ?? null
+      ...(form.value.tipo_descuento ? { valor: form.value.valor ?? null, unidad: form.value.unidad ?? 0 } : {})
     }
     if(isEditing.value && form.value.id){
       await api.beneficios.update(form.value.id, payload)
       showToast('Beneficio actualizado')
     } else {
-      await api.beneficios.create(payload)
+      // 🔧 FIX: aplanar payload y agregar empresa
+      await api.beneficios.create({ empresa: empresaId.value, ...payload })
       showToast('Beneficio creado')
     }
     closeModal()
     await fetch()
   } catch(e){
-    showToast(e?.response?.data?.detail || 'Error al guardar')
+    const msg = extractApiErrorMessage(e)
+    showToast(msg)
+    // console extra para depurar si hace falta
+    console.error('Error al guardar beneficio:', e?.response?.data || e)
   } finally {
     saving.value = false
   }
@@ -237,7 +299,7 @@ async function remove(){
     await fetch()
     showToast('Beneficio eliminado')
   } catch(e){
-    showToast(e?.response?.data?.detail || 'No se pudo eliminar')
+    showToast(extractApiErrorMessage(e))
   }
 }
 </script>

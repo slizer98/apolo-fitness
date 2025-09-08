@@ -78,20 +78,25 @@ export const useUiConfigStore = defineStore('uiConfig', () => {
 
   // Fallbacks si no hay config en DB
   const menu = computed(() => {
+    // Si hay JSON en DB, úsalo
     if (Array.isArray(nav.value)) return nav.value
+
+    // Fallback por defecto
     return [
       { label: 'Dashboard',   routeName: 'Dashboard',       icon: 'fa-house' },
       { label: 'Clientes',    routeName: 'ClientesLista',   icon: 'fa-id-card' },
-      { label: 'Planes',      routeName: 'PlanesLista',     icon: 'fa-dumbbell' },
-      { label: 'Servicios',   routeName: 'ServiciosLista',     icon: 'fa-screwdriver-wrench' },
-      { label: 'Beneficios',   routeName: 'BeneficiosLista',     icon: 'fa-gift' },
-      { label: 'Disciplinas',   routeName: 'DisciplinasLista',     icon: 'fa-gift' },
+      { label: 'Membresías',  routeName: 'PlanesLista',     icon: 'fa-dumbbell' },
+      { label: 'Servicios',   routeName: 'ServiciosLista',  icon: 'fa-screwdriver-wrench' },
+      { label: 'Beneficios',  routeName: 'BeneficiosLista', icon: 'fa-gift' },
+      { label: 'Productos',   routeName: 'ProductosLista',  icon: 'fa-box' },
+      { label: 'Disciplinas', routeName: 'DisciplinasLista',icon: 'fa-person-running' },
       { label: 'Usuarios',    routeName: 'UsuariosEmpresa', icon: 'fa-user-shield', roles: ['admin','owner','manager','gerente'] },
       { label: 'Config',      routeName: 'Configuraciones', icon: 'fa-gear',        roles: ['admin','owner','manager','gerente'] },
       { label: 'Config UI',   routeName: 'UiConfigurator',  icon: 'fa-sliders',     roles: ['admin','owner','manager','gerente'] },
       { label: 'Perfil',      routeName: 'Perfil',          icon: 'fa-circle-user' },
     ]
   })
+
 
   const dashboardWidgets = computed(() => {
     if (Array.isArray(widgets.value)) return widgets.value

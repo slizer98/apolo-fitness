@@ -351,6 +351,101 @@ const accesos = {
   create(payload){ return http.post("accesos/", payload) },
 }
 
+// INVENTARIO
+const inventario = {
+  almacenes: {
+    list(params){ return http.get("inventario/almacenes/", { params }) },
+    retrieve(id){ return http.get(`inventario/almacenes/${id}/`) },
+    create(payload){ return http.post("inventario/almacenes/", payload) },
+    update(id, payload){ return http.put(`inventario/almacenes/${id}/`, payload) },
+    patch(id, payload){ return http.patch(`inventario/almacenes/${id}/`, payload) },
+    delete(id){ return http.delete(`inventario/almacenes/${id}/`) },
+  },
+  categorias: {
+    list(params){ return http.get("inventario/categorias/", { params }) },
+    retrieve(id){ return http.get(`inventario/categorias/${id}/`) },
+    create(payload){ return http.post("inventario/categorias/", payload) },
+    update(id, payload){ return http.put(`inventario/categorias/${id}/`, payload) },
+    patch(id, payload){ return http.patch(`inventario/categorias/${id}/`, payload) },
+    delete(id){ return http.delete(`inventario/categorias/${id}/`) },
+  },
+  productos: {
+    list(params){ return http.get("inventario/productos/", { params }) },
+    retrieve(id){ return http.get(`inventario/productos/${id}/`) },
+    create(payload){ return http.post("inventario/productos/", payload) },
+    update(id, payload){ return http.put(`inventario/productos/${id}/`, payload) },
+    patch(id, payload){ return http.patch(`inventario/productos/${id}/`, payload) },
+    delete(id){ return http.delete(`inventario/productos/${id}/`) },
+  },
+  movimientos: {
+    list(params){ return http.get("inventario/movimientos/", { params }) }, // ?empresa=&producto=&almacen=&fecha_after=&fecha_before=
+    retrieve(id){ return http.get(`inventario/movimientos/${id}/`) },
+    create(payload){ return http.post("inventario/movimientos/", payload) },
+    update(id, payload){ return http.put(`inventario/movimientos/${id}/`, payload) },
+    patch(id, payload){ return http.patch(`inventario/movimientos/${id}/`, payload) },
+    delete(id){ return http.delete(`inventario/movimientos/${id}/`) },
+  },
+};
+
+// VENTAS
+const ventas = {
+  codigos: {
+    list(params){ return http.get("ventas/codigos-descuento/", { params }) },
+    retrieve(id){ return http.get(`ventas/codigos-descuento/${id}/`) },
+    create(payload){ return http.post("ventas/codigos-descuento/", payload) },
+    update(id, payload){ return http.put(`ventas/codigos-descuento/${id}/`, payload) },
+    patch(id, payload){ return http.patch(`ventas/codigos-descuento/${id}/`, payload) },
+    delete(id){ return http.delete(`ventas/codigos-descuento/${id}/`) },
+    validar(params){ return http.get("ventas/codigos-descuento/validar/", { params }) }, // empresa, codigo, (opcional) total
+    canjear(id){ return http.post(`ventas/codigos-descuento/${id}/canjear/`) },
+  },
+  ventas: {
+    list(params){ return http.get("ventas/ventas/", { params }) }, // ?empresa=&cliente=&fecha_after=&fecha_before=
+    retrieve(id){ return http.get(`ventas/ventas/${id}/`) },
+    create(payload){ return http.post("ventas/ventas/", payload) },
+    update(id, payload){ return http.put(`ventas/ventas/${id}/`, payload) },
+    patch(id, payload){ return http.patch(`ventas/ventas/${id}/`, payload) },
+    delete(id){ return http.delete(`ventas/ventas/${id}/`) },
+  },
+  detalles: {
+    list(params){ return http.get("ventas/detalles/", { params }) }, // ?venta=&producto=&plan=
+    retrieve(id){ return http.get(`ventas/detalles/${id}/`) },
+    create(payload){ return http.post("ventas/detalles/", payload) },
+    update(id, payload){ return http.put(`ventas/detalles/${id}/`, payload) },
+    patch(id, payload){ return http.patch(`ventas/detalles/${id}/`, payload) },
+    delete(id){ return http.delete(`ventas/detalles/${id}/`) },
+  },
+};
+
+// FINANZAS
+const finanzas = {
+  proveedores: {
+    list(params){ return http.get("finanzas/proveedores/", { params }) },
+    retrieve(id){ return http.get(`finanzas/proveedores/${id}/`) },
+    create(payload){ return http.post("finanzas/proveedores/", payload) },
+    update(id, payload){ return http.put(`finanzas/proveedores/${id}/`, payload) },
+    patch(id, payload){ return http.patch(`finanzas/proveedores/${id}/`, payload) },
+    delete(id){ return http.delete(`finanzas/proveedores/${id}/`) },
+  },
+  categoriasEgresos: {
+    list(params){ return http.get("finanzas/categorias-egresos/", { params }) },
+    retrieve(id){ return http.get(`finanzas/categorias-egresos/${id}/`) },
+    create(payload){ return http.post("finanzas/categorias-egresos/", payload) },
+    update(id, payload){ return http.put(`finanzas/categorias-egresos/${id}/`, payload) },
+    patch(id, payload){ return http.patch(`finanzas/categorias-egresos/${id}/`, payload) },
+    delete(id){ return http.delete(`finanzas/categorias-egresos/${id}/`) },
+  },
+  egresos: {
+    list(params){ return http.get("finanzas/egresos/", { params }) }, // ?empresa=&proveedor=&categoria=&fecha_after=&fecha_before=
+    retrieve(id){ return http.get(`finanzas/egresos/${id}/`) },
+    create(payload){ return http.post("finanzas/egresos/", payload) },
+    update(id, payload){ return http.put(`finanzas/egresos/${id}/`, payload) },
+    patch(id, payload){ return http.patch(`finanzas/egresos/${id}/`, payload) },
+    delete(id){ return http.delete(`finanzas/egresos/${id}/`) },
+  },
+};
+
+
 const api = {
   auth,
   accounts,
@@ -365,7 +460,7 @@ const api = {
   servicios, beneficios, servicioBeneficios,
   planesServicios, planesBeneficios,
   disciplinas, disciplinasPlanes, horariosDisciplinas,
-  altasPlan, accesos,
+  altasPlan, accesos, inventario, ventas, finanzas,
   // exporta helpers por si los necesitas en UI
   _helpers: { saveTokens, getTokens, clearTokens, setEmpresa: system.setEmpresa },
 };
