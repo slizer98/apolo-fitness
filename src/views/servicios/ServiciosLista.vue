@@ -35,7 +35,7 @@
           <button @click="closeModal" class="text-gray-400 hover:text-white">✕</button>
         </div>
         <form @submit.prevent="save" class="p-4 space-y-4" novalidate>
-          <div class="grid sm:grid-cols-2 gap-3">
+          <div class="grid sm:grid-cols-1 gap-3">
             <div>
               <label class="block text-xs text-gray-400 mb-1">Nombre *</label>
               <input v-model.trim="form.nombre" class="w-full bg-gray-900 border rounded px-3 py-2"
@@ -49,7 +49,7 @@
                        class="flex-1 bg-gray-900 border border-gray-700 rounded px-3 py-2"
                        @focus="openIconPicker = true" readonly />
                 <button type="button" class="px-2 py-2 rounded border border-gray-700 bg-gray-800/60 hover:bg-gray-700"
-                        @click="openIconPicker = true">Elegir…</button>
+                        @click="openIconPicker = true">Elegir...</button>
               </div>
               <div v-if="form.icono" class="mt-2 flex items-center gap-2 text-gray-300">
                 <Icon :icon="form.icono" class="w-5 h-5" />

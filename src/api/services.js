@@ -233,12 +233,88 @@ const configuraciones = {
   list(params)    { return http.get("configuraciones/", { params }) },
 }
 
-const valoresConfiguracion = {
-  create(payload) { return http.post("valores-configuracion/", payload) },
-  list(params)    { return http.get("valores-configuracion/", { params }) }, // <-- para UiConfigurator
-  getPorEmpresa(empresaId) { return http.get(`valores-configuracion/por-empresa/${empresaId}/`) }, // <-- para store
-}
+// const valoresConfiguracion = {
+//   list(params)   { return http.get('valores-configuracion/', { params }) },
+//   create(payload){ return http.post('valores-configuracion/', payload) },
+//   update(id,pay) { return http.patch(`valores-configuracion/${id}/`, pay) },
+//   getPorEmpresa(empresaId){ return http.get(`valores-configuracion/por-empresa/${empresaId}/`) },
 
+//   // ⬇️ Nuevo helper: upsert específico para ui.nav
+//   // valor = Array del menú (objetos con {routeName,label,icon,roles?})
+//   async upsertUiNav({ empresaId, valor }) {
+//     // 1) asegura Configuracion 'ui.nav' (tipo json)
+//     let cfgId = null
+//     {
+//       const { data } = await configuraciones.list({ search: 'ui.nav', page_size: 50 })
+//       const rows = data?.results || data || []
+//       const found = rows.find(r => r.nombre === 'ui.nav')
+//       if (found) {
+//         cfgId = found.id
+//       } else {
+//         const { data: created } = await configuraciones.create({
+//           nombre: 'ui.nav',
+//           tipo_dato: 'json',
+//           descripcion: 'Menú de navegación por empresa',
+//         })
+//         cfgId = created.id
+//       }
+//     }
+
+//     // 2) busca ValorConfiguracion existente para esa configuracion y empresa
+//     const { data: vcData } = await valoresConfiguracion.list({ search: 'ui.nav', page_size: 50 })
+//     const list = vcData?.results || vcData || []
+//     const existing = list.find(r => String(r.empresa) === String(empresaId) && r.configuracion === cfgId)
+
+//     const payload = {
+//       empresa: empresaId,
+//       configuracion: cfgId,
+//       valor: JSON.stringify(valor), // IMPORTANTE: string JSON
+//     }
+
+//     if (existing?.id) {
+//       return valoresConfiguracion.update(existing.id, payload)
+//     }
+//     return valoresConfiguracion.create(payload)
+//   },
+//     // Upsert múltiple (array de {key,value})
+//   async upsertMany(empresaId, pairs){
+//     for (const { key, value } of pairs){
+//       const val = (typeof value === 'object') ? JSON.stringify(value) : String(value ?? '')
+//       await http.post('valores-configuracion/upsert/', {
+//         empresa: empresaId,
+//         nombre: key,
+//         valor: val,
+//       })
+//     }
+//   },
+  
+// }
+
+const valoresConfiguracion = {
+  list(params)    { return http.get('valores-configuracion/', { params }) },
+  create(payload) { return http.post('valores-configuracion/', payload) },
+  update(id, pay) { return http.patch(`valores-configuracion/${id}/`, pay) },
+
+  // 🔹 Carga todo el bloque ui.* por empresa (json ya parseado en los valores tipo 'json')
+  getPorEmpresa(empresaId) {
+    return http.get(`valores-configuracion/por-empresa/${empresaId}/`);
+  },
+
+  // 🔹 Guarda una sola clave
+  upsert({ empresa, nombre, valor }) {
+    return http.post('valores-configuracion/upsert/', { empresa, nombre, valor });
+  },
+
+  // 🔹 Guarda varias claves de una
+  upsertMany({ empresa, items }) {
+    return http.post('valores-configuracion/upsert-many/', { empresa, items });
+  },
+
+  // 🔹 Helper para crear/actualizar 'ui.nav' como JSON correctamente
+  async upsertUiNav({ empresaId, valor }) {
+    return this.upsert({ empresa: empresaId, nombre: 'ui.nav', valor: JSON.stringify(valor) });
+  },
+};
 
 /**
  * PLANES

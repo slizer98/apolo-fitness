@@ -1,363 +1,476 @@
 <template>
-  <div class="p-4 text-white max-w-6xl mx-auto">
+  <div class="p-4">
+    <!-- Header acciones -->
     <div class="flex items-center justify-between mb-4">
-      <h1 class="text-2xl font-light">Configuración de UI por empresa</h1>
-      <div class="text-sm text-gray-400">Empresa activa: <span class="text-apolo-primary">{{ empresaNombre || empresaId }}</span></div>
+      <h1 class="text-base font-semibold">Config UI</h1>
+      <div class="flex items-center gap-2">
+        <button
+          class="px-3 py-1.5 text-sm rounded border border-gray-300 hover: transition"
+          :disabled="loading"
+          @click="load(true)"
+        >
+          <i class="fa-solid fa-rotate mr-1"></i> Recargar
+        </button>
+        <button
+          class="px-3 py-1.5 text-sm rounded border border-gray-900 text-white bg-gray-900 hover:bg-black transition disabled:opacity-50"
+          :disabled="saving"
+          @click="saveAll"
+        >
+          <i class="fa-solid fa-floppy-disk mr-1"></i> Guardar
+        </button>
+        <small
+          class="text-xs"
+          :class="{
+            'text-gray-500': saveMessageType==='info',
+            'text-emerald-600': saveMessageType==='ok',
+            'text-amber-600': saveMessageType==='warn',
+            'text-red-600': saveMessageType==='err',
+          }"
+        >{{ saveMessage }}</small>
+      </div>
     </div>
 
-    <div v-if="loadingInit" class="grid gap-3">
-      <div class="animate-pulse h-8 bg-gray-800/60 rounded"></div>
-      <div class="animate-pulse h-40 bg-gray-800/60 rounded"></div>
-    </div>
-
-    <div v-else class="grid md:grid-cols-2 gap-6">
-      <!-- Editor -->
-      <section class="rounded-2xl bg-gray-950 border border-gray-800 p-4">
-        <h2 class="text-lg font-medium mb-3">Editor</h2>
-
-        <!-- Branding -->
-        <div class="space-y-3">
-          <div>
-            <label class="block text-xs text-gray-400 mb-1">Nombre de la app (ui.app_name)</label>
-            <input v-model="form.appName" class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2" />
-          </div>
-
-          <div>
-            <label class="block text-xs text-gray-400 mb-1">Logo URL (ui.logo_url)</label>
-            <input v-model="form.logoUrl" placeholder="https://..." class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2" />
-          </div>
-
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="block text-xs text-gray-400 mb-1">Color primario (ui.primary)</label>
-              <input v-model="form.primary" type="text" placeholder="#FF9F1C" class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2" />
-            </div>
-            <div>
-              <label class="block text-xs text-gray-400 mb-1">Color secundario (ui.secondary)</label>
-              <input v-model="form.secondary" type="text" placeholder="#F6AE2D" class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2" />
+    <!-- Grid: Rutas nuevas | Menú actual -->
+    <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
+      <!-- Card: Rutas nuevas -->
+      <section class="rounded-2xl border border-gray-200">
+        <header class="px-4 py-3 border-b border-gray-200">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <h2 class="text-sm font-medium">Rutas nuevas</h2>
+              <span class="text-xs text-gray-500">Arrastra al “Menú actual” para añadir</span>
             </div>
           </div>
-        </div>
+        </header>
 
-        <hr class="my-4 border-gray-800">
-
-        <!-- Menú lateral -->
-        <div>
-          <div class="flex items-center justify-between mb-1">
-            <label class="block text-xs text-gray-400">Menú (ui.nav) — JSON</label>
-            <button class="text-xs px-2 py-1 rounded border border-gray-700 bg-gray-800/60 hover:bg-gray-700"
-                    @click="applySampleNav">Usar ejemplo</button>
-          </div>
-          <textarea v-model="form.nav" rows="8" class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 font-mono text-sm"></textarea>
-          <p v-if="navError" class="text-red-400 text-xs mt-1">{{ navError }}</p>
-        </div>
-
-        <hr class="my-4 border-gray-800">
-
-        <!-- Widgets del dashboard -->
-        <div>
-          <div class="flex items-center justify-between mb-1">
-            <label class="block text-xs text-gray-400">Widgets (ui.dashboard.widgets) — JSON</label>
-            <div class="flex gap-2">
-              <button class="text-xs px-2 py-1 rounded border border-gray-700 bg-gray-800/60 hover:bg-gray-700"
-                      @click="applySampleWidgets">Ejemplo</button>
-              <button class="text-xs px-2 py-1 rounded border border-gray-700 bg-gray-800/60 hover:bg-gray-700"
-                      @click="prettyWidgets">Formatear</button>
-            </div>
-          </div>
-          <textarea v-model="form.widgets" rows="10" class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 font-mono text-sm"></textarea>
-          <p v-if="widgetsError" class="text-red-400 text-xs mt-1">{{ widgetsError }}</p>
-        </div>
-
-        <div class="flex items-center justify-end gap-2 mt-4">
-          <button class="px-4 py-2 rounded border border-gray-700 bg-gray-800/60 hover:bg-gray-700"
-                  @click="reload">Descartar cambios</button>
-          <button class="px-4 py-2 rounded bg-apolo-primary text-black hover:bg-apolo-secondary disabled:opacity-60"
-                  :disabled="saving || !!navError || !!widgetsError" @click="saveAll">
-            {{ saving ? 'Guardando…' : 'Guardar' }}
-          </button>
-        </div>
-      </section>
-
-      <!-- Preview -->
-      <section class="rounded-2xl bg-gray-950 border border-gray-800 p-4">
-        <h2 class="text-lg font-medium mb-3">Previsualización</h2>
-
-        <div class="rounded-xl border border-gray-800 overflow-hidden">
-          <div class="p-3 flex items-center gap-3" :style="{ background: `linear-gradient(90deg, #000, ${form.primary || '#FF9F1C'}22, #000)` }">
-            <img :src="form.logoUrl || defaultLogo" alt="logo" class="h-8 w-auto">
-            <div class="text-sm">
-              <div class="font-medium">{{ form.appName || 'ÁGORA ERP' }}</div>
-              <div class="text-[11px] text-gray-400">Colores: <span :style="{color: form.primary}">Primary</span>, <span :style="{color: form.secondary}">Secondary</span></div>
-            </div>
-          </div>
-
-          <div class="grid grid-cols-1 gap-2 p-3">
-            <div class="text-xs text-gray-400">Menú simulado</div>
-            <div class="grid grid-cols-2 gap-2">
-              <div v-for="(item, i) in previewNav" :key="i" class="px-3 py-2 rounded-lg border border-gray-800 bg-gray-900/60 flex items-center gap-2">
-                <i :class="['fa', item.icon || 'fa-circle', 'opacity-80']"></i>
-                <span class="text-sm">{{ item.label || item.routeName }}</span>
+        <ul
+          class="p-2"
+          @dragover.prevent="onListDragOver('catalog', $event)"
+          @drop="onDrop('catalog')"
+        >
+          <li
+            v-for="(r, i) in newRoutes"
+            :key="'cat-'+r.routeName"
+            class="flex items-center justify-between gap-2 px-3 py-2 rounded-lg border border-gray-200 mb-2 cursor-grab"
+            draggable="true"
+            @dragstart="onDragStart('catalog', i)"
+            @dragover.prevent="onItemDragOver('catalog', i)"
+            @dblclick="openEdit('catalog', i)"
+          >
+            <div class="flex items-center gap-2 min-w-0">
+              <i :class="['fa-solid', r.icon || 'fa-circle']"></i>
+              <div class="flex flex-col min-w-0">
+                <span class="text-sm font-medium truncate">{{ r.label }}</span>
+                <span class="text-xs text-gray-500 truncate">
+                  <code>{{ r.routeName }}</code>
+                </span>
               </div>
             </div>
-          </div>
+            <button class="text-xs px-2 py-1 rounded border border-gray-300" title="Arrastrar">⋮⋮</button>
+          </li>
 
-          <div class="p-3">
-            <div class="text-xs text-gray-400 mb-2">Widgets</div>
-            <div class="flex flex-wrap gap-2">
-              <span v-for="(w,i) in previewWidgets" :key="i" class="text-xs px-2 py-1 rounded-full border border-gray-800 bg-gray-900/60">
-                {{ w.name }}
-              </span>
+          <li
+            v-if="!newRoutes.length"
+            class="px-3 py-2 text-center text-xs text-gray-500"
+          >No hay rutas disponibles</li>
+        </ul>
+      </section>
+
+      <!-- Card: Menú actual -->
+      <section class="rounded-2xl border border-gray-200">
+        <header class="px-4 py-3 border-b border-gray-200">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <h2 class="text-sm font-medium">Menú actual</h2>
+              <span class="text-xs text-gray-500">Reordena o arrastra hacia “Rutas nuevas” para quitar</span>
             </div>
           </div>
-        </div>
+        </header>
 
-        <p class="text-xs text-gray-500 mt-3">* La vista real tomará esta configuración al recargar.</p>
+        <ul
+          class="p-2"
+          @dragover.prevent="onListDragOver('menu', $event)"
+          @drop="onDrop('menu')"
+        >
+          <li
+            v-for="(m, i) in menu"
+            :key="'menu-'+m.routeName+'-'+i"
+            class="flex items-center justify-between gap-2 px-3 py-2 rounded-lg border border-gray-200 mb-2 cursor-grab"
+            draggable="true"
+            @dragstart="onDragStart('menu', i)"
+            @dragover.prevent="onItemDragOver('menu', i)"
+            @dblclick="openEdit('menu', i)"
+          >
+            <div class="flex items-center gap-2 min-w-0">
+              <i :class="['fa-solid', m.icon || 'fa-circle']"></i>
+              <div class="flex flex-col min-w-0">
+                <span class="text-sm font-medium truncate">{{ m.label }}</span>
+                <span class="text-xs text-gray-500 truncate">
+                  <code>{{ m.routeName }}</code>
+                  <template v-if="m.roles?.length"> · roles: {{ m.roles.join(', ') }}</template>
+                </span>
+              </div>
+            </div>
+            <button class="text-xs px-2 py-1 rounded border border-gray-300" title="Arrastrar">⋮⋮</button>
+          </li>
+
+          <li
+            v-if="!menu.length"
+            class="px-3 py-2 text-center text-xs text-gray-500"
+          >No hay elementos en el menú</li>
+        </ul>
       </section>
     </div>
+    <!-- Modal edición -->
+<div v-if="editor.open" class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4" @click.self="editor.open=false">
+  <div class="w-full max-w-xl bg-gray-950 border border-gray-800 rounded-2xl shadow-xl">
+    <div class="px-4 py-3 border-b border-gray-800 flex items-center justify-between">
+      <h3 class="text-lg">Editar elemento</h3>
+      <button @click="editor.open=false" class="text-gray-400 hover:text-white">✕</button>
+    </div>
+
+    <form @submit.prevent="applyEdit" class="p-4 space-y-4" novalidate>
+      <div class="grid sm:grid-cols-1 gap-3">
+        <div>
+          <label class="block text-xs text-gray-400 mb-1">Label *</label>
+          <input
+            v-model.trim="form.label"
+            class="w-full bg-gray-900 border rounded px-3 py-2"
+            :class="form.label ? 'border-gray-700' : 'border-red-600'"
+            placeholder="Nombre visible en el menú"
+          />
+          <p v-if="!form.label" class="text-red-400 text-xs mt-1">Requerido</p>
+        </div>
+
+        <div>
+          <label class="block text-xs text-gray-400 mb-1">Route name</label>
+          <input
+            v-model="form.routeName"
+            class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-gray-400"
+            disabled
+          />
+        </div>
+
+        <div>
+          <label class="block text-xs text-gray-400 mb-1">Icono (opcional)</label>
+          <div class="flex items-center gap-2">
+            <input
+              v-model.trim="form.icon"
+              placeholder="fa-house o iconify: lucide:dumbbell"
+              class="flex-1 bg-gray-900 border border-gray-700 rounded px-3 py-2"
+              @focus="openIconPicker = true"
+              readonly
+            />
+            <button
+              type="button"
+              class="px-2 py-2 rounded border border-gray-700 bg-gray-800/60 hover:bg-gray-700"
+              @click="openIconPicker = true"
+            >
+              Elegir...
+            </button>
+          </div>
+
+          <div v-if="form.icon" class="mt-2 flex items-center gap-2 text-gray-300">
+            <!-- Soporta Iconify y clases FA: si es 'algo:algo' mostramos Iconify -->
+            <Icon v-if="form.icon.includes(':')" :icon="form.icon" class="w-5 h-5" />
+            <i v-else :class="['fa-solid', form.icon]" class="w-5 h-5"></i>
+            <span class="text-xs">{{ form.icon }}</span>
+            <button type="button" class="text-xs text-gray-400 hover:text-white" @click="form.icon = ''">Quitar</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-end gap-2 pt-1">
+        <button type="button" @click="editor.open=false"
+                class="px-4 py-2 rounded border border-gray-700 bg-gray-800/60 hover:bg-gray-700">
+          Cancelar
+        </button>
+        <button type="submit"
+                class="px-4 py-2 rounded bg-apolo-primary text-black hover:bg-apolo-secondary disabled:opacity-60"
+                :disabled="!form.label">
+          Aplicar
+        </button>
+      </div>
+    </form>
   </div>
+</div>
+
+<!-- Icon Picker -->
+
+</div>
+<IconPicker v-if="openIconPicker" @close="openIconPicker=false" @select="onSelectIconify" />
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
-import api from '@/api/services'
+import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useWorkspaceStore } from '@/stores/workspace'
-import { useUiConfigStore } from '@/stores/uiConfig'
-import defaultLogo from '@/assets/images/apolo-name.png' // si lo usas en el template
+import api from '@/api/services'
+import { getRouteCatalog } from '@/router/routeCatalog' // si exportas función, ver loadCatalog()
+import { Icon } from '@iconify/vue'                  // para previsualizar iconos de Iconify
+import IconPicker from '@/components/IconPicker.vue' // ajusta la ruta si la tienes en otro path
 
+// ===== estado para el picker =====
+const openIconPicker = ref(false)
+
+// ===== callback cuando el usuario elige un icono en el picker =====
+function onSelectIconify(iconName) {
+  // iconName esperado tipo 'lucide:dumbbell' o 'mdi:home'
+  form.icon = iconName || ''
+  openIconPicker.value = false
+}
+/* =========================
+   Workspace (empresaId real)
+========================= */
 const ws = useWorkspaceStore()
-const ui = useUiConfigStore()
-
-const loadingInit = ref(true)
-const saving = ref(false)
-
 const empresaId = computed(() => ws.empresaId)
-const empresaNombre = computed(() => ws.empresaNombre)
 
-// Campos que vamos a gestionar desde este editor
-const keys = [
-  { name: 'ui.app_name',           type: 'string' },
-  { name: 'ui.logo_url',           type: 'string' },
-  { name: 'ui.primary',            type: 'string' },
-  { name: 'ui.secondary',          type: 'string' },
-  { name: 'ui.nav',                type: 'json'   },
-  { name: 'ui.dashboard.widgets',  type: 'json'   },
-]
+/* =========================
+   Estado UI
+========================= */
+const loading = ref(false)
+const saving  = ref(false)
+const saveMessage = ref('')
+const saveMessageType = ref('info') // info | ok | warn | err
 
-// Mapa: nombre_config -> { configId, valorId, valorString, tipo }
-const records = ref({})
+const menu = ref([])         // Menú actual (ui.nav)
+const newRoutes = ref([])    // Catálogo - menú
 
-// Formulario visual
-const form = ref({
-  appName: '',
-  logoUrl: '',
-  primary: '#FF9F1C',
-  secondary: '#F6AE2D',
-  nav: '',
-  widgets: '',
+// Drag state
+const drag = reactive({
+  src: /** 'menu' | 'catalog' | null */ null,
+  index: /** number|null */ null,
+  overIndexMenu: /** number|null */ null,
+  overIndexCatalog: /** number|null */ null,
 })
 
-const navError = ref('')
-const widgetsError = ref('')
+// Modal edición
+const editor = reactive({ open: false, from: 'menu', index: null })
+const form = reactive({ label: '', routeName: '', icon: 'fa-circle', rolesRaw: '' })
 
-// --- Helpers de normalización ---
-const arr = (data) => {
-  if (Array.isArray(data)) return data
-  if (data && Array.isArray(data.results)) return data.results
+/* =========================
+   Utils
+========================= */
+function rolesFromRaw(raw) {
+  return raw
+    ? raw.split(',').map(s => s.trim()).filter(Boolean)
+    : []
+}
+function toKeySet(arr) {
+  const s = new Set()
+  arr.forEach(it => s.add(it.routeName))
+  return s
+}
+function loadCatalog() {
+  // Soporta: export default array  ó  export default function()->array
+  if (Array.isArray(getRouteCatalog)) return getRouteCatalog
+  if (typeof getRouteCatalog === 'function') return getRouteCatalog() || []
+  if (Array.isArray(getRouteCatalog?.default)) return getRouteCatalog.default
+  if (typeof getRouteCatalog?.default === 'function') return getRouteCatalog.default() || []
   return []
 }
 
-// --- Previews con validación JSON ---
-const previewNav = computed(() => {
-  try {
-    const a = JSON.parse(form.value.nav || '[]')
-    if (!Array.isArray(a)) throw new Error('nav debe ser un arreglo')
-    navError.value = ''
-    return a
-  } catch {
-    navError.value = 'JSON inválido en ui.nav'
-    return []
-  }
-})
-
-const previewWidgets = computed(() => {
-  try {
-    const a = JSON.parse(form.value.widgets || '[]')
-    if (!Array.isArray(a)) throw new Error('widgets debe ser un arreglo')
-    widgetsError.value = ''
-    return a
-  } catch {
-    widgetsError.value = 'JSON inválido en ui.dashboard.widgets'
-    return []
-  }
-})
-
-// --- Botones de ejemplo ---
-function applySampleNav() {
-  const sample = [
-    { label: 'Dashboard',   routeName: 'Dashboard',       icon: 'fa-house' },
-    { label: 'Clientes',    routeName: 'ClientesLista',   icon: 'fa-id-card' },
-    { label: 'Planes',      routeName: 'PlanesLista',     icon: 'fa-dumbbell' },
-    { label: 'Usuarios',    routeName: 'UsuariosEmpresa', icon: 'fa-user-shield', roles: ['admin','owner','manager','gerente'] },
-    { label: 'Config',      routeName: 'Configuraciones', icon: 'fa-gear',        roles: ['admin','owner','manager','gerente'] },
-    { label: 'Config UI',   routeName: 'UiConfigurator',  icon: 'fa-sliders',     roles: ['admin','owner','manager','gerente'] },
-    { label: 'Perfil',      routeName: 'Perfil',          icon: 'fa-circle-user' },
-  ]
-  form.value.nav = JSON.stringify(sample, null, 2)
-}
-
-function applySampleWidgets() {
-  const sample = [
-    { name: 'kpis', props: {} },
-    { name: 'quickActions', props: {} },
-    { name: 'entradasDelDia', props: {} },
-    { name: 'planesVigentes', props: { limit: 8 } },
-  ]
-  form.value.widgets = JSON.stringify(sample, null, 2)
-}
-
-function prettyWidgets() {
-  try {
-    form.value.widgets = JSON.stringify(JSON.parse(form.value.widgets || '[]'), null, 2)
-  } catch {}
-}
-
-// --- Carga de configuraciones ---
-async function loadConfig() {
-  loadingInit.value = true
-  await ws.ensureEmpresaSet()
-
-  // 1) Catálogo de configuraciones (para obtener configId)
-  const { data: cfgsResp } = await api.configuraciones.list({ page_size: 200 })
-  const cfgList = arr(cfgsResp)
-
-  // 2) Valores por empresa ***como LISTA*** (necesitamos valorId para hacer update)
-  const { data: valsResp } = await api.valoresConfiguracion.list({ empresa: ws.empresaId, page_size: 200 })
-  const valList = arr(valsResp)
-
-  const map = {}
-  for (const k of keys) {
-    const c = cfgList.find(x => x?.nombre === k.name) || null
-    // Soporta ambos shapes: con configuracion_nombre o configuracion anidado
-    const v = valList.find(
-      x => x?.configuracion_nombre === k.name ||
-           x?.configuracion?.nombre === k.name
-    ) || null
-
-    map[k.name] = {
-      configId: c?.id || null,
-      valorId: v?.id || null,
-      valorString: v?.valor ?? '',
-      tipo: k.type,
-    }
-  }
-  records.value = map
-
-  // Prefills con fallback al store de UI
-  form.value.appName   = map['ui.app_name']?.valorString || ui.branding.appName || 'ÁGORA ERP'
-  form.value.logoUrl   = map['ui.logo_url']?.valorString || ''
-  form.value.primary   = map['ui.primary']?.valorString  || ui.theme.primary || '#FF9F1C'
-  form.value.secondary = map['ui.secondary']?.valorString|| ui.theme.secondary || '#F6AE2D'
-  form.value.nav       = map['ui.nav']?.valorString      || JSON.stringify(ui.menu, null, 2)
-  form.value.widgets   = map['ui.dashboard.widgets']?.valorString || JSON.stringify(ui.dashboardWidgets, null, 2)
-
-  loadingInit.value = false
-}
-
-// Crea las definiciones del catálogo si no existen
-async function ensureConfigDefinitions() {
-  const defs = [
-    { nombre:'ui.app_name',           tipo_dato:'string', descripcion:'Nombre visible de la app' },
-    { nombre:'ui.logo_url',           tipo_dato:'string', descripcion:'URL del logo' },
-    { nombre:'ui.primary',            tipo_dato:'string', descripcion:'Color primario' },
-    { nombre:'ui.secondary',          tipo_dato:'string', descripcion:'Color secundario' },
-    { nombre:'ui.nav',                tipo_dato:'json',   descripcion:'Menú lateral' },
-    { nombre:'ui.dashboard.widgets',  tipo_dato:'json',   descripcion:'Widgets dashboard' },
-  ]
-
-  for (const d of defs) {
-    if (!records.value[d.nombre]?.configId) {
-      try {
-        const { data } = await api.configuraciones.create(d)
-        records.value[d.nombre] = { ...(records.value[d.nombre] || {}), configId: data?.id }
-      } catch {
-        // Si ya existía, vuelve a buscar para capturar su id
-        const { data: cfgsResp } = await api.configuraciones.list({ search: d.nombre })
-        const found = arr(cfgsResp).find(x => x?.nombre === d.nombre)
-        if (found?.id) {
-          records.value[d.nombre] = { ...(records.value[d.nombre] || {}), configId: found.id }
-        }
+/* =========================================================
+   FIX: migrar menú metido por error en ui.app_name → ui.nav
+========================================================= */
+async function fixMenuEnAppName(idEmpresa, ui) {
+  if (Array.isArray(ui['ui.nav'])) return false
+  const raw = ui['ui.app_name']
+  if (typeof raw === 'string' && raw.trim().startsWith('[')) {
+    try {
+      const parsed = JSON.parse(raw)
+      if (Array.isArray(parsed)) {
+        await api.valoresConfiguracion.upsert({
+          empresa: idEmpresa,
+          nombre: 'ui.nav',
+          valor: JSON.stringify(parsed),
+        })
+        await api.valoresConfiguracion.upsert({
+          empresa: idEmpresa,
+          nombre: 'ui.app_name',
+          valor: 'Mi App',
+        })
+        return true
       }
-    }
+    } catch { /* ignore */ }
   }
+  return false
 }
 
-// Guardado en lote
-async function saveAll() {
-  // Validaciones de JSON
-  try { JSON.parse(form.value.nav || '[]'); navError.value = '' } 
-  catch { navError.value = 'JSON inválido en ui.nav'; return }
-  try { JSON.parse(form.value.widgets || '[]'); widgetsError.value = '' } 
-  catch { widgetsError.value = 'JSON inválido en ui.dashboard.widgets'; return }
-
-  saving.value = true
+/* =========================
+   Carga
+========================= */
+async function load(force = false) {
+  if (!empresaId.value) {
+    saveMessage.value = 'Selecciona una empresa'
+    saveMessageType.value = 'warn'
+    return
+  }
+  loading.value = true
+  saveMessage.value = force ? 'Recargando…' : 'Cargando…'
+  saveMessageType.value = 'info'
   try {
-    await ensureConfigDefinitions()
+    // 1) UI por empresa
+    let { data: ui } = await api.valoresConfiguracion.getPorEmpresa(empresaId.value)
 
-    // Upsert de cada clave
-    const upserts = [
-      ['ui.app_name',           form.value.appName],
-      ['ui.logo_url',           form.value.logoUrl],
-      ['ui.primary',            form.value.primary],
-      ['ui.secondary',          form.value.secondary],
-      ['ui.nav',                form.value.nav],
-      ['ui.dashboard.widgets',  form.value.widgets],
-    ]
-
-    const ops = []
-    for (const [key, val] of upserts) {
-      const rec = records.value[key]
-      if (!rec?.configId) continue
-
-      const payload = {
-        configuracion: rec.configId,
-        empresa: ws.empresaId,
-        valor: String(val ?? ''),
-      }
-
-      // Si ya hay valor, actualiza; si no, crea
-      if (rec?.valorId) {
-        // Usa update o patch según tu services
-        ops.push(
-          (api.valoresConfiguracion.update
-            ? api.valoresConfiguracion.update(rec.valorId, { valor: payload.valor })
-            : api.valoresConfiguracion.patch(rec.valorId, { valor: payload.valor })
-          )
-        )
-      } else {
-        ops.push(api.valoresConfiguracion.create(payload))
-      }
+    // 2) Fix si el menú quedó en app_name
+    const migrated = await fixMenuEnAppName(empresaId.value, ui)
+    if (migrated) {
+      ;({ data: ui } = await api.valoresConfiguracion.getPorEmpresa(empresaId.value))
     }
 
-    await Promise.all(ops)
+    // 3) Menú actual
+    let nav = ui['ui.nav']
+    if (typeof nav === 'string') {
+      try { nav = JSON.parse(nav) } catch { nav = [] }
+    }
+    menu.value = Array.isArray(nav) ? nav : []
 
-    // Recarga el store de UI para que el layout aplique colores/menú/widgets
-    await ui.loadForActiveCompany()
-    // Puedes disparar un toast aquí si tienes tu sistema de notificaciones
-    // toast.success('Configuración actualizada')
+    // 4) Catálogo - diferencia
+    const catalog = loadCatalog() || []
+    const current = toKeySet(menu.value)
+    newRoutes.value = catalog.filter(c => !current.has(c.routeName))
 
+    saveMessage.value = '✔ Config cargada'
+    saveMessageType.value = 'ok'
   } catch (e) {
-    console.error('No se pudo guardar', e?.response?.data || e)
-    // toast.error('Hubo un error al guardar')
+    console.error(e)
+    saveMessage.value = '✖ Error al cargar'
+    saveMessageType.value = 'err'
+  } finally {
+    loading.value = false
+  }
+}
+
+/* =========================
+   Guardado
+========================= */
+async function saveAll() {
+  if (!empresaId.value) return
+  saving.value = true
+  saveMessage.value = 'Guardando…'
+  saveMessageType.value = 'info'
+  try {
+    await api.valoresConfiguracion.upsert({
+      empresa: empresaId.value,
+      nombre: 'ui.nav',
+      valor: JSON.stringify(menu.value),
+    })
+    saveMessage.value = '✔ Guardado'
+    saveMessageType.value = 'ok'
+  } catch (e) {
+    console.error(e)
+    saveMessage.value = '✖ Error al guardar'
+    saveMessageType.value = 'err'
   } finally {
     saving.value = false
   }
 }
 
-function reload() {
-  loadConfig()
+/* =========================
+   Drag & Drop (con reorden exacto)
+========================= */
+function onDragStart(source, index) {
+  drag.src = source // 'menu' | 'catalog'
+  drag.index = index
 }
 
-onMounted(loadConfig)
-</script>
+function onItemDragOver(targetList, overIndex) {
+  if (targetList === 'menu') {
+    drag.overIndexMenu = overIndex
+  } else {
+    drag.overIndexCatalog = overIndex
+  }
+}
 
+function onListDragOver(targetList, evt) {
+  // Si no hay elementos, overIndex = 0 (insertar al inicio)
+  if (targetList === 'menu' && menu.value.length === 0) {
+    drag.overIndexMenu = 0
+  }
+  if (targetList === 'catalog' && newRoutes.value.length === 0) {
+    drag.overIndexCatalog = 0
+  }
+}
+
+function insertAt(list, fromIndex, toIndex) {
+  if (toIndex == null || toIndex < 0 || toIndex > list.length) {
+    // si no tenemos un índice válido, va al final
+    toIndex = list.length
+  }
+  if (fromIndex === toIndex || fromIndex + 1 === toIndex) return
+  const item = list.splice(fromIndex, 1)[0]
+  if (fromIndex < toIndex) toIndex-- // al sacar, el array encoge
+  list.splice(toIndex, 0, item)
+}
+
+function onDrop(target) {
+  const { src, index } = drag
+  if (src == null || index == null) return
+  if (target !== 'menu' && target !== 'catalog') return
+
+  if (src === target) {
+    // Reordenar dentro de la misma lista usando overIndex
+    if (src === 'menu') {
+      insertAt(menu.value, index, drag.overIndexMenu ?? menu.value.length)
+    } else {
+      insertAt(newRoutes.value, index, drag.overIndexCatalog ?? newRoutes.value.length)
+    }
+  } else {
+    // Mover entre listas con inserción por overIndex
+    if (src === 'menu' && target === 'catalog') {
+      const item = menu.value.splice(index, 1)[0]
+      const exists = newRoutes.value.findIndex(r => r.routeName === item.routeName) >= 0
+      const insertIndex = drag.overIndexCatalog ?? newRoutes.value.length
+      if (!exists) newRoutes.value.splice(insertIndex, 0, { ...item })
+    } else if (src === 'catalog' && target === 'menu') {
+      const item = newRoutes.value.splice(index, 1)[0]
+      const exists = menu.value.findIndex(m => m.routeName === item.routeName) >= 0
+      const insertIndex = drag.overIndexMenu ?? menu.value.length
+      if (!exists) menu.value.splice(insertIndex, 0, { ...item })
+    }
+  }
+
+  // limpiar estado drag
+  drag.src = drag.index = null
+  drag.overIndexMenu = drag.overIndexCatalog = null
+}
+
+/* =========================
+   Editor
+========================= */
+function openEdit(from, i) {
+  editor.from = from         // 'menu' | 'catalog'
+  editor.index = i
+  const srcArr = from === 'menu' ? menu.value : newRoutes.value
+  const it = srcArr[i]
+  form.label = it.label
+  form.routeName = it.routeName
+  form.icon = it.icon || 'fa-circle'
+  form.rolesRaw = (it.roles || []).join(', ')
+  editor.open = true
+}
+
+function applyEdit() {
+  const roles = rolesFromRaw(form.rolesRaw)
+  const destArr = editor.from === 'menu' ? menu.value : newRoutes.value
+  const idx = editor.index
+  if (idx == null) return
+  const current = destArr[idx]
+  destArr.splice(idx, 1, {
+    ...current,
+    label: form.label?.trim() || current.label,
+    icon:  form.icon?.trim()  || current.icon || 'fa-circle',
+    roles: roles.length ? roles : undefined,
+  })
+  editor.open = false
+}
+
+/* =========================
+   Lifecycle
+========================= */
+onMounted(async () => {
+  await ws.ensureEmpresaSet()
+  if (empresaId.value) load()
+})
+watch(empresaId, (n, o) => { if (n && n !== o) load(true) })
+</script>

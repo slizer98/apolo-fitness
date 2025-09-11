@@ -13,7 +13,7 @@
       <div class="h-16 px-4 flex items-center gap-3 border-b border-gray-800/70">
         <img :src="apoloImage" alt="Ágora" class="h-7 w-auto opacity-90" />
         <div class="text-sm text-gray-300 leading-tight">
-          <div class="font-medium">{{ ui.branding.appName }}</div>
+          <!-- <div class="font-medium">{{ ui.branding.appName }}</div>s -->
           <div class="text-[11px] text-gray-400 truncate">Empresa: {{ ws.empresaNombre || ws.empresaId }}</div>
         </div>
       </div>
