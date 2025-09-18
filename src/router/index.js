@@ -24,6 +24,7 @@ const ServiciosLista   = () => import('@/views/servicios/ServiciosLista.vue')
 const DisciplinasLista   = () => import('@/views/disciplinas/DisciplinasLista.vue')
 const BeneficiosLista  = () => import('@/views/beneficios/BeneficiosLista.vue')
 const MembresiasLista = () => import('@/views/membresias/MembresiasLista.vue')
+const POS = () => import('@/views/ventas/POS.vue')
 const ProductosLista = () => import('@/views/inventario/ProductoLista.vue')
 const MembresiaCrear  = () => import('@/views/membresias/MembresiaCrear.vue')
 const UsuariosEmpresa = () => import('@/views/usuarios/UsuariosEmpresa.vue')
@@ -60,6 +61,7 @@ const routes = [
       { path: 'beneficios', name: 'BeneficiosLista', component: BeneficiosLista, meta: { perms: ['planes:read'] } },
       { path: 'disciplinas', name: 'DisciplinasLista', component: DisciplinasLista, meta: { perms: ['planes:read'] } },
       { path: 'productos', name: 'ProductosLista', component: ProductosLista, meta: { perms: ['productos:read'] } },
+      { path: 'pos', name: 'Pos', component: POS, meta: { perms: ['productos:read'] } },
       { path: 'membresias',       name: 'MembresiasLista', component: MembresiasLista, meta: { perms: ['membresias:read'] } },
       { path: 'membresias/nueva', name: 'MembresiaCrear',  component: MembresiaCrear,  meta: { perms: ['membresias:create'] } },
       // Administración

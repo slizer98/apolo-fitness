@@ -9,6 +9,7 @@ const DEFAULT_META = {
   ServiciosLista:  { label: 'Servicios',   icon: 'fa-screwdriver-wrench' },
   BeneficiosLista: { label: 'Beneficios',  icon: 'fa-gift' },
   ProductosLista:  { label: 'Productos',   icon: 'fa-box' },
+  Pos:  { label: 'POS',   icon: 'fa-box' },
   DisciplinasLista:{ label: 'Disciplinas', icon: 'fa-person-running' },
   UsuariosEmpresa: { label: 'Usuarios',    icon: 'fa-user-shield' },
   Configuraciones: { label: 'Config',      icon: 'fa-gear' },

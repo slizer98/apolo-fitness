@@ -437,14 +437,23 @@ const inventario = {
     patch(id, payload){ return http.patch(`inventario/almacenes/${id}/`, payload) },
     delete(id){ return http.delete(`inventario/almacenes/${id}/`) },
   },
-  categorias: {
-    list(params){ return http.get("inventario/categorias/", { params }) },
-    retrieve(id){ return http.get(`inventario/categorias/${id}/`) },
-    create(payload){ return http.post("inventario/categorias/", payload) },
-    update(id, payload){ return http.put(`inventario/categorias/${id}/`, payload) },
-    patch(id, payload){ return http.patch(`inventario/categorias/${id}/`, payload) },
-    delete(id){ return http.delete(`inventario/categorias/${id}/`) },
-  },
+    categoriasProducto: {
+      list(params){ return http.get("inventario/categorias-producto/", { params }) },
+      retrieve(id){ return http.get(`inventario/categorias-producto/${id}/`) },
+      create(payload){ return http.post("inventario/categorias-producto/", payload) },
+      update(id, payload){ return http.put(`inventario/categorias-producto/${id}/`, payload) },
+      patch(id, payload){ return http.patch(`inventario/categorias-producto/${id}/`, payload) },
+      delete(id){ return http.delete(`inventario/categorias-producto/${id}/`) },
+    },
+
+    categorias: {
+      list(params){ return http.get("inventario/categorias-producto/", { params }) },
+      retrieve(id){ return http.get(`inventario/categorias-producto/${id}/`) },
+      create(payload){ return http.post("inventario/categorias-producto/", payload) },
+      update(id, payload){ return http.put(`inventario/categorias-producto/${id}/`, payload) },
+      patch(id, payload){ return http.patch(`inventario/categorias-producto/${id}/`, payload) },
+      delete(id){ return http.delete(`inventario/categorias-producto/${id}/`) },
+    },
   productos: {
     list(params){ return http.get("inventario/productos/", { params }) },
     retrieve(id){ return http.get(`inventario/productos/${id}/`) },
@@ -452,6 +461,7 @@ const inventario = {
     update(id, payload){ return http.put(`inventario/productos/${id}/`, payload) },
     patch(id, payload){ return http.patch(`inventario/productos/${id}/`, payload) },
     delete(id){ return http.delete(`inventario/productos/${id}/`) },
+    stock(id, params){ return http.get(`inventario/productos/${id}/stock/`, { params }) },
   },
   movimientos: {
     list(params){ return http.get("inventario/movimientos/", { params }) }, // ?empresa=&producto=&almacen=&fecha_after=&fecha_before=
@@ -474,6 +484,7 @@ const ventas = {
     delete(id){ return http.delete(`ventas/codigos-descuento/${id}/`) },
     validar(params){ return http.get("ventas/codigos-descuento/validar/", { params }) }, // empresa, codigo, (opcional) total
     canjear(id){ return http.post(`ventas/codigos-descuento/${id}/canjear/`) },
+
   },
   ventas: {
     list(params){ return http.get("ventas/ventas/", { params }) }, // ?empresa=&cliente=&fecha_after=&fecha_before=
@@ -482,6 +493,7 @@ const ventas = {
     update(id, payload){ return http.put(`ventas/ventas/${id}/`, payload) },
     patch(id, payload){ return http.patch(`ventas/ventas/${id}/`, payload) },
     delete(id){ return http.delete(`ventas/ventas/${id}/`) },
+    posCheckout(payload){ return http.post("ventas/ventas/pos-checkout/", payload) },
   },
   detalles: {
     list(params){ return http.get("ventas/detalles/", { params }) }, // ?venta=&producto=&plan=
