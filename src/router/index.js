@@ -12,6 +12,8 @@ const AppLayout       = () => import('@/layouts/AppLayout.vue')
 
 // Vistas protegidas (lazy)
 const Dashboard       = () => import('@/components/Dashboard.vue')
+const EmpresasLista = () => import('@/views/empresas/EmpresasLista.vue')
+const EmpresaDetalle = () => import('@/views/empresas/EmpresaDetalle.vue')
 const ClientesLista   = () => import('@/views/clientes/ClientesLista.vue')
 // const ClienteCrear    = () => import('@/views/clientes/ClienteCrear.vue')
 const ClienteEditar = () => import('@/views/clientes/ClienteEditar.vue') 
@@ -44,7 +46,8 @@ const routes = [
     meta: { requiresAuth: true },
     children: [
       { path: 'dashboard', name: 'Dashboard', component: Dashboard },
-
+      { path: '/empresas', name: 'EmpresasLista', component: EmpresasLista },
+      { path: '/empresas/:id', name: 'EmpresaDetalle', component: EmpresaDetalle, props: true },
       // Clientes
       { path: 'clientes',       name: 'ClientesLista', component: ClientesLista, meta: { perms: ['clientes:read'] } },
       // { path: 'clientes/nuevo', name: 'ClienteCrear',  component: ClienteCrear,  meta: { perms: ['clientes:create'] } },

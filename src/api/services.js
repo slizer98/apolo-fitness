@@ -340,6 +340,26 @@ const planes = {
   //   delete(id) { return http.delete(`planes/restricciones/${id}/`); },         // <- NUEVO
   // },
 }
+
+planes.publicarRevision = function(planId, payload = {}) {
+  return http.post(`planes/${planId}/publicar-revision/`, payload);
+};
+
+planes.revisiones = {
+  list(params) { return http.get("planes/revisiones/", { params }); },
+  precios(params) { return http.get("planes/revisiones/precios/", { params }); },
+  restricciones(params) { return http.get("planes/revisiones/restricciones/", { params }); },
+  servicios(params) { return http.get("planes/revisiones/servicios/", { params }); },
+  beneficios(params) { return http.get("planes/revisiones/beneficios/", { params }); },
+  disciplinas(params) { return http.get("planes/revisiones/disciplinas/", { params }); },
+
+  // helper: trae la revisión vigente más reciente a cierta fecha
+  async getVigente(planId, fechaISO /* 'YYYY-MM-DD' */) {
+    const { data } = await this.list({ plan: planId, vigentes_a: fechaISO, page_size: 1, ordering: "-version" });
+    const arr = data?.results || data || [];
+    return arr[0] || null;
+  },
+};
 const planesRestricciones = {
   list(params){ return http.get("planes/restricciones/", { params }) },
   retrieve(id){ return http.get(`planes/restricciones/${id}/`) },
