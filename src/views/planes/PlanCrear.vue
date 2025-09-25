@@ -1,189 +1,292 @@
 <template>
-  <!-- Overlay -->
   <div
     class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-start justify-center p-4 overflow-y-auto"
     @click.self="onClose"
   >
-    <div class="w-full max-w-3xl bg-gray-950 border border-gray-800 rounded-2xl shadow-2xl">
+    <div class="w-full max-w-4xl bg-gray-950 border border-gray-800 rounded-2xl shadow-2xl">
       <!-- Header -->
       <div class="px-5 py-4 border-b border-gray-800 flex items-center justify-between">
         <h3 class="text-lg">Nuevo plan</h3>
         <button @click="onClose" class="text-gray-400 hover:text-white" aria-label="Cerrar">✕</button>
       </div>
 
+      <!-- Tabs -->
+      <div class="px-5 pt-4 border-b border-gray-800">
+        <nav class="flex flex-wrap gap-2">
+          <button
+            v-for="t in tabs" :key="t.key" type="button"
+            class="px-3 py-2 rounded-lg text-sm"
+            :class="tab===t.key ? 'bg-gray-800 text-white' : 'text-gray-400 hover:text-gray-200'"
+            @click="tab=t.key"
+          >
+            {{ t.label }}
+          </button>
+        </nav>
+      </div>
+
       <!-- Form -->
       <form @submit.prevent="save" class="p-5 space-y-6">
-        <!-- Básicos -->
-        <section class="grid sm:grid-cols-2 gap-4">
+        <!-- =================== TAB: BÁSICOS =================== -->
+        <section v-show="tab==='basicos'" class="space-y-4">
+          <div class="grid sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs text-gray-400 mb-1">Nombre</label>
+              <input v-model.trim="form.nombre"
+                     class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2"
+                     :class="{'border-red-600': errors.nombre}" maxlength="255" />
+              <p v-if="errors.nombre" class="text-red-400 text-xs mt-1">{{ errors.nombre }}</p>
+            </div>
+
+            <div class="flex items-center gap-3 sm:pt-6">
+              <input id="multi" type="checkbox" v-model="form.acceso_multisucursal"
+                     class="h-4 w-4 rounded border-gray-700 bg-gray-900" />
+              <label for="multi" class="text-sm text-gray-300">Acceso multisucursal</label>
+            </div>
+          </div>
+
           <div>
-            <label class="block text-xs text-gray-400 mb-1">Nombre *</label>
-            <input v-model.trim="form.nombre" class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2"
-                   :class="{'border-red-600': errors.nombre}" maxlength="255" />
-            <p v-if="errors.nombre" class="text-red-400 text-xs mt-1">{{ errors.nombre }}</p>
-          </div>
-
-          <div class="flex items-center gap-3 pt-6 sm:pt-0">
-            <input id="multi" type="checkbox" v-model="form.acceso_multisucursal" class="h-4 w-4 rounded border-gray-700 bg-gray-900" />
-            <label for="multi" class="text-sm text-gray-300">Acceso multisucursal</label>
-          </div>
-
-          <div class="sm:col-span-2">
             <label class="block text-xs text-gray-400 mb-1">Descripción</label>
             <textarea v-model.trim="form.descripcion" rows="2"
                       class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2"></textarea>
           </div>
-        </section>
 
-        <!-- Tipo de plan -->
-        <section class="grid sm:grid-cols-3 gap-4">
-          <div>
-            <label class="block text-xs text-gray-400 mb-1">Tipo de plan *</label>
-            <select v-model="form.tipo_plan" class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2"
-                    :class="{'border-red-600': errors.tipo_plan}">
-              <option disabled value="">Selecciona…</option>
-              <option value="tiempo">Por tiempo</option>
-              <option value="sesiones">Por sesiones</option>
-            </select>
-            <p v-if="errors.tipo_plan" class="text-red-400 text-xs mt-1">{{ errors.tipo_plan }}</p>
-          </div>
-
-          <div v-if="form.tipo_plan==='tiempo'">
-            <label class="block text-xs text-gray-400 mb-1">Periodicidad *</label>
-            <select v-model="form.periodicidad" class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2"
-                    :class="{'border-red-600': errors.periodicidad}">
-              <option disabled value="">Selecciona…</option>
-              <option value="semanal">Semanal</option>
-              <option value="mensual">Mensual</option>
-            </select>
-            <p v-if="errors.periodicidad" class="text-red-400 text-xs mt-1">{{ errors.periodicidad }}</p>
-          </div>
-
-          <div v-if="form.tipo_plan==='tiempo'">
-            <label class="block text-xs text-gray-400 mb-1">Preventa</label>
-            <div class="flex items-center gap-2">
-              <input id="preventa" type="checkbox" v-model="form.preventa" class="h-4 w-4 rounded border-gray-700 bg-gray-900" />
-              <label for="preventa" class="text-sm text-gray-300">Habilitar</label>
-            </div>
-          </div>
-
-          <!-- Sesiones -->
-          <div v-if="form.tipo_plan==='sesiones'">
-            <label class="block text-xs text-gray-400 mb-1"># de sesiones *</label>
-            <input v-model="form.numero_sesiones" @input="onlyInt('numero_sesiones')"
-                   class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2"
-                   :class="{'border-red-600': errors.numero_sesiones}" inputmode="numeric" />
-            <p v-if="errors.numero_sesiones" class="text-red-400 text-xs mt-1">{{ errors.numero_sesiones }}</p>
-          </div>
-          <div v-if="form.tipo_plan==='sesiones'">
-            <label class="block text-xs text-gray-400 mb-1">Rango (días) *</label>
-            <input v-model="form.rango_dias" @input="onlyInt('rango_dias')"
-                   class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2"
-                   :class="{'border-red-600': errors.rango_dias}" inputmode="numeric" />
-            <p v-if="errors.rango_dias" class="text-red-400 text-xs mt-1">{{ errors.rango_dias }}</p>
-          </div>
-        </section>
-
-        <!-- Vigencia opcional -->
-        <section class="grid sm:grid-cols-2 gap-4">
-          <div>
-            <label class="block text-xs text-gray-400 mb-1">Vigente desde (YYYY-MM-DD)</label>
-            <input v-model="form.desde" placeholder="2025-01-01"
-                   class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2" />
-          </div>
-          <div>
-            <label class="block text-xs text-gray-400 mb-1">Vigente hasta (YYYY-MM-DD)</label>
-            <input v-model="form.hasta" placeholder="2025-12-31"
-                   class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2" />
-          </div>
-        </section>
-
-        <!-- Esquemas de precio (dentro del modal de crear plan) -->
-        <section class="space-y-2">
-          <div class="flex items-center justify-between">
-            <h4 class="text-sm text-gray-300">Esquemas de precio</h4>
-            <button type="button" @click="addPrecioRow"
-                    class="text-xs px-2 py-1 rounded border border-gray-700 bg-gray-800/60 hover:bg-gray-700">+ Agregar</button>
-          </div>
-
-          <div v-if="!precios.length" class="text-xs text-gray-500">Sin filas. Agrega al menos una.</div>
-
-          <div v-for="(p,idx) in precios" :key="p._k"
-               class="grid sm:grid-cols-5 gap-2 items-end bg-gray-900/40 border border-gray-800 rounded-xl p-3">
+          <div class="grid sm:grid-cols-3 gap-4">
             <div>
-              <label class="block text-[11px] text-gray-400 mb-1">Esquema *</label>
-              <select v-model="p.esquema" class="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1.5">
-                <option disabled value="">Selecciona…</option>
-                <option value="individual">Individual</option>
-                <option value="grupal">Grupal</option>
-                <option value="empresa">Empresa</option>
+              <label class="block text-xs text-gray-400 mb-1">Tipo de plan</label>
+              <select v-model="form.tipo_plan"
+                      class="w-full bg-gray-900 border border-gray-700 rounded px-2 py-2"
+                      :class="{'border-red-600': errors.tipo_plan}">
+                <option disabled value="">Seleccione…</option>
+                <option value="tiempo">Por tiempo (mensual/semanal)</option>
+                <option value="sesiones">Por sesiones</option>
               </select>
+              <p v-if="errors.tipo_plan" class="text-red-400 text-xs mt-1">{{ errors.tipo_plan }}</p>
             </div>
-            <div>
-              <label class="block text-[11px] text-gray-400 mb-1">Tipo *</label>
-              <input :value="precioTipo(p)" disabled
-                     class="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1.5 text-gray-400" />
+
+            <div v-if="form.tipo_plan==='tiempo'">
+              <label class="block text-xs text-gray-400 mb-1">Periodicidad</label>
+              <select v-model="form.periodicidad"
+                      class="w-full bg-gray-900 border border-gray-700 rounded px-2 py-2"
+                      :class="{'border-red-600': errors.periodicidad}">
+                <option disabled value="">Seleccione…</option>
+                <option value="mensual">Mensual</option>
+                <option value="semanal">Semanal</option>
+              </select>
+              <p v-if="errors.periodicidad" class="text-red-400 text-xs mt-1">{{ errors.periodicidad }}</p>
             </div>
-            <div>
-              <label class="block text-[11px] text-gray-400 mb-1">Precio *</label>
-              <input v-model="p.precio" @input="moneyMask(p, 'precio')" inputmode="decimal"
-                     class="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1.5"
-                     placeholder="0.00" />
-            </div>
-            <div>
-              <label class="block text-[11px] text-gray-400 mb-1"># visitas</label>
-              <input v-model="p.numero_visitas" @input="onlyIntRow(p, 'numero_visitas')" inputmode="numeric"
-                     class="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1.5"
-                     :placeholder="form.tipo_plan==='sesiones' ? String(form.numero_sesiones || 0) : '0 (ilimitado)'" />
-            </div>
-            <div class="flex items-center justify-end gap-2">
-              <button type="button" @click="removePrecioRow(idx)"
-                      class="px-2 py-1 rounded border border-red-800 bg-red-900/40 hover:bg-red-800">Quitar</button>
+
+            <div v-if="form.tipo_plan==='sesiones'">
+              <label class="block text-xs text-gray-400 mb-1"># de sesiones</label>
+              <input v-model.number="form.numero_sesiones" type="number" min="1" step="1"
+                     class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2"
+                     :class="{'border-red-600': errors.numero_sesiones}" />
+              <p v-if="errors.numero_sesiones" class="text-red-400 text-xs mt-1">{{ errors.numero_sesiones }}</p>
             </div>
           </div>
 
-          <p v-if="errors.precios" class="text-red-400 text-xs mt-1">{{ errors.precios }}</p>
+          <div class="grid sm:grid-cols-3 gap-4">
+            <div class="flex items-center gap-2">
+              <input id="preventa" type="checkbox" v-model="form.preventa"
+                     class="h-4 w-4 rounded border-gray-700 bg-gray-900" />
+              <label for="preventa" class="text-sm text-gray-300">Preventa</label>
+            </div>
+
+            <div>
+              <label class="block text-xs text-gray-400 mb-1">Vigente desde</label>
+              <input v-model="form.desde" type="date"
+                     class="w-full bg-gray-900 border border-gray-700 rounded px-2 py-2" />
+            </div>
+
+            <div>
+              <label class="block text-xs text-gray-400 mb-1">Vigente hasta</label>
+              <input v-model="form.hasta" type="date"
+                     class="w-full bg-gray-900 border border-gray-700 rounded px-2 py-2" />
+            </div>
+          </div>
         </section>
 
-        <!-- Servicios (checks) -->
-        <section>
-          <div class="flex items-center justify-between mb-2">
+        <!-- =================== TAB: SERVICIOS =================== -->
+        <section v-show="tab==='servicios'" class="space-y-3">
+          <div class="flex items-center justify-between">
             <h4 class="text-sm text-gray-300">Servicios</h4>
-            <RouterLink class="text-xs text-apolo-primary hover:underline" :to="{name:'ServiciosLista'}">Administrar servicios</RouterLink>
+            <RouterLink class="text-xs text-apolo-primary hover:underline" :to="{name:'ServiciosLista'}">
+              Administrar servicios
+            </RouterLink>
           </div>
 
           <div v-if="loading.servicios" class="grid gap-2">
-            <div class="animate-pulse h-8 bg-gray-800/60 rounded" v-for="i in 3" :key="i"></div>
+            <div v-for="i in 4" :key="i" class="animate-pulse h-10 bg-gray-800/60 rounded"></div>
           </div>
 
-          <div v-else class="space-y-2 max-h-56 overflow-auto pr-1">
-            <div v-for="s in servicios" :key="s.id"
-                 class="flex items-center justify-between gap-3 bg-gray-900/50 border border-gray-800 rounded-xl px-3 py-2">
-              <label class="flex items-center gap-2">
-                <input type="checkbox" v-model="svcState[s.id].checked"
-                       class="h-4 w-4 rounded border-gray-700 bg-gray-900"/>
-                <span class="text-sm">{{ s.nombre }}</span>
-              </label>
-
-              <div class="flex items-center gap-2">
-                <input v-model="svcState[s.id].precio" @input="moneyMask(svcState[s.id], 'precio')" inputmode="decimal"
-                       class="w-28 bg-gray-900 border border-gray-700 rounded px-2 py-1 text-sm"
-                       placeholder="$ opcional" />
-                <!-- Menú de acciones del servicio -->
-                <div class="relative" :data-svc-menu="s.id">
-                  <button type="button" class="px-2 py-1 rounded hover:bg-gray-800" @click.stop="toggleSvcMenu(s.id)">⋯</button>
-                  <div v-if="openSvcMenuId===s.id"
-                       class="absolute right-0 mt-1 w-56 bg-gray-950 border border-gray-800 rounded-xl shadow-xl p-1 z-20">
-                    <button type="button" class="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-900/70"
-                            @click="openBeneficiosForService(s)">
-                      Agregar beneficios al plan…
-                    </button>
-                  </div>
+          <div v-else class="grid sm:grid-cols-2 gap-3">
+            <label
+              v-for="s in servicios" :key="s.id"
+              class="rounded-xl border border-gray-800 bg-gray-900/50 p-3 flex flex-col gap-2"
+            >
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <input type="checkbox" v-model="svcState[s.id].checked"
+                         class="h-4 w-4 rounded border-gray-700 bg-gray-900" />
+                  <span class="text-xl" :class="svcState[s.id].icono || s.icono"></span>
+                  <span class="text-sm font-medium">{{ s.nombre }}</span>
                 </div>
               </div>
-            </div>
 
-            <p v-if="errors.servicios" class="text-red-400 text-xs mt-1">{{ errors.servicios }}</p>
+              <div
+                class="grid sm:grid-cols-2 gap-2"
+                :class="{'opacity-50 pointer-events-none': !svcState[s.id].checked}"
+              >
+                <input v-model="svcState[s.id].precio" @input="moneyMask(svcState[s.id],'precio')" inputmode="decimal"
+                       class="bg-gray-900 border border-gray-700 rounded px-2 py-1.5" placeholder="$ precio (opcional)" />
+                <input v-model="svcState[s.id].icono"
+                       class="bg-gray-900 border border-gray-700 rounded px-2 py-1.5" placeholder="icono (opcional)" />
+              </div>
+            </label>
           </div>
+
+          <p v-if="errors.servicios" class="text-red-400 text-xs">{{ errors.servicios }}</p>
+        </section>
+
+        <!-- =================== TAB: BENEFICIOS =================== -->
+        <section v-show="tab==='beneficios'" class="space-y-3">
+          <details class="rounded-xl border border-gray-800 bg-gray-900/40">
+            <summary class="cursor-pointer px-4 py-3">Agregar beneficios</summary>
+            <div class="p-4 space-y-3">
+              <div v-if="loading.beneficios" class="grid gap-2">
+                <div v-for="i in 4" :key="i" class="animate-pulse h-8 bg-gray-800/60 rounded"></div>
+              </div>
+
+              <div v-else class="space-y-2 max-h-72 overflow-auto pr-1">
+                <label v-for="b in beneficios" :key="b.id" class="flex items-start gap-3">
+                  <input type="checkbox" v-model="beneficiosChecks" :value="b.id"
+                         class="h-4 w-4 rounded border-gray-700 bg-gray-900 mt-1.5" />
+                  <div class="w-full">
+                    <div class="text-sm font-medium">{{ b.nombre }}</div>
+                    <div class="text-xs text-gray-400">{{ b.descripcion || '—' }}</div>
+
+                    <!-- Aplica a: plan o servicio -->
+                    <div v-if="beneficiosChecks.includes(b.id)" class="mt-2 grid sm:grid-cols-3 gap-2 items-center">
+                      <span class="text-xs text-gray-300">Aplica a</span>
+                      <div class="flex items-center gap-3 sm:col-span-2">
+                        <label class="flex items-center gap-2 text-sm">
+                          <input type="radio" :name="'aplica_'+b.id" value="plan"
+                                 v-model="beneficiosDestino[b.id]" /> Plan
+                        </label>
+                        <label class="flex items-center gap-2 text-sm">
+                          <input type="radio" :name="'aplica_'+b.id" value="servicio"
+                                 v-model="beneficiosDestino[b.id]" /> Servicio
+                        </label>
+                        <select v-if="beneficiosDestino[b.id]==='servicio'"
+                                v-model="beneficiosServicio[b.id]"
+                                class="bg-gray-900 border border-gray-700 rounded px-2 py-1">
+                          <option disabled value="">Seleccione servicio…</option>
+                          <option v-for="s in serviciosSeleccionados" :key="s.id" :value="s.id">{{ s.nombre }}</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                </label>
+              </div>
+            </div>
+          </details>
+        </section>
+
+        <!-- =================== TAB: ESQUEMA DE PRECIOS =================== -->
+        <section v-show="tab==='precios'" class="space-y-3">
+          <div class="grid sm:grid-cols-5 gap-2 items-center">
+            <select v-model="priceForm.esquema" class="bg-gray-900 border border-gray-700 rounded px-2 py-2">
+              <option disabled value="">Esquema…</option>
+              <option value="individual">Individual</option>
+              <option value="grupal">Grupal</option>
+              <option value="empresa">Empresa</option>
+            </select>
+
+            <select v-model="priceForm.tipo" class="bg-gray-900 border border-gray-700 rounded px-2 py-2">
+              <option disabled value="">Periodicidad…</option>
+              <option value="mensual">Mensual</option>
+              <option value="semanal">Semanal</option>
+              <option value="sesiones">Sesiones</option>
+            </select>
+
+            <input v-model="priceForm.precio" type="number" min="0" step="0.01"
+                   class="bg-gray-900 border border-gray-700 rounded px-3 py-2"
+                   placeholder="Precio" />
+            <input v-model="priceForm.numero_visitas" type="number" min="0" step="1"
+                   class="bg-gray-900 border border-gray-700 rounded px-3 py-2"
+                   :placeholder="priceForm.tipo==='sesiones' ? '# visitas' : '# visitas (opcional)'" />
+            <button type="button" @click="agregarPrecio"
+                    class="px-3 py-2 rounded-lg bg-apolo-primary text-black hover:bg-apolo-secondary">
+              Agregar
+            </button>
+          </div>
+
+          <ul class="text-sm divide-y divide-gray-800">
+            <li v-for="(p,idx) in preciosList" :key="p.id || 'tmp-'+idx" class="py-2 flex items-center justify-between">
+              <div>{{ p.esquema }} · {{ p.tipo }} — {{ currency(p.precio) }} ({{ p.numero_visitas || 0 }} visitas)</div>
+              <button class="text-red-300 hover:text-red-200" @click="eliminarPrecio(p, idx)">Eliminar</button>
+            </li>
+          </ul>
+        </section>
+
+        <!-- =================== TAB: RESTRICCIONES =================== -->
+        <section v-show="tab==='restricciones'" class="space-y-4">
+          <div class="text-sm text-gray-300">Define reglas de acceso/uso para este plan.</div>
+
+          <div class="grid sm:grid-cols-4 gap-2 items-end">
+            <div class="sm:col-span-2">
+              <label class="block text-xs text-gray-400 mb-1">Nombre</label>
+              <input v-model.trim="restrForm.nombre" class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2" />
+            </div>
+            <div class="sm:col-span-2">
+              <label class="block text-xs text-gray-400 mb-1">Descripción</label>
+              <input v-model.trim="restrForm.descripcion" class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2" />
+            </div>
+          </div>
+
+          <div class="grid sm:grid-cols-4 gap-2 items-end">
+            <div>
+              <label class="block text-xs text-gray-400 mb-1">Días/semana</label>
+              <input v-model.number="restrForm.dias_por_semana" type="number" min="0" step="1"
+                     class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2" />
+            </div>
+            <div>
+              <label class="block text-xs text-gray-400 mb-1">Minutos/visita</label>
+              <input v-model.number="restrForm.minutos_por_visita" type="number" min="0" step="1"
+                     class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2" />
+            </div>
+            <div>
+              <label class="block text-xs text-gray-400 mb-1">Hora inicio</label>
+              <input v-model="restrForm.hora_inicio" type="time"
+                     class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2" />
+            </div>
+            <div>
+              <label class="block text-xs text-gray-400 mb-1">Hora fin</label>
+              <input v-model="restrForm.hora_fin" type="time"
+                     class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2" />
+            </div>
+          </div>
+
+          <div class="flex justify-end">
+            <button type="button" @click="agregarRestr"
+                    class="px-3 py-2 rounded-lg bg-apolo-primary text-black hover:bg-apolo-secondary">
+              Agregar restricción
+            </button>
+          </div>
+
+          <ul class="text-sm divide-y divide-gray-800">
+            <li v-for="(r,idx) in restrList" :key="r.id || 'r'+idx" class="py-2 flex items-center justify-between">
+              <div class="flex-1">
+                <div class="font-medium">{{ r.nombre || '—' }}</div>
+                <div class="text-gray-400">
+                  {{ r.descripcion || '—' }} · {{ r.dias_por_semana || 0 }} d/sem · {{ r.minutos_por_visita || 0 }} min/visita
+                  · {{ r.hora_inicio || '—' }} - {{ r.hora_fin || '—' }}
+                </div>
+              </div>
+              <div class="flex items-center gap-2">
+                <button class="text-red-300 hover:text-red-200" @click="eliminarRestr(r, idx)">Eliminar</button>
+              </div>
+            </li>
+          </ul>
         </section>
 
         <!-- Footer -->
@@ -191,57 +294,26 @@
           <button type="button" @click="onClose"
                   class="px-4 py-2 rounded border border-gray-700 bg-gray-800/60 hover:bg-gray-700">Cancelar</button>
           <button type="submit" :disabled="saving"
-                  class="px-4 py-2 rounded bg-apolo-primary text-black hover:bg-apolo-secondary disabled:opacity-60">
-            {{ saving ? 'Guardando…' : 'Guardar' }}
+                  class="px-4 py-2 rounded bg-apolo-primary text-black hover:bg-apolo-secondary">
+            {{ saving ? 'Guardando…' : 'Guardar plan' }}
           </button>
         </div>
       </form>
-    </div>
-
-    <!-- Modal: elegir beneficios (se aplican al plan) -->
-    <div v-if="showBeneficios" class="fixed inset-0 z-[60] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-      <div class="w-full max-w-lg bg-gray-950 border border-gray-800 rounded-2xl shadow-2xl">
-        <div class="px-5 py-3 border-b border-gray-800 flex items-center justify-between">
-          <h3 class="text-lg">Agregar beneficios</h3>
-          <button @click="closeBeneficios" class="text-gray-400 hover:text-white" aria-label="Cerrar beneficios">✕</button>
-        </div>
-        <div class="p-5 space-y-3">
-          <div v-if="loading.beneficios" class="grid gap-2">
-            <div class="animate-pulse h-8 bg-gray-800/60 rounded" v-for="i in 3" :key="i"></div>
-          </div>
-          <div v-else class="space-y-2 max-h-64 overflow-auto pr-1">
-            <label v-for="b in beneficios" :key="b.id" class="flex items-center gap-2 bg-gray-900/50 border border-gray-800 rounded-xl px-3 py-2">
-              <input type="checkbox" v-model="beneficiosSeleccionados" :value="b.id"
-                     class="h-4 w-4 rounded border-gray-700 bg-gray-900" />
-              <div>
-                <div class="text-sm">{{ b.nombre }}</div>
-                <div class="text-[11px] text-gray-400">{{ b.descripcion || '—' }}</div>
-              </div>
-            </label>
-          </div>
-        </div>
-        <div class="px-5 pb-4 flex items-center justify-end gap-2">
-          <button @click="closeBeneficios" class="px-4 py-2 rounded border border-gray-700 bg-gray-800/60 hover:bg-gray-700">Cerrar</button>
-          <button @click="applyBeneficios" class="px-4 py-2 rounded bg-apolo-primary text-black hover:bg-apolo-secondary">Aplicar</button>
-        </div>
-      </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, onUnmounted, watch, computed } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter, RouterLink } from 'vue-router'
 import api from '@/api/services'
 import { useWorkspaceStore } from '@/stores/workspace'
 
-const ws = useWorkspaceStore()
-const empresaId = computed(() => ws.empresaId)
-
 const emit = defineEmits(['close','saved'])
 const router = useRouter()
+const ws = useWorkspaceStore()
 
-// ---------- estado ----------
+/* ================= state ================= */
 const saving = ref(false)
 const errors = reactive({})
 const form = reactive({
@@ -254,230 +326,231 @@ const form = reactive({
   desde: '',
   hasta: '',
   numero_sesiones: '',
-  rango_dias: '',
 })
 
-// precios embebidos
-const precios = ref([])
+/* tabs */
+const tabs = [
+  { key: 'basicos', label: 'Básicos' },
+  { key: 'servicios', label: 'Servicios' },
+  { key: 'beneficios', label: 'Beneficios' },
+  { key: 'precios', label: 'Esquema de precios' },
+  { key: 'restricciones', label: 'Restricciones' },
+]
+const tab = ref('basicos')
 
-// servicios y beneficios
+/* catálogos */
 const loading = reactive({ servicios: true, beneficios: true })
 const servicios = ref([])
 const beneficios = ref([])
 
-const svcState = reactive({})                // id -> {checked, precio}
-const openSvcMenuId = ref(null)              // menú "…" por servicio
-const showBeneficios = ref(false)
-const beneficiosSeleccionados = ref([])
+/* servicios seleccionados */
+const svcState = reactive({})                 // {[id]: {checked, precio, icono}}
+const serviciosSeleccionados = computed(() => servicios.value.filter(s => svcState[s.id]?.checked))
 
-// ---------- init ----------
-onMounted(async () => {
-  await Promise.all([loadServicios(), loadBeneficios()])
-  // arranca con 1 fila de precio
-  addPrecioRow()
-  // cierra menús al hacer click fuera
-  document.addEventListener('click', onDocClick)
-  // cerrar con ESC
-  document.addEventListener('keydown', onKeydown)
+/* beneficios */
+const beneficiosChecks = ref([])              // [id]
+const beneficiosDestino = reactive({})        // { [idBeneficio]: 'plan'|'servicio' }
+const beneficiosServicio = reactive({})       // { [idBeneficio]: <idServicio> }
+
+/* precios (UI) */
+const priceForm = reactive({ esquema:'', tipo:'', precio:'', numero_visitas:0 })
+const preciosList = ref([])
+
+/* restricciones (UI) */
+const restrForm = reactive({
+  nombre:'', descripcion:'', dias_por_semana:'', minutos_por_visita:'', hora_inicio:'', hora_fin:''
 })
+const restrList = ref([])
 
-onUnmounted(() => {
-  document.removeEventListener('click', onDocClick)
-  document.removeEventListener('keydown', onKeydown)
-})
-
-function onKeydown(e) {
-  if (e.key === 'Escape') onClose()
-}
-
-function onClose(){
-  document.removeEventListener('click', onDocClick)
-  emit('close') // por si se usa como modal controlado
-
-  // Como esta pantalla vive en una ruta (RouterLink a PlanCrear),
-  // navegamos para "cerrar" si nadie escucha el emit:
-  if (history.state && history.state.back !== null) {
-    router.back()
-  } else {
-    router.push({ name: 'Planes' }) // Ajusta al nombre real de la lista
+/* ================= methods ================= */
+function onClose () {
+  // 1) intentamos avisar al padre
+  emit('close')
+  // 2) si nadie lo maneja, hacemos fallback de navegación
+  const hasHistory = window.history.length > 1
+  try {
+    if (hasHistory) router.back()
+    else router.push({ name: 'PlanesLista' })
+  } catch {
+    // último fallback: no-op
   }
 }
 
-// ---------- cargar catálogos ----------
-async function loadServicios () {
-  loading.servicios = true
-  try {
-    const { data } = await api.servicios.list({ ordering: 'id', page_size: 200 })
-    servicios.value = data?.results || data || []
-    // inicializa estado de checks
-    servicios.value.forEach(s => { svcState[s.id] = { checked: false, precio: '' } })
-  } catch { servicios.value = [] }
-  finally { loading.servicios = false }
-}
-
-async function loadBeneficios () {
-  loading.beneficios = true
-  try {
-    const { data } = await api.beneficios.list({ ordering: 'id', page_size: 200 })
-    beneficios.value = data?.results || data || []
-  } catch { beneficios.value = [] }
-  finally { loading.beneficios = false }
-}
-
-// ---------- helpers UI ----------
-function addPrecioRow () {
-  precios.value.push({_k: cryptoRandom(), esquema: '', precio: '', numero_visitas: ''})
-}
-function removePrecioRow (idx) { precios.value.splice(idx, 1) }
-
-function precioTipo (p) {
-  return form.tipo_plan === 'sesiones'
-    ? 'sesiones'
-    : (form.periodicidad || '—')
-}
-
-function onlyInt (field) {
-  form[field] = String(form[field] ?? '').replace(/\D+/g, '').slice(0, 6)
-}
-function onlyIntRow (row, field) {
-  row[field] = String(row[field] ?? '').replace(/\D+/g, '').slice(0, 6)
-}
-function moneyMask (obj, field) {
-  let v = String(obj[field] ?? '').replace(/[^\d.]/g,'')
+function moneyMask(target, key){
+  let v = (target[key] ?? '').toString().replace(/[^\d.]/g,'')
   const parts = v.split('.')
-  if (parts.length > 2) v = parts[0] + '.' + parts.slice(1).join('')
-  v = v.replace(/^0+(\d)/, '$1')
-  const [a,b=''] = v.split('.')
-  obj[field] = b ? a + '.' + b.slice(0,2) : a
+  if (parts.length > 2) v = parts.shift() + '.' + parts.join('')
+  if (v) target[key] = v
 }
 
-function toggleSvcMenu (id) {
-  openSvcMenuId.value = (openSvcMenuId.value === id) ? null : id
-}
-function onDocClick(e){
-  // cierra menú de servicio si click es fuera del contenedor con atributo data-svc-menu
-  const inMenu = e.target.closest?.('[data-svc-menu]')
-  if (!inMenu) openSvcMenuId.value = null
-}
-function openBeneficiosForService(_s) {
-  openSvcMenuId.value = null
-  showBeneficios.value = true
-}
-function closeBeneficios() { showBeneficios.value = false }
-
-// Aplica beneficios seleccionados: se guardarán contra el PLAN al final (no por servicio)
-function applyBeneficios() {
-  showBeneficios.value = false
+function currency(v){
+  if (v === '' || v === null || v === undefined) return '$0.00'
+  const n = Number(v) || 0
+  return n.toLocaleString('es-MX', { style:'currency', currency:'MXN' })
 }
 
-// ---------- validación ----------
-function validate () {
+/* precios: add/remove (UI) */
+function agregarPrecio(){
+  if (!priceForm.esquema || !priceForm.tipo || !priceForm.precio){
+    return
+  }
+
+  // regla: si es "sesiones", forzar numero_visitas > 0
+  let numeroVisitas = priceForm.numero_visitas
+  if (priceForm.tipo === 'sesiones') {
+    if (!numeroVisitas && form.numero_sesiones) numeroVisitas = form.numero_sesiones
+    if (!numeroVisitas || Number(numeroVisitas) <= 0) {
+      alert('Para "sesiones", debes indicar # de visitas/sesiones.')
+      return
+    }
+  }
+
+  preciosList.value.push({
+    esquema: priceForm.esquema,
+    tipo: priceForm.tipo,                       // <- Periodicidad mapeada a "tipo"
+    precio: Number(priceForm.precio),
+    numero_visitas: numeroVisitas ? Number(numeroVisitas) : 0,
+  })
+
+  priceForm.esquema = ''
+  priceForm.tipo = ''
+  priceForm.precio = ''
+  priceForm.numero_visitas = 0
+}
+
+
+async function eliminarPrecio(p, idx){
+  if (p.id){
+    try { await api.planes.precios.delete(p.id) } catch {}
+  }
+  preciosList.value.splice(idx,1)
+}
+
+/* restricciones: add/remove (UI) */
+function agregarRestr(){
+  const r = { ...restrForm }
+  restrList.value.push(r)
+  Object.assign(restrForm, { nombre:'', descripcion:'', dias_por_semana:'', minutos_por_visita:'', hora_inicio:'', hora_fin:'' })
+}
+async function eliminarRestr(r, idx){
+  if (r.id){
+    try { await api.planes.restricciones.delete(r.id) } catch {}
+  }
+  restrList.value.splice(idx,1)
+}
+
+/* ================= validation ================= */
+function validate(){
   Object.keys(errors).forEach(k => delete errors[k])
 
   if (!form.nombre) errors.nombre = 'El nombre es obligatorio'
   if (!form.tipo_plan) errors.tipo_plan = 'Selecciona el tipo de plan'
   if (form.tipo_plan === 'tiempo' && !form.periodicidad) errors.periodicidad = 'Selecciona la periodicidad'
-  if (form.tipo_plan === 'sesiones') {
-    if (!form.numero_sesiones) errors.numero_sesiones = 'Indica cuántas sesiones'
-    if (!form.rango_dias) errors.rango_dias = 'Indica el rango en días'
-  }
-  if (!precios.value.length) {
-    errors.precios = 'Agrega al menos un esquema de precio'
-  } else {
-    const bad = precios.value.find(p => !p.esquema || !p.precio)
-    if (bad) errors.precios = 'Cada fila debe tener esquema y precio'
-  }
+  if (form.tipo_plan === 'sesiones' && !form.numero_sesiones) errors.numero_sesiones = 'Indica cuántas sesiones'
+
   return Object.keys(errors).length === 0
 }
 
-// ---------- guardar ----------
-async function save () {
+/* ================= save ================= */
+async function save(){
   if (!validate()) return
   saving.value = true
   try {
-    // 1) Crea el plan
+    await ws.ensureEmpresaSet()
+    const empresa = ws.empresaId
+    if (!empresa) throw new Error('No se pudo determinar la empresa activa.')
+
+    // 1) Crear plan (con empresa)
     const payloadPlan = {
+      empresa,
       nombre: form.nombre,
-      descripcion: form.descripcion || '',
-      acceso_multisucursal: !!form.acceso_multisucursal,
-      tipo_plan: form.tipo_plan,                // libre en Plan
-      preventa: !!form.preventa,
+      descripcion: form.descripcion,
+      acceso_multisucursal: form.acceso_multisucursal,
+      tipo_plan: form.tipo_plan,
+      periodicidad: form.tipo_plan==='tiempo' ? form.periodicidad : '',
+      preventa: form.preventa,
       desde: form.desde || null,
       hasta: form.hasta || null,
-      visitas_gratis: 0,
-      empresa: empresaId.value
+      numero_sesiones: form.tipo_plan==='sesiones' ? (form.numero_sesiones || null) : null,
     }
-    const { data: created } = await api.planes.create(payloadPlan)
-    const planId = created?.id
+    const { data: plan } = await api.planes.create(payloadPlan)
 
-    // 2) Precios (mapea a enums del backend)
-    const opsPrecios = precios.value.map(p => {
-      const tipo = (form.tipo_plan === 'sesiones') ? 'sesiones'
-                 : (form.periodicidad === 'semanal' ? 'semanal' : 'mensual')
-      const numero_visitas = (form.tipo_plan === 'sesiones')
-        ? Number(form.numero_sesiones || 0)
-        : Number(p.numero_visitas || 0)
-      return api.planes.precios.create({
-        plan: planId,
-        esquema: p.esquema,          // individual/grupal/empresa
-        tipo,                        // semanal/mensual/sesiones
-        precio: Number(p.precio || 0),
-        numero_visitas,
+    // 2) Servicios
+    const svcIds = serviciosSeleccionados.value.map(s => s.id)
+    for (const sId of svcIds){
+      const st = svcState[sId] || {}
+      await api.planesServicios.create({
+        plan: plan.id,
+        servicio: sId,
+        precio: st.precio ? Number(st.precio) : 0,
+        icono: st.icono || '',
       })
-    })
-    await Promise.all(opsPrecios)
-
-    // 3) Servicios seleccionados
-    const svcIds = Object.keys(svcState).filter(id => svcState[id].checked)
-    if (svcIds.length) {
-      await Promise.all(svcIds.map(id => api.planesServicios.create({
-        plan: planId,
-        servicio: Number(id),
-        precio: svcState[id].precio ? Number(svcState[id].precio) : null,
-      })))
     }
 
-    // 4) Beneficios seleccionados (aplican al plan)
-    if (beneficiosSeleccionados.value.length) {
-      await Promise.all(beneficiosSeleccionados.value.map(bid => api.planesBeneficios.create({
-        plan: planId,
-        beneficio: bid,
-      })))
+    // 3) Beneficios
+    for (const bId of beneficiosChecks.value){
+      const destino = beneficiosDestino[bId] || 'plan'
+      if (destino === 'plan'){
+        await api.planesBeneficios.create({ plan: plan.id, beneficio: bId })
+      } else {
+        const srvId = beneficiosServicio[bId]
+        if (srvId) await api.servicioBeneficios.create({ servicio: srvId, beneficio: bId })
+      }
     }
 
-    emit('saved', created)
-    // Cerrar tras guardar (ruta)
-    onClose()
-    // Si prefieres ir al detalle en lugar de cerrar:
-    // router.push({ name: 'PlanDetalle', params: { id: created.id } })
-  } catch (e) {
-    console.error(e)
+    // 4) Precios (con defensas)
+    for (const p of preciosList.value){
+      const payload = {
+        plan: plan.id,
+        esquema: p.esquema,
+        tipo: p.tipo,
+        precio: Number(p.precio),
+        numero_visitas: p.tipo === 'sesiones'
+          ? Number(p.numero_visitas || form.numero_sesiones || 0)
+          : (p.numero_visitas != null ? Number(p.numero_visitas) : 0),
+      }
+      if (payload.tipo === 'sesiones' && (!payload.numero_visitas || payload.numero_visitas <= 0)) {
+        // si algo se escapó, no intentes crear y avisa
+        console.warn('Precio omitido por falta de numero_visitas para "sesiones"', payload)
+        continue
+      }
+      await api.planes.precios.create(payload)
+    }
+
+    // 5) Restricciones
+    for (const r of restrList.value){
+      await api.planes.restricciones.create({ ...r, plan: plan.id })
+    }
+
+    emit('saved', plan)
+    router.push({ name:'PlanesLista' })
+  } catch (e){
+    console.error('Error creando plan', e)
+    alert(e?.response?.data ? JSON.stringify(e.response.data) : (e.message || 'No se pudo crear el plan'))
   } finally {
     saving.value = false
   }
 }
 
-// util
-function cryptoRandom(){ try { return crypto.randomUUID() } catch { return String(Math.random()).slice(2) } }
 
-// coherencia: si cambia tipo_plan, ajusta periodicidad / número_visitas
-watch(() => form.tipo_plan, (tp) => {
-  if (tp === 'sesiones') {
-    form.periodicidad = ''
-    precios.value.forEach(p => { if (!p.numero_visitas) p.numero_visitas = form.numero_sesiones || '' })
-  } else if (tp === 'tiempo') {
-    form.numero_sesiones = ''
-    form.rango_dias = ''
-    precios.value.forEach(p => { if (!p.numero_visitas) p.numero_visitas = '' })
-  }
-})
-watch(() => form.numero_sesiones, (n) => {
-  if (form.tipo_plan === 'sesiones') {
-    precios.value.forEach(p => { p.numero_visitas = n || '' })
-  }
+/* ================= data loads ================= */
+async function loadServicios(){
+  try {
+    const { data } = await api.servicios.list({ page_size: 1000 })
+    const arr = data?.results || data || []
+    servicios.value = arr
+    arr.forEach(s => { if (!svcState[s.id]) svcState[s.id] = { checked:false, precio:'', icono:'' } })
+  } finally { loading.servicios = false }
+}
+async function loadBeneficios(){
+  try {
+    const { data } = await api.beneficios.list({ page_size: 1000 })
+    beneficios.value = data?.results || data || []
+  } finally { loading.beneficios = false }
+}
+
+onMounted(async () => {
+  await ws.ensureEmpresaSet()
+  await Promise.all([loadServicios(), loadBeneficios()])
 })
 </script>
-
-<style scoped>
-/* nada especial */
-</style>

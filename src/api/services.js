@@ -334,11 +334,14 @@ const planes = {
     delete(id) { return http.delete(`planes/precios/${id}/`); },               // <- NUEVO
   },
 
-  // restricciones: {
-  //   create(payload) { return http.post("planes/restricciones/", payload); },
-  //   list(params) { return http.get("planes/restricciones/", { params }); },    // <- NUEVO (filtra por plan)
-  //   delete(id) { return http.delete(`planes/restricciones/${id}/`); },         // <- NUEVO
-  // },
+  restricciones: {
+    create(payload) { return http.post("planes/restricciones/", payload); },
+    list(params) { return http.get("planes/restricciones/", { params }); },
+    retrieve(id) { return http.get(`planes/restricciones/${id}/`); },
+    update(id, payload) { return http.put(`planes/restricciones/${id}/`, payload); },
+    patch(id, payload) { return http.patch(`planes/restricciones/${id}/`, payload); },
+    delete(id) { return http.delete(`planes/restricciones/${id}/`); },
+  },
 }
 
 planes.publicarRevision = function(planId, payload = {}) {

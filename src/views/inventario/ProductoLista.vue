@@ -1,20 +1,30 @@
 <!-- src/views/inventario/ProductosLista.vue -->
 <script setup>
-import { ref, reactive, onMounted, watch, computed } from 'vue'
+import { ref, reactive, onMounted, watch, computed, nextTick } from 'vue'
 import { useWorkspaceStore } from '@/stores/workspace'
 import api from '@/api/services'
+import TableBasic from '@/components/TableBasic.vue'
+
+/* ====== Constantes impuestos (globales de la vista) ====== */
+const IVA_PCT = 16   // 16%
+const IEPS_PCT = 8   // 8%
 
 /* ====== Workspace (empresa) ====== */
 const ws = useWorkspaceStore()
 const empresaId = computed(() => Number(ws.empresaId || 0))
 const empresaReady = computed(() => !!empresaId.value)
 
-/* ====== Filtros / estado ====== */
+/* ====== Estado UI / filtros ====== */
 const q = ref('')
 const categoria = ref('')
-const almacen = ref('')
+const almacen = ref('')         // <- al elegir, cargamos stock de todos
 const page = ref(1)
 const pageSize = ref(24)
+const viewMode = ref(localStorage.getItem('prodViewMode') || 'grid') // grid | table
+
+// Impuestos (checks globales)
+const aplicarIVA = ref(true)
+const aplicarIEPS = ref(false)
 
 const productos = ref([])
 const count = ref(0)
@@ -22,7 +32,7 @@ const categorias = ref([])
 const almacenes = ref([])
 const loading = ref(false)
 
-/* ====== Modal CRUD Producto ====== */
+/* ====== Modal CRUD Producto (sin stock ni impuestos) ====== */
 const showModal = ref(false)
 const isEditing = ref(false)
 const form = reactive({
@@ -32,9 +42,6 @@ const form = reactive({
   descripcion: '',
   codigo_barras: '',
   precio: 0,
-  iva_porcentaje: 0,
-  stock_inicial: 0,
-  almacen: '',
 })
 
 function openNew() {
@@ -42,8 +49,7 @@ function openNew() {
   Object.assign(form, {
     id: null, categoria: null, nombre: '',
     descripcion: '', codigo_barras: '',
-    precio: 0, iva_porcentaje: 0,
-    stock_inicial: 0, almacen: '',
+    precio: 0,
   })
   showModal.value = true
 }
@@ -57,27 +63,13 @@ function openEdit(p) {
     descripcion: p.descripcion || '',
     codigo_barras: p.codigo_barras || '',
     precio: Number(p.precio || 0),
-    iva_porcentaje: Number(p.iva_porcentaje || 0),
-    stock_inicial: 0,
-    almacen: '',
   })
   showModal.value = true
-}
-
-function precioConIVA(p){
-  const base = Number(p.precio || 0)
-  const iva = Number(p.iva_porcentaje || 0)
-  const total = base * (1 + (isNaN(iva) ? 0 : iva/100))
-  return Number.isFinite(total) ? total : 0
 }
 
 async function save() {
   if (!empresaReady.value) return alert('Falta empresa activa')
   if (!form.categoria) return alert('Selecciona una categoría')
-
-  if (Number(form.stock_inicial) > 0 && !form.almacen) {
-    return alert('Selecciona el almacén para el stock inicial')
-  }
 
   const payload = {
     empresa: empresaId.value,
@@ -86,9 +78,6 @@ async function save() {
     descripcion: form.descripcion?.trim(),
     codigo_barras: (form.codigo_barras || '').trim(),
     precio: form.precio,
-    iva_porcentaje: form.iva_porcentaje,
-    stock_inicial: Number(form.stock_inicial || 0),
-    almacen: form.almacen || null,
   }
   try {
     if (isEditing.value && form.id) {
@@ -98,6 +87,8 @@ async function save() {
     }
     showModal.value = false
     await load()
+    // si estamos en tabla, conviene cargar stocks de nuevo
+    if (almacen.value) await fetchStocksForCurrent()
   } catch (e) {
     const msg = e?.response?.data
     console.warn('save error:', msg)
@@ -121,7 +112,7 @@ async function removeProd(p) {
   }
 }
 
-/* ====== Modal Nueva Categoría (con combobox y anti-duplicados) ====== */
+/* ====== Modal Nueva Categoría (combobox anti-duplicados) ====== */
 const showCatModal = ref(false)
 const catForm = reactive({ nombre: '' })
 const catOpenList = ref(false)
@@ -133,7 +124,6 @@ function openCatModal() {
   showCatModal.value = true
 }
 
-// normaliza (case/acentos-insensitive)
 function norm(s) {
   return (s || '')
     .toString()
@@ -159,7 +149,7 @@ const catIsDuplicate = computed(() => {
 
 function useExistingCategory(cat) {
   categoria.value = String(cat.id) // filtro de lista
-  form.categoria = cat.id          // dejar seleccionada para producto
+  form.categoria = cat.id          // preselecciona en modal producto
   showCatModal.value = false
 }
 
@@ -168,7 +158,6 @@ async function saveCategoria() {
   const nombreLimpio = (catForm.nombre || '').trim()
   if (!nombreLimpio) return alert('Escribe un nombre')
 
-  // Si ya existe, usamos la existente en vez de crear
   const dup = (categorias.value || []).find(c => norm(c.nombre) === norm(nombreLimpio))
   if (dup) {
     useExistingCategory(dup)
@@ -189,14 +178,9 @@ async function saveCategoria() {
     }
   } catch (e) {
     const msg = e?.response?.data
-    // si backend devolvió unique_together, también seleccionamos la existente
-    if (msg?.nombre?.length || msg?.detail) {
-      const exist = (categorias.value || []).find(c => norm(c.nombre) === norm(nombreLimpio))
-      if (exist) useExistingCategory(exist)
-      else alert(msg?.detail || msg?.nombre?.[0] || 'No se pudo crear la categoría')
-    } else {
-      alert('No se pudo crear la categoría')
-    }
+    const exist = (categorias.value || []).find(c => norm(c.nombre) === norm(nombreLimpio))
+    if (exist) useExistingCategory(exist)
+    else alert(msg?.detail || msg?.nombre?.[0] || 'No se pudo crear la categoría')
   }
 }
 
@@ -209,15 +193,19 @@ async function load() {
       empresa: empresaId.value,
       search: q.value || undefined,
       categoria: categoria.value || undefined,
-      page: page.value,
-      page_size: pageSize.value,
+      page: viewMode.value === 'table' ? 1 : page.value,     // en tabla usamos page local del componente
+      page_size: viewMode.value === 'table' ? 500 : pageSize.value,
+      ordering: 'nombre',
     }
     const { data } = await api.inventario.productos.list(params)
     productos.value = data?.results || data || []
     count.value = data?.count ?? productos.value.length
-  } catch (e) {
-    console.error('Error listando productos:', e?.response?.status, e?.response?.data)
-    alert('No se pudieron cargar los productos')
+
+    // si hay un almacén seleccionado, cargar stock de todos los productos listados
+    if (almacen.value) {
+      await nextTick()
+      await fetchStocksForCurrent()
+    }
   } finally {
     loading.value = false
   }
@@ -243,19 +231,30 @@ async function loadAlmacenes() {
   almacenes.value = data?.results || data || []
 }
 
-/* ====== STOCK por producto (cache local) ====== */
-const stockCache = reactive(new Map())
+/* ====== STOCK por producto (auto por almacén) ====== */
+const stockCache = reactive(new Map()) // key: `${id}:${almacen}` -> number
 
-async function verStock(p) {
-  if (!empresaReady.value) return
-  if (!almacen.value) { alert('Selecciona un almacén'); return }
-  const key = `${p.id}:${almacen.value}`
-  if (stockCache.has(key)) return
-  const { data } = await api.inventario.productos.stock(p.id, {
+async function fetchStock(productId, almacenId) {
+  const key = `${productId}:${almacenId}`
+  if (stockCache.has(key)) return stockCache.get(key)
+  const { data } = await api.inventario.productos.stock(productId, {
     empresa: empresaId.value,
-    almacen: almacen.value
+    almacen: almacenId
   })
-  stockCache.set(key, Number(data?.stock || 0))
+  const val = Number(data?.stock || 0)
+  stockCache.set(key, val)
+  return val
+}
+
+async function fetchStocksForCurrent() {
+  if (!almacen.value) return
+  const current = productos.value || []
+  // limita concurrencia para no saturar
+  const chunkSize = 12
+  for (let i = 0; i < current.length; i += chunkSize) {
+    const slice = current.slice(i, i + chunkSize)
+    await Promise.all(slice.map(p => fetchStock(p.id, almacen.value)))
+  }
 }
 
 function getStock(p) {
@@ -264,7 +263,73 @@ function getStock(p) {
   return stockCache.get(key)
 }
 
-/* ====== Lifecycle ====== */
+/* ====== Precios (globales) ====== */
+function precioConImpuestos(p) {
+  const base = Number(p.precio || 0)
+  let total = base
+  if (aplicarIVA.value) total += base * (IVA_PCT / 100)
+  if (aplicarIEPS.value) total += base * (IEPS_PCT / 100)
+  return total
+}
+
+/* ====== Tabla: columnas ====== */
+const tableColumns = computed(() => {
+  const cols = [
+    {
+      accessorKey: 'nombre',
+      header: 'Nombre',
+      cell: ({ row }) => row.original.nombre,
+      enableSorting: true,
+    },
+    {
+      accessorKey: 'categoria_nombre',
+      header: 'Categoría',
+      cell: ({ row }) => row.original.categoria_nombre || '—',
+      enableSorting: true,
+    },
+    {
+      accessorKey: 'precio',
+      header: 'Precio base',
+      cell: ({ row }) => `$ ${Number(row.original.precio || 0).toFixed(2)}`,
+      enableSorting: true,
+    },
+    {
+      accessorKey: 'precio_total',
+      header: () => `Total${aplicarIVA.value ? ' + IVA' : ''}${aplicarIEPS.value ? ' + IEPS' : ''}`,
+      cell: ({ row }) => `$ ${precioConImpuestos(row.original).toFixed(2)}`,
+      enableSorting: false,
+    },
+    {
+      accessorKey: 'codigo_barras',
+      header: 'Cód. barras',
+      cell: ({ row }) => row.original.codigo_barras || '—',
+      enableSorting: true,
+    },
+  ]
+  if (almacen.value) {
+    cols.push({
+      accessorKey: 'stock',
+      header: 'Stock',
+      cell: ({ row }) => {
+        const s = getStock(row.original)
+        return s === undefined ? '...' : s
+      },
+      enableSorting: false,
+    })
+  }
+  cols.push({
+    accessorKey: 'acciones',
+    header: 'Acciones',
+    cell: ({ row }) => {
+      // placeholder, el HTML real lo ponemos en slot usando el id del registro
+      return '—'
+    },
+    enableSorting: false,
+  })
+  return cols
+})
+
+/* ====== Lifecycle / watchers ====== */
 onMounted(async () => {
   await ws.ensureEmpresaSet()
   if (!empresaReady.value) return
@@ -281,7 +346,15 @@ watch(() => ws.empresaKey, async () => {
   await load()
 })
 
-watch([q, categoria, page, pageSize], () => load())
+watch([q, categoria, page, pageSize, viewMode], async () => {
+  // si cambia a tabla, pedimos más para que TableBasic pagine en cliente
+  await load()
+})
+
+watch(almacen, async () => {
+  stockCache.clear()
+  if (almacen.value) await fetchStocksForCurrent()
+})
 </script>
 
 <template>
@@ -291,55 +364,87 @@ watch([q, categoria, page, pageSize], () => load())
       No hay empresa activa. Abre sesión o selecciona una empresa para continuar.
     </div>
 
-    <!-- Filtros -->
-    <div class="flex flex-col md:flex-row gap-3 items-stretch" v-else>
-      <div class="flex-1 flex items-center gap-2">
-        <input
-          v-model="q"
-          type="text"
-          placeholder="Buscar por nombre o código de barras…"
-          class="w-full border border-gray-800 rounded-lg px-3 py-2 bg-gray-900 text-gray-100 placeholder-gray-400"
-        />
+    <!-- Filtros / Controles -->
+    <div v-else class="flex flex-col gap-3">
+      <div class="flex flex-col md:flex-row gap-3 items-stretch">
+        <div class="flex-1 flex items-center gap-2">
+          <input
+            v-model="q"
+            type="text"
+            placeholder="Buscar por nombre o código de barras…"
+            class="w-full border border-gray-800 rounded-lg px-3 py-2 bg-gray-900 text-gray-100 placeholder-gray-400"
+          />
+        </div>
+
+        <div class="flex items-center gap-2">
+          <select
+            v-model="categoria"
+            class="border border-gray-800 rounded-lg px-3 py-2 min-w-52 bg-gray-900 text-gray-100"
+          >
+            <option value="">Todas las categorías</option>
+            <option v-for="c in categorias" :key="c.id" :value="String(c.id)">
+              {{ c.nombre }}
+            </option>
+          </select>
+
+          <select
+            v-model="almacen"
+            class="border border-gray-800 rounded-lg px-3 py-2 min-w-48 bg-gray-900 text-gray-100"
+          >
+            <option value="">Almacén (opcional)</option>
+            <option v-for="a in almacenes" :key="a.id" :value="String(a.id)">
+              {{ a.nombre }}
+            </option>
+          </select>
+
+          <button
+            @click="openCatModal"
+            class="px-3 py-2 rounded-lg border border-gray-700 hover:border-gray-500 text-gray-100"
+          >
+            Nueva categoría
+          </button>
+
+          <button
+            @click="openNew"
+            class="px-3 py-2 rounded-lg border border-gray-700 hover:border-gray-500 text-gray-100"
+          >
+            Nuevo producto
+          </button>
+        </div>
       </div>
-      <div class="flex items-center gap-2">
-        <select
-          v-model="categoria"
-          class="border border-gray-800 rounded-lg px-3 py-2 min-w-52 bg-gray-900 text-gray-100"
-        >
-          <option value="">Todas las categorías</option>
-          <option v-for="c in categorias" :key="c.id" :value="String(c.id)">
-            {{ c.nombre }}
-          </option>
-        </select>
 
-        <select
-          v-model="almacen"
-          class="border border-gray-800 rounded-lg px-3 py-2 min-w-48 bg-gray-900 text-gray-100"
-        >
-          <option value="">Almacén (opcional)</option>
-          <option v-for="a in almacenes" :key="a.id" :value="String(a.id)">
-            {{ a.nombre }}
-          </option>
-        </select>
+      <!-- Impuestos globales + toggle vista -->
+      <div class="flex flex-wrap items-center gap-3 text-sm">
+        <label class="inline-flex items-center gap-2 text-gray-200">
+          <input type="checkbox" v-model="aplicarIVA" class="accent-white">
+          Aplicar IVA ({{ IVA_PCT }}%)
+        </label>
+        <label class="inline-flex items-center gap-2 text-gray-200">
+          <input type="checkbox" v-model="aplicarIEPS" class="accent-white">
+          Aplicar IEPS ({{ IEPS_PCT }}%)
+        </label>
 
-        <button
-          @click="openCatModal"
-          class="px-3 py-2 rounded-lg border border-gray-700 hover:border-gray-500 text-gray-100"
-        >
-          Nueva categoría
-        </button>
-
-        <button
-          @click="openNew"
-          class="px-3 py-2 rounded-lg border border-gray-700 hover:border-gray-500 text-gray-100"
-        >
-          Nuevo producto
-        </button>
+        <div class="ml-auto border border-gray-800 rounded-lg overflow-hidden flex">
+          <button
+            class="px-3 py-2 text-gray-100"
+            :class="viewMode==='grid' ? 'bg-gray-800' : ''"
+            @click="viewMode='grid'; localStorage.setItem('prodViewMode','grid')"
+          >
+            Tarjetas
+          </button>
+          <button
+            class="px-3 py-2 text-gray-100"
+            :class="viewMode==='table' ? 'bg-gray-800' : ''"
+            @click="viewMode='table'; localStorage.setItem('prodViewMode','table')"
+          >
+            Tabla
+          </button>
+        </div>
       </div>
     </div>
 
-    <!-- Grid -->
-    <div v-if="empresaReady" class="border border-gray-800 rounded-xl p-3 bg-gray-950">
+    <!-- GRID de productos -->
+    <div v-if="empresaReady && viewMode==='grid'" class="border border-gray-800 rounded-xl p-3 bg-gray-950">
       <div v-if="loading" class="py-10 text-center text-gray-400">Cargando…</div>
 
       <div v-else class="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
@@ -354,8 +459,12 @@ watch([q, categoria, page, pageSize], () => load())
               <div class="text-xs text-gray-400">{{ p.categoria_nombre || '—' }}</div>
             </div>
             <div class="text-right text-gray-100">
-              <div class="font-semibold">$ {{ precioConIVA(p).toFixed(2) }}</div>
-              <div class="text-[11px] text-gray-400">Base: $ {{ Number(p.precio||0).toFixed(2) }} + IVA {{ Number(p.iva_porcentaje||0).toFixed(2) }}%</div>
+              <div class="font-semibold">$ {{ precioConImpuestos(p).toFixed(2) }}</div>
+              <div class="text-[11px] text-gray-400">
+                Base: $ {{ Number(p.precio||0).toFixed(2) }}
+                <template v-if="aplicarIVA"> + IVA {{ IVA_PCT }}%</template>
+                <template v-if="aplicarIEPS"> + IEPS {{ IEPS_PCT }}%</template>
+              </div>
             </div>
           </div>
 
@@ -366,10 +475,8 @@ watch([q, categoria, page, pageSize], () => load())
           <div class="mt-3 flex items-center justify-between gap-2">
             <div class="text-sm">
               <template v-if="almacen">
-                <button @click="verStock(p)" class="text-blue-400 underline">Ver stock</button>
-                <span v-if="getStock(p) !== undefined" class="ml-2 text-gray-200">
-                  Stock: <b>{{ getStock(p) }}</b>
-                </span>
+                <span class="text-gray-400">Stock</span>:
+                <b class="text-gray-200">{{ getStock(p) ?? '...' }}</b>
               </template>
             </div>
             <div class="flex items-center gap-2">
@@ -390,7 +497,7 @@ watch([q, categoria, page, pageSize], () => load())
         </div>
       </div>
 
-      <!-- Paginación -->
+      <!-- Paginación (solo grid) -->
       <div class="mt-4 flex items-center justify-between">
         <div class="text-sm text-gray-400">Total: {{ count }}</div>
         <div class="flex items-center gap-2">
@@ -421,6 +528,20 @@ watch([q, categoria, page, pageSize], () => load())
       </div>
     </div>
 
+    <!-- TABLA de productos -->
+    <div v-if="empresaReady && viewMode==='table'" class="border border-gray-800 rounded-xl p-3 bg-gray-950">
+      <div v-if="loading" class="py-10 text-center text-gray-400">Cargando…</div>
+
+      <div v-else>
+        <TableBasic :rows="productos" :columns="tableColumns" :initialPageSize="10" />
+
+        <!-- Acciones por fila para la columna 'Acciones' (render por encima usando absolute sería complejo).
+             Simple: mostramos botones globales invisibles en tabla, pero práctico: nada extra necesario
+             porque TableBasic ya imprime el texto. Opcionalmente puedes añadir un slot en TableBasic. -->
+        <!-- Si quieres acciones reales dentro de la tabla, añade un slot a TableBasic para custom cell. -->
+      </div>
+    </div>
+
     <!-- Modal NUEVA CATEGORÍA (combobox con filtro) -->
     <div
       v-if="showCatModal"
@@ -432,7 +553,6 @@ watch([q, categoria, page, pageSize], () => load())
           <h3 class="text-lg text-gray-100">Nueva categoría</h3>
           <button @click="showCatModal = false" class="text-gray-400 hover:text-white">✕</button>
         </div>
-
         <form @submit.prevent="saveCategoria" class="p-4 space-y-3" novalidate>
           <div>
             <label class="text-sm text-gray-300">Nombre de categoría</label>
@@ -445,7 +565,6 @@ watch([q, categoria, page, pageSize], () => load())
                 class="w-full border border-gray-700 rounded-lg px-3 py-2 bg-gray-900 text-gray-100"
                 autocomplete="off"
               />
-              <!-- Lista de coincidencias -->
               <div
                 v-if="catOpenList && catMatches.length"
                 class="absolute z-10 mt-1 w-full max-h-56 overflow-auto border border-gray-700 rounded-lg bg-gray-900 shadow-xl"
@@ -470,7 +589,6 @@ watch([q, categoria, page, pageSize], () => load())
               </template>
             </div>
           </div>
-
           <div class="flex items-center justify-end gap-2">
             <button type="button" @click="showCatModal = false"
               class="px-3 py-2 border border-gray-700 rounded-lg text-gray-100 hover:border-gray-500">
@@ -485,7 +603,7 @@ watch([q, categoria, page, pageSize], () => load())
       </div>
     </div>
 
-    <!-- Modal CRUD PRODUCTO -->
+    <!-- Modal CRUD PRODUCTO (sin impuestos ni stock) -->
     <div
       v-if="showModal"
       class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4"
@@ -541,52 +659,16 @@ watch([q, categoria, page, pageSize], () => load())
             </div>
 
             <div>
-              <label class="text-sm text-gray-300">Precio</label>
+              <label class="text-sm text-gray-300">Precio base</label>
               <input
                 v-model.number="form.precio"
                 type="number" min="0" step="0.01" required
                 class="w-full border border-gray-700 rounded-lg px-3 py-2 bg-gray-900 text-gray-100"
               />
             </div>
-
-            <div>
-              <label class="text-sm text-gray-300">IVA (%)</label>
-              <input
-                v-model.number="form.iva_porcentaje"
-                type="number" min="0" step="0.01"
-                class="w-full border border-gray-700 rounded-lg px-3 py-2 bg-gray-900 text-gray-100"
-              />
-            </div>
           </div>
 
-          <!-- stock inicial -->
-          <div class="sm:col-span-2 grid sm:grid-cols-2 gap-3 mt-1">
-            <div>
-              <label class="text-sm text-gray-300">Stock inicial</label>
-              <input
-                v-model.number="form.stock_inicial"
-                type="number" min="0" step="1"
-                class="w-full border border-gray-700 rounded-lg px-3 py-2 bg-gray-900 text-gray-100"
-                placeholder="Ej. 10"
-              />
-            </div>
-            <div>
-              <label class="text-sm text-gray-300">Almacén para stock inicial</label>
-              <select
-                v-model="form.almacen"
-                :disabled="!Number(form.stock_inicial)"
-                class="w-full border border-gray-700 rounded-lg px-3 py-2 bg-gray-900 text-gray-100 disabled:opacity-50"
-              >
-                <option value="">Selecciona almacén</option>
-                <option v-for="a in almacenes" :key="a.id" :value="String(a.id)">{{ a.nombre }}</option>
-              </select>
-              <div class="text-[11px] text-gray-400 mt-1" v-if="Number(form.stock_inicial)">
-                Se creará una <b>Entrada</b> por {{ form.stock_inicial }} pzas al guardar.
-              </div>
-            </div>
-          </div>
-
-          <div class="flex items-center justify-end gap-2 mt-2">
+          <div class="flex items-center justify-end gap-2">
             <button type="button" @click="showModal = false"
               class="px-3 py-2 border border-gray-700 rounded-lg text-gray-100 hover:border-gray-500">
               Cancelar
@@ -603,6 +685,4 @@ watch([q, categoria, page, pageSize], () => load())
 </template>
 
 <style scoped>
-.fade-enter-active, .fade-leave-active { transition: opacity .2s ease }
-.fade-enter-from, .fade-leave-to { opacity: 0 }
 </style>
