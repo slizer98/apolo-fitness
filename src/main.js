@@ -8,7 +8,7 @@ import VueTippy  from 'vue-tippy'
 import { useAuthStore } from "@/stores/auth";
 import 'tippy.js/dist/tippy.css'
 import { registerRBAC } from '@/rbac/directives'
-
+import { Icon } from '@iconify/vue'
 import '@fontsource/inter/300.css';
 import '@fontsource/inter/400.css';
 import '@fontsource/inter/500.css';
@@ -35,6 +35,7 @@ app.use(VueTippy, {
   }
 })
 app.use(pinia)
+app.component('Icon', Icon) 
 app.use(router)
 registerRBAC(app)
 useAuthStore().init();

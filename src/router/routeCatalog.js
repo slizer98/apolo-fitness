@@ -5,6 +5,7 @@ import router from '@/router'
 const DEFAULT_META = {
   Dashboard:       { label: 'Dashboard',   icon: 'fa-house' },
   ClientesLista:   { label: 'Clientes',    icon: 'fa-id-card' },
+  ConveniosLista:   { label: 'Convenios',    icon: 'fa-id-card' },
   PlanesLista:     { label: 'Membresías',  icon: 'fa-dumbbell' },
   ServiciosLista:  { label: 'Servicios',   icon: 'fa-screwdriver-wrench' },
   BeneficiosLista: { label: 'Beneficios',  icon: 'fa-gift' },

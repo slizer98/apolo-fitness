@@ -15,6 +15,7 @@ const Dashboard       = () => import('@/components/Dashboard.vue')
 const EmpresasLista = () => import('@/views/empresas/EmpresasLista.vue')
 const EmpresaDetalle = () => import('@/views/empresas/EmpresaDetalle.vue')
 const ClientesLista   = () => import('@/views/clientes/ClientesLista.vue')
+const ConveniosLista   = () => import('@/views/clientes/ConveniosLista.vue')
 // const ClienteCrear    = () => import('@/views/clientes/ClienteCrear.vue')
 const ClienteEditar = () => import('@/views/clientes/ClienteEditar.vue') 
 const ClienteDetalle = () => import('@/views/clientes/ClienteDetalle.vue') 
@@ -50,6 +51,7 @@ const routes = [
       { path: '/empresas/:id', name: 'EmpresaDetalle', component: EmpresaDetalle, props: true },
       // Clientes
       { path: 'clientes',       name: 'ClientesLista', component: ClientesLista, meta: { perms: ['clientes:read'] } },
+      { path: 'convenios',       name: 'ConveniosLista', component: ConveniosLista, meta: { perms: ['clientes:read'] } },
       // { path: 'clientes/nuevo', name: 'ClienteCrear',  component: ClienteCrear,  meta: { perms: ['clientes:create'] } },
       { path: 'clientes/:id',        name: 'ClienteDetalle',component:ClienteDetalle,  props: true },
       { path: 'clientes/:id/editar', name: 'ClienteEditar',  component: ClienteEditar, props: true },

@@ -166,24 +166,70 @@
       <!-- CONVENIOS -->
       <section v-show="tab==='convenios'" class="rounded-2xl bg-gray-900/60 border border-gray-800 p-4">
         <div class="flex items-center justify-between mb-3">
-          <h2 class="text-lg font-medium">Convenios</h2>
-          <button @click="addConvenio" class="px-3 py-2 rounded border border-gray-700 bg-gray-800/60 hover:bg-gray-700">
-            + Agregar
-          </button>
-        </div>
-        <div v-if="convenios.length" class="space-y-2">
-          <div v-for="(row, i) in convenios" :key="row.id || i" class="grid sm:grid-cols-5 gap-2 items-center border border-gray-800 rounded-xl p-3">
-            <input v-model="row.empresa_convenio" class="bg-gray-900 border border-gray-700 rounded px-3 py-2" placeholder="Empresa convenio" />
-            <input v-model="row.telefono_oficina" class="bg-gray-900 border border-gray-700 rounded px-3 py-2" placeholder="Teléfono" />
-            <input v-model="row.medio_entero" class="bg-gray-900 border border-gray-700 rounded px-3 py-2" placeholder="¿Cómo se enteró?" />
-            <input v-model="row.tipo_cliente" class="bg-gray-900 border border-gray-700 rounded px-3 py-2" placeholder="Tipo de cliente" />
-            <div class="flex items-center justify-end gap-2">
-              <button @click="saveConvenio(row)" class="px-3 py-1.5 rounded bg-apolo-primary text-black hover:bg-apolo-secondary">Guardar</button>
-              <button @click="removeConvenio(row)" class="px-3 py-1.5 rounded border border-red-800 bg-red-900/40 hover:bg-red-800">Eliminar</button>
-            </div>
+          <h2 class="text-lg font-medium">Convenios de la empresa</h2>
+          <div class="flex items-center gap-2">
+            <input v-model="qConvenios" placeholder="Buscar…" class="bg-gray-900 border border-gray-700 text-gray-200 rounded px-3 py-2 text-sm" />
+            <RouterLink :to="{ name: 'ConveniosLista' }"
+              class="px-3 py-2 rounded border border-gray-700 bg-gray-800/60 hover:bg-gray-700">
+              + Crear convenio
+            </RouterLink>
           </div>
         </div>
-        <div v-else class="text-gray-400 text-sm">Sin convenios.</div>
+
+        <div class="overflow-x-auto border border-gray-800 rounded-xl">
+          <table class="w-full text-sm">
+            <thead class="bg-gray-900/60">
+              <tr class="text-left">
+                <th class="px-3 py-2 border-b border-gray-800">ID</th>
+                <th class="px-3 py-2 border-b border-gray-800">Empresa convenio</th>
+                <th class="px-3 py-2 border-b border-gray-800">Teléfono</th>
+                <th class="px-3 py-2 border-b border-gray-800">Medio</th>
+                <th class="px-3 py-2 border-b border-gray-800">Tipo</th>
+                <th class="px-3 py-2 border-b border-gray-800">Vinculado a</th>
+                <th class="px-3 py-2 border-b border-gray-800 text-right">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="row in conveniosFiltrados" :key="row.id" class="border-b border-gray-900/50">
+                <td class="px-3 py-2">{{ row.id }}</td>
+                <td class="px-3 py-2">{{ row.empresa_convenio || '—' }}</td>
+                <td class="px-3 py-2">{{ row.telefono_oficina || '—' }}</td>
+                <td class="px-3 py-2">{{ row.medio_entero || '—' }}</td>
+                <td class="px-3 py-2">{{ row.tipo_cliente || '—' }}</td>
+                <td class="px-3 py-2">
+                  <span v-if="row.cliente === id">Este cliente</span>
+                  <span v-else-if="row.cliente_nombre">{{ row.cliente_nombre }}</span>
+                  <span v-else>—</span>
+                </td>
+                <td class="px-3 py-2">
+                  <div class="flex items-center justify-end gap-2">
+                    <button
+                      v-if="row.cliente === id"
+                      @click="desenlazarConvenio(row)"
+                      class="px-3 py-1.5 rounded border border-red-800 bg-red-900/40 hover:bg-red-800">
+                      Quitar enlace
+                    </button>
+                    <button
+                      v-else-if="!row.cliente"
+                      @click="enlazarConvenio(row)"
+                      class="px-3 py-1.5 rounded bg-apolo-primary text-black hover:bg-apolo-secondary">
+                      Enlazar a este cliente
+                    </button>
+                    <button
+                      v-else
+                      @click="reasignarConvenio(row)"
+                      class="px-3 py-1.5 rounded border border-yellow-700 bg-yellow-900/40 hover:bg-yellow-800">
+                      Reasignar a este cliente
+                    </button>
+                  </div>
+                </td>
+              </tr>
+              <tr v-if="!conveniosEmpresa.length">
+                <td colspan="7" class="px-3 py-6 text-center text-gray-400">Sin convenios en la empresa.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </section>
 
       <!-- DATOS ADICIONALES -->
@@ -210,59 +256,28 @@
         </div>
         <div v-else class="text-gray-400 text-sm">Sin datos adicionales.</div>
       </section>
-
-      <!-- SUCURSALES -->
-      <section v-show="tab==='sucursales'" class="rounded-2xl bg-gray-900/60 border border-gray-800 p-4">
-        <div class="flex items-center justify-between mb-3">
-          <h2 class="text-lg font-medium">Asignación a sucursales</h2>
-          <button @click="addSucursal" class="px-3 py-2 rounded border border-gray-700 bg-gray-800/60 hover:bg-gray-700">
-            + Agregar
-          </button>
-        </div>
-
-        <div v-if="sucursalesAsignadas.length" class="space-y-2">
-          <div v-for="(row, i) in sucursalesAsignadas" :key="row.id || i" class="grid sm:grid-cols-5 gap-2 items-center border border-gray-800 rounded-xl p-3">
-            <select v-model="row.sucursal" class="bg-gray-900 border border-gray-700 rounded px-3 py-2">
-              <option disabled value="">Selecciona sucursal</option>
-              <option v-for="s in sucursalesEmpresa" :key="s.id" :value="s.id">{{ s.nombre }}</option>
-            </select>
-            <input v-model="row.fecha_inicio" type="date" class="bg-gray-900 border border-gray-700 rounded px-3 py-2" />
-            <input v-model="row.fecha_fin" type="date" class="bg-gray-900 border border-gray-700 rounded px-3 py-2" />
-            <div class="text-xs text-gray-400">
-              <div>Empresa: {{ empresaNombre || '—' }}</div>
-            </div>
-            <div class="flex items-center justify-end gap-2">
-              <button @click="saveSucursal(row)" class="px-3 py-1.5 rounded bg-apolo-primary text-black hover:bg-apolo-secondary">Guardar</button>
-              <button @click="removeSucursal(row)" class="px-3 py-1.5 rounded border border-red-800 bg-red-900/40 hover:bg-red-800">Eliminar</button>
-            </div>
-          </div>
-        </div>
-        <div v-else class="text-gray-400 text-sm">Sin asignaciones.</div>
-      </section>
     </div>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted, computed } from 'vue'
-import { useRoute, useRouter, RouterLink } from 'vue-router'
+import { useRoute, RouterLink } from 'vue-router'
 import api from '@/api/services'
 import { useWorkspaceStore } from '@/stores/workspace'
 
 const route = useRoute()
-const router = useRouter()
 const ws = useWorkspaceStore()
 
 const id = computed(() => Number(route.params.id))
 
-// Tabs
+// Tabs (SIN sucursales)
 const TABS = [
   { key: 'basicos',    label: 'Básicos',        icon: 'fa-user' },
   { key: 'contacto',   label: 'Contacto',       icon: 'fa-address-book' },
   { key: 'fiscales',   label: 'Fiscales',       icon: 'fa-file-invoice' },
   { key: 'convenios',  label: 'Convenios',      icon: 'fa-handshake' },
   { key: 'adicionales',label: 'Datos adicionales', icon: 'fa-list' },
-  { key: 'sucursales', label: 'Sucursales',     icon: 'fa-building' },
 ]
 const tab = ref('basicos')
 
@@ -270,9 +285,8 @@ const tab = ref('basicos')
 const loadingAll = ref(true)
 const savingBasics = ref(false)
 
-// Empresa/Sucursal de contexto (para sucursales/convenios si hace falta)
+// Empresa del contexto
 const empresaId = computed(() => ws.empresaId)
-const empresaNombre = computed(() => ws.empresaNombre)
 
 // === BASICOS ===
 const clienteForm = ref({
@@ -290,16 +304,13 @@ const contactos = ref([])
 // === FISCALES (OneToOne) ===
 const fiscales = ref(null)
 
-// === CONVENIOS ===
-const convenios = ref([])
+// === CONVENIOS (por empresa, para enlazar) ===
+const conveniosEmpresa = ref([])
+const qConvenios = ref('')
 
 // === ADICIONALES ===
 const adicionales = ref([])
 const caracteristicas = ref([]) // catálogo para select
-
-// === SUCURSALES ===
-const sucursalesAsignadas = ref([])
-const sucursalesEmpresa = ref([])
 
 onMounted(loadAll)
 
@@ -312,37 +323,32 @@ async function loadAll() {
     const { data: c } = await api.clientes.retrieve(id.value)
     fillBasicsFrom(c)
 
-    // Subrecursos (tolerar [] o results)
+    // Subrecursos
     const [
       { data: dc },
       { data: df },
-      { data: cv },
       { data: da },
-      { data: cs },
       { data: cars },
-      { data: sucs },
+      { data: cvEmpresa },
     ] = await Promise.all([
       api.clientes.datosContacto.getByCliente(id.value),
       api.clientes.datosFiscales.getByCliente(id.value),
-      api.clientes.convenios.getByCliente(id.value),
       api.clientes.datosAdicionales.getByCliente(id.value),
-      api.clientes.clienteSucursales.getByCliente(id.value),
       api.clientes.caracteristicas.list({ empresa: empresaId.value, page_size: 200 }),
-      api.sucursales.list({ empresa: empresaId.value, page_size: 200 }),
+      api.convenios.list({ ordering: '-id', page_size: 200 }), // <- por empresa (header)
     ])
 
     const toArray = (resp) => resp?.results ?? resp ?? []
 
     contactos.value = toArray(dc)
-    const dfList = toArray(df); fiscales.value = dfList.length ? dfList[0] : null
-    convenios.value = toArray(cv)
-    adicionales.value = toArray(da)
-    sucursalesAsignadas.value = toArray(cs)
 
+    const dfList = toArray(df).filter(x => String(x.cliente) === String(id.value))
+    fiscales.value = dfList.length ? dfList[0] : null
+
+    adicionales.value = toArray(da)
     caracteristicas.value = toArray(cars)
-    sucursalesEmpresa.value = toArray(sucs)
+    conveniosEmpresa.value = toArray(cvEmpresa) // todos los convenios de la empresa
   } catch (e) {
-    // podrías lanzar un toast aquí
     console.error('No se pudo cargar cliente', e?.response?.data || e)
   } finally {
     loadingAll.value = false
@@ -379,7 +385,6 @@ async function saveBasics() {
   try {
     const payload = { ...clienteForm.value }
     await api.clientes.update(id.value, payload)
-    // toast ok
   } catch (e) {
     console.error('Error guardando básicos', e?.response?.data || e)
   } finally {
@@ -401,7 +406,6 @@ async function saveContacto(row) {
       const { data } = await api.clientes.datosContacto.create(payload)
       row.id = data?.id
     }
-    // toast ok
   } catch (e) {
     console.error('No se pudo guardar contacto', e?.response?.data || e)
   }
@@ -451,45 +455,45 @@ async function saveFiscales() {
   }
 }
 
-// === CONVENIOS ===
-function addConvenio() {
-  convenios.value.push({
-    id: null, cliente: id.value,
-    empresa: empresaId.value || null,
-    empresa_convenio: '', telefono_oficina: '',
-    medio_entero: '', tipo_cliente: '',
-  })
-}
-async function saveConvenio(row) {
-  const payload = {
-    cliente: id.value,
-    empresa: row.empresa || empresaId.value, // empresa obligatoria
-    empresa_convenio: row.empresa_convenio || '',
-    telefono_oficina: row.telefono_oficina || '',
-    medio_entero: row.medio_entero || '',
-    tipo_cliente: row.tipo_cliente || '',
-  }
+// === CONVENIOS (enlazar / desenlazar / reasignar) ===
+const conveniosFiltrados = computed(() => {
+  const t = qConvenios.value.trim().toLowerCase()
+  if (!t) return conveniosEmpresa.value
+  return conveniosEmpresa.value.filter(r =>
+    String(r.empresa_convenio || '').toLowerCase().includes(t) ||
+    String(r.medio_entero || '').toLowerCase().includes(t) ||
+    String(r.tipo_cliente || '').toLowerCase().includes(t) ||
+    String(r.cliente_nombre || '').toLowerCase().includes(t)
+  )
+})
+
+async function enlazarConvenio(row) {
   try {
-    if (row.id) {
-      await api.clientes.convenios.patch(row.id, payload)
-    } else {
-      const { data } = await api.clientes.convenios.create(payload)
-      row.id = data?.id
-    }
+    const { data } = await api.convenios.patch(row.id, { cliente: id.value })
+    // actualiza fila
+    Object.assign(row, data)
   } catch (e) {
-    console.error('No se pudo guardar convenio', e?.response?.data || e)
+    console.error('No se pudo enlazar', e?.response?.data || e)
   }
 }
-async function removeConvenio(row) {
-  if (!row.id) {
-    convenios.value = convenios.value.filter(r => r !== row)
-    return
-  }
+
+async function desenlazarConvenio(row) {
+  if (!confirm('¿Quitar enlace de este convenio con el cliente?')) return
   try {
-    await api.clientes.convenios.delete(row.id)
-    convenios.value = convenios.value.filter(r => r.id !== row.id)
+    const { data } = await api.convenios.patch(row.id, { cliente: null })
+    Object.assign(row, data)
   } catch (e) {
-    console.error('No se pudo eliminar convenio', e?.response?.data || e)
+    console.error('No se pudo desenlazar', e?.response?.data || e)
+  }
+}
+
+async function reasignarConvenio(row) {
+  if (!confirm('Este convenio está enlazado a otro cliente. ¿Reasignarlo a este cliente?')) return
+  try {
+    const { data } = await api.convenios.patch(row.id, { cliente: id.value })
+    Object.assign(row, data)
+  } catch (e) {
+    console.error('No se pudo reasignar', e?.response?.data || e)
   }
 }
 
@@ -504,7 +508,7 @@ async function saveAdicional(row) {
     campo: row.campo || '',
     valor: row.valor || '',
   }
-  if (!payload.caracteristica) return // requiere selección
+  if (!payload.caracteristica) return
   try {
     if (row.id) {
       await api.clientes.datosAdicionales.patch(row.id, payload)
@@ -526,50 +530,6 @@ async function removeAdicional(row) {
     adicionales.value = adicionales.value.filter(r => r.id !== row.id)
   } catch (e) {
     console.error('No se pudo eliminar dato adicional', e?.response?.data || e)
-  }
-}
-
-// === SUCURSALES ===
-function addSucursal() {
-  sucursalesAsignadas.value.push({
-    id: null,
-    cliente: id.value,
-    empresa: empresaId.value || null,
-    sucursal: '',
-    fecha_inicio: '',
-    fecha_fin: '',
-  })
-}
-async function saveSucursal(row) {
-  const payload = {
-    cliente: id.value,
-    empresa: row.empresa || empresaId.value,
-    sucursal: row.sucursal || null,
-    fecha_inicio: row.fecha_inicio || null,
-    fecha_fin: row.fecha_fin || null,
-  }
-  if (!payload.sucursal) return
-  try {
-    if (row.id) {
-      await api.clientes.clienteSucursales.patch(row.id, payload)
-    } else {
-      const { data } = await api.clientes.clienteSucursales.create(payload)
-      row.id = data?.id
-    }
-  } catch (e) {
-    console.error('No se pudo guardar asignación', e?.response?.data || e)
-  }
-}
-async function removeSucursal(row) {
-  if (!row.id) {
-    sucursalesAsignadas.value = sucursalesAsignadas.value.filter(r => r !== row)
-    return
-  }
-  try {
-    await api.clientes.clienteSucursales.delete(row.id)
-    sucursalesAsignadas.value = sucursalesAsignadas.value.filter(r => r.id !== row.id)
-  } catch (e) {
-    console.error('No se pudo eliminar asignación', e?.response?.data || e)
   }
 }
 </script>

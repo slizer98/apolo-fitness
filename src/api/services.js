@@ -191,13 +191,6 @@ const clientes = {
     },
   },
 
-  convenios: {
-    create(payload) { return http.post("clientes/convenios/", payload); },
-    getByCliente(clienteId) {
-      return http.get("clientes/convenios/", { params: { cliente: clienteId, ordering: "-id", page_size: 100 } });
-    },
-  },
-
   datosAdicionales: {
     create(payload) { return http.post("clientes/datos-adicionales/", payload); },
     getByCliente(clienteId) {
@@ -224,6 +217,15 @@ const clientes = {
 
 
 };
+
+const convenios = {
+  list(params){ return http.get("clientes/convenios/", { params }) }, // ?empresa=[header], ?cliente=
+  retrieve(id){ return http.get(`clientes/convenios/${id}/`) },
+  create(payload){ return http.post("clientes/convenios/", payload) }, // empresa viene del header
+  patch(id, payload){ return http.patch(`clientes/convenios/${id}/`, payload) },
+  delete(id){ return http.delete(`clientes/convenios/${id}/`) },
+}
+
 
 /**
  * CONFIGURACIÓN
@@ -565,6 +567,7 @@ const api = {
   sucursales,
   usuariosEmpresa,
   clientes,
+  convenios,
   configuraciones,
   valoresConfiguracion,
   planes, planesRestricciones,
