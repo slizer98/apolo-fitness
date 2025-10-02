@@ -324,7 +324,7 @@ const valoresConfiguracion = {
 // ...
 const planes = {
   list(params) { return http.get("planes/", { params }); },
-  retrieve(id) { return http.get(`planes/${id}/`); },
+  retrieve(id,params) { return http.get(`planes/${id}/`, {  params }); },
   create(payload) { return http.post("planes/", payload); },
   update(id, payload) { return http.put(`planes/${id}/`, payload); },
   patch(id, payload) { return http.patch(`planes/${id}/`, payload); },

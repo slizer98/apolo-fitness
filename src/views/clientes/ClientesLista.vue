@@ -49,6 +49,14 @@
       @close="closeSucursal"
       @saved="onAnySaved"
     />
+    <!-- NUEVO: Asignar membresía -->
+    <AsignarMembresiaModal
+      v-if="showAlta"
+      :show="showAlta"
+      :cliente="currentCliente"
+      @close="closeAlta"
+      @saved="onAltaSaved"
+    />
   </div>
 </template>
 
@@ -64,6 +72,7 @@ import ClienteCrearModal from '@/views/clientes/modals/ClienteCrearModal.vue'
 import DatosFiscalesModal from '@/views/clientes/modals/DatosFiscalesModal.vue'
 import DatoContactoModal from '@/views/clientes/modals/DatoContactoModal.vue'
 import ClienteSucursalModal from '@/views/clientes/modals/ClienteSucursalModal.vue'
+import AsignarMembresiaModal from '@/views/clientes/modals/AsignarMembresiaModal.vue' // <- NUEVO
 
 /* ---------- Estado ---------- */
 const loading = ref(true)
@@ -73,6 +82,7 @@ const showCrear = ref(false)
 const showFiscales = ref(false)
 const showContacto = ref(false)
 const showSucursal = ref(false)
+const showAlta = ref(false) // <- NUEVO
 const currentCliente = ref(null)
 
 const openMenuId = ref(null)
@@ -146,6 +156,10 @@ function openFiscales (c) { currentCliente.value = c; showFiscales.value = true;
 function openContacto (c) { currentCliente.value = c; showContacto.value = true; closeMenu() }
 function openSucursal (c) { currentCliente.value = c; showSucursal.value = true; closeMenu() }
 
+// NUEVO: alta de membresía
+function openAlta (c) { currentCliente.value = c; showAlta.value = true; closeMenu() }
+function closeAlta () { showAlta.value = false }
+
 function closeFiscales () { showFiscales.value = false }
 function closeContacto () { showContacto.value = false }
 function closeSucursal () { showSucursal.value = false }
@@ -167,6 +181,13 @@ async function onAnySaved () {
   showContacto.value = false
   showSucursal.value = false
   await fetchAllClientSide()
+}
+
+// NUEVO: después de crear la membresía
+async function onAltaSaved () {
+  showAlta.value = false
+  // si quieres, refresca la lista o lanza un toast
+  // await fetchAllClientSide()
 }
 
 /* ---------- Columnas (TanStack) ---------- */
@@ -209,7 +230,7 @@ const columns = [
           }, '⋯'),
           openMenuId.value === c.id
             ? h('div', {
-                class: 'absolute right-0 mt-1 w-48 bg-gray-950 border border-gray-800 rounded-xl shadow-xl p-1 z-20',
+                class: 'absolute right-0 mt-1 w-56 bg-gray-950 border border-gray-800 rounded-xl shadow-xl p-1 z-20',
                 role: 'menu'
               }, [
                 h(RouterLink, {
@@ -233,6 +254,12 @@ const columns = [
                   role: 'menuitem',
                   onClick: () => openSucursal(c)
                 }, 'Asignar a sucursal'),
+                // NUEVO: Asignar membresía (alta de plan)
+                h('button', {
+                  class: 'w-full text-left px-3 py-2 rounded-lg hover:bg-gray-900/70 text-apolo-primary',
+                  role: 'menuitem',
+                  onClick: () => openAlta(c)
+                }, 'Asignar membresía'),
                 h('button', {
                   class: 'w-full text-left px-3 py-2 rounded-lg hover:bg-red-900/40',
                   role: 'menuitem',
