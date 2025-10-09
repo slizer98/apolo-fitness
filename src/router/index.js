@@ -28,6 +28,7 @@ const DisciplinasLista   = () => import('@/views/disciplinas/DisciplinasLista.vu
 const BeneficiosLista  = () => import('@/views/beneficios/BeneficiosLista.vue')
 const MembresiasLista = () => import('@/views/membresias/MembresiasLista.vue')
 const POS = () => import('@/views/ventas/POS.vue')
+const AlmacenesLista = () => import('@/views/inventario/AlmacenesLista.vue')
 const ProductosLista = () => import('@/views/inventario/ProductoLista.vue')
 const MembresiaCrear  = () => import('@/views/membresias/MembresiaCrear.vue')
 const UsuariosEmpresa = () => import('@/views/usuarios/UsuariosEmpresa.vue')
@@ -65,6 +66,7 @@ const routes = [
       { path: 'servicios',  name: 'ServiciosLista',  component: ServiciosLista,  meta: { perms: ['planes:read'] } },
       { path: 'beneficios', name: 'BeneficiosLista', component: BeneficiosLista, meta: { perms: ['planes:read'] } },
       { path: 'disciplinas', name: 'DisciplinasLista', component: DisciplinasLista, meta: { perms: ['planes:read'] } },
+      { path: 'almacenes', name: 'AlmacenesLista', component: AlmacenesLista, meta: { perms: ['productos:read'] } },
       { path: 'productos', name: 'ProductosLista', component: ProductosLista, meta: { perms: ['productos:read'] } },
       { path: 'pos', name: 'Pos', component: POS, meta: { perms: ['productos:read'] } },
       { path: 'membresias',       name: 'MembresiasLista', component: MembresiasLista, meta: { perms: ['membresias:read'] } },

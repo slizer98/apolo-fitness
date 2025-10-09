@@ -175,6 +175,7 @@ const clientes = {
   delete(id) {
     return http.delete(`clientes/${id}/`);
   },
+  resumen: (id) => http.get(`/clientes/${id}/resumen/`),
 
   datosContacto: {
     create(payload) { return http.post("clientes/datos-contacto/", payload); },
@@ -317,6 +318,8 @@ const valoresConfiguracion = {
     return this.upsert({ empresa: empresaId, nombre: 'ui.nav', valor: JSON.stringify(valor) });
   },
 };
+
+
 
 /**
  * PLANES
@@ -495,6 +498,30 @@ const inventario = {
     update(id, payload){ return http.put(`inventario/movimientos/${id}/`, payload) },
     patch(id, payload){ return http.patch(`inventario/movimientos/${id}/`, payload) },
     delete(id){ return http.delete(`inventario/movimientos/${id}/`) },
+     entrada({ empresa, producto, destino, cantidad, nota="" }) {
+      return this.create({
+        empresa, producto, cantidad, nota,
+        tipo: "entrada",
+        almacen_origen: null,
+        almacen_destino: destino
+      })
+    },
+    salida({ empresa, producto, origen, cantidad, nota="" }) {
+      return this.create({
+        empresa, producto, cantidad, nota,
+        tipo: "salida",
+        almacen_origen: origen,
+        almacen_destino: null
+      })
+    },
+    traspaso({ empresa, producto, origen, destino, cantidad, nota="" }) {
+      return this.create({
+        empresa, producto, cantidad, nota,
+        tipo: "traspaso",
+        almacen_origen: origen,
+        almacen_destino: destino
+      })
+    },
   },
 };
 

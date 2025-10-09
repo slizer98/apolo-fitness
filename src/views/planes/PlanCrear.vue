@@ -1,22 +1,33 @@
 <template>
   <div
-    class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-start justify-center p-4 overflow-y-auto"
+    class="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-start justify-center p-4 overflow-y-auto"
     @click.self="onClose"
   >
-    <div class="w-full max-w-4xl bg-gray-950 border border-gray-800 rounded-2xl shadow-2xl">
+    <div class="w-full max-w-4xl bg-white border border-gray-200 rounded-2xl shadow-2xl">
       <!-- Header -->
-      <div class="px-5 py-4 border-b border-gray-800 flex items-center justify-between">
-        <h3 class="text-lg">Nuevo plan</h3>
-        <button @click="onClose" class="text-gray-400 hover:text-white" aria-label="Cerrar">✕</button>
+      <div class="px-5 py-4 border-b border-gray-200 flex items-center justify-between">
+        <h3 class="text-lg font-semibold text-gray-900">Nuevo plan</h3>
+        <button
+          @click="onClose"
+          class="h-8 w-8 grid place-items-center rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50"
+          aria-label="Cerrar"
+          title="Cerrar"
+        >
+          ✕
+        </button>
       </div>
 
-      <!-- Tabs -->
-      <div class="px-5 pt-4 border-b border-gray-800">
+      <!-- Tabs (claro / pill) -->
+      <div class="px-5 pt-4 border-b border-gray-200">
         <nav class="flex flex-wrap gap-2">
           <button
-            v-for="t in tabs" :key="t.key" type="button"
-            class="px-3 py-2 rounded-lg text-sm"
-            :class="tab===t.key ? 'bg-gray-800 text-white' : 'text-gray-400 hover:text-gray-200'"
+            v-for="t in tabs"
+            :key="t.key"
+            type="button"
+            class="px-3 py-2 rounded-lg text-sm border"
+            :class="tab===t.key
+              ? 'bg-gray-100 border-gray-300 text-gray-900'
+              : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'"
             @click="tab=t.key"
           >
             {{ t.label }}
@@ -26,109 +37,128 @@
 
       <!-- Form -->
       <form @submit.prevent="save" class="p-5 space-y-6">
-        <!-- =================== TAB: BÁSICOS =================== -->
+        <!-- ============ TAB: BÁSICOS (CLARO) ============ -->
         <section v-show="tab==='basicos'" class="space-y-4">
-          <div class="grid sm:grid-cols-2 gap-4">
-            <div>
-              <label class="block text-xs text-gray-400 mb-1">Nombre</label>
-              <input v-model.trim="form.nombre"
-                     class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2"
-                     :class="{'border-red-600': errors.nombre}" maxlength="255" />
-              <p v-if="errors.nombre" class="text-red-400 text-xs mt-1">{{ errors.nombre }}</p>
-            </div>
+  <div class="grid sm:grid-cols-2 gap-4">
+    <div>
+      <label class="block text-xs text-gray-600 mb-1">Nombre</label>
+      <input
+        v-model.trim="form.nombre"
+        class="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-apolo-primary/30"
+        :class="{'border-red-400 ring-2 ring-red-100': errors.nombre}"
+        maxlength="255"
+      />
+      <p v-if="errors.nombre" class="text-red-600 text-xs mt-1">{{ errors.nombre }}</p>
+    </div>
 
-            <div class="flex items-center gap-3 sm:pt-6">
-              <input id="multi" type="checkbox" v-model="form.acceso_multisucursal"
-                     class="h-4 w-4 rounded border-gray-700 bg-gray-900" />
-              <label for="multi" class="text-sm text-gray-300">Acceso multisucursal</label>
-            </div>
-          </div>
+    <div class="flex items-center gap-3 sm:pt-6">
+      <input
+        id="multi"
+        type="checkbox"
+        v-model="form.acceso_multisucursal"
+        class="h-4 w-4 rounded border-gray-300 text-apolo-primary focus:ring-apolo-primary"
+      />
+      <label for="multi" class="text-sm text-gray-800">Acceso multisucursal</label>
+    </div>
+  </div>
 
-          <div>
-            <label class="block text-xs text-gray-400 mb-1">Descripción</label>
-            <textarea v-model.trim="form.descripcion" rows="2"
-                      class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2"></textarea>
-          </div>
+  <div>
+    <label class="block text-xs text-gray-600 mb-1">Descripción</label>
+    <textarea
+      v-model.trim="form.descripcion"
+      rows="2"
+      class="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-apolo-primary/30"
+    ></textarea>
+  </div>
 
-          <div class="grid sm:grid-cols-3 gap-4">
-            <div>
-              <label class="block text-xs text-gray-400 mb-1">Tipo de plan</label>
-              <select v-model="form.tipo_plan"
-                      class="w-full bg-gray-900 border border-gray-700 rounded px-2 py-2"
-                      :class="{'border-red-600': errors.tipo_plan}">
-                <option disabled value="">Seleccione…</option>
-                <option value="tiempo">Por tiempo (mensual/semanal)</option>
-                <option value="sesiones">Por sesiones</option>
-              </select>
-              <p v-if="errors.tipo_plan" class="text-red-400 text-xs mt-1">{{ errors.tipo_plan }}</p>
-            </div>
+  <div class="grid sm:grid-cols-3 gap-4">
+    <div>
+      <label class="block text-xs text-gray-600 mb-1">Tipo de plan</label>
+      <select
+        v-model="form.tipo_plan"
+        class="w-full bg-white border border-gray-300 rounded-lg px-2 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-apolo-primary/30"
+        :class="{'border-red-400 ring-2 ring-red-100': errors.tipo_plan}"
+      >
+        <option disabled value="">Seleccione…</option>
+        <option value="tiempo">Por tiempo (mensual/semanal)</option>
+        <option value="sesiones">Por sesiones</option>
+      </select>
+      <p v-if="errors.tipo_plan" class="text-red-600 text-xs mt-1">{{ errors.tipo_plan }}</p>
+    </div>
 
-            <div v-if="form.tipo_plan==='tiempo'">
-              <label class="block text-xs text-gray-400 mb-1">Periodicidad</label>
-              <select v-model="form.periodicidad"
-                      class="w-full bg-gray-900 border border-gray-700 rounded px-2 py-2"
-                      :class="{'border-red-600': errors.periodicidad}">
-                <option disabled value="">Seleccione…</option>
-                <option value="mensual">Mensual</option>
-                <option value="semanal">Semanal</option>
-              </select>
-              <p v-if="errors.periodicidad" class="text-red-400 text-xs mt-1">{{ errors.periodicidad }}</p>
-            </div>
+    <div v-if="form.tipo_plan==='sesiones'">
+      <label class="block text-xs text-gray-600 mb-1"># de sesiones</label>
+      <input
+        v-model.number="form.numero_sesiones"
+        type="number"
+        min="1"
+        step="1"
+        class="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-apolo-primary/30"
+        :class="{'border-red-400 ring-2 ring-red-100': errors.numero_sesiones}"
+      />
+      <p v-if="errors.numero_sesiones" class="text-red-600 text-xs mt-1">{{ errors.numero_sesiones }}</p>
+    </div>
+  </div>
 
-            <div v-if="form.tipo_plan==='sesiones'">
-              <label class="block text-xs text-gray-400 mb-1"># de sesiones</label>
-              <input v-model.number="form.numero_sesiones" type="number" min="1" step="1"
-                     class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2"
-                     :class="{'border-red-600': errors.numero_sesiones}" />
-              <p v-if="errors.numero_sesiones" class="text-red-400 text-xs mt-1">{{ errors.numero_sesiones }}</p>
-            </div>
-          </div>
+  <div class="grid sm:grid-cols-3 gap-4">
+    <div class="flex items-center gap-2">
+      <input
+        id="preventa"
+        type="checkbox"
+        v-model="form.preventa"
+        class="h-4 w-4 rounded border-gray-300 text-apolo-primary focus:ring-apolo-primary"
+      />
+      <label for="preventa" class="text-sm text-gray-800">Preventa</label>
+    </div>
 
-          <div class="grid sm:grid-cols-3 gap-4">
-            <div class="flex items-center gap-2">
-              <input id="preventa" type="checkbox" v-model="form.preventa"
-                     class="h-4 w-4 rounded border-gray-700 bg-gray-900" />
-              <label for="preventa" class="text-sm text-gray-300">Preventa</label>
-            </div>
+    <div>
+      <label class="block text-xs text-gray-600 mb-1">Vigente desde</label>
+      <input
+        v-model="form.desde"
+        type="date"
+        class="w-full bg-white border border-gray-300 rounded-lg px-2 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-apolo-primary/30"
+      />
+    </div>
 
-            <div>
-              <label class="block text-xs text-gray-400 mb-1">Vigente desde</label>
-              <input v-model="form.desde" type="date"
-                     class="w-full bg-gray-900 border border-gray-700 rounded px-2 py-2" />
-            </div>
+    <div>
+      <label class="block text-xs text-gray-600 mb-1">Vigente hasta</label>
+      <input
+        v-model="form.hasta"
+        type="date"
+        class="w-full bg-white border border-gray-300 rounded-lg px-2 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-apolo-primary/30"
+      />
+    </div>
+  </div>
+</section>
 
-            <div>
-              <label class="block text-xs text-gray-400 mb-1">Vigente hasta</label>
-              <input v-model="form.hasta" type="date"
-                     class="w-full bg-gray-900 border border-gray-700 rounded px-2 py-2" />
-            </div>
-          </div>
-        </section>
-
-        <!-- =================== TAB: SERVICIOS =================== -->
+        <!-- ============ TAB: SERVICIOS (CLARO) ============ -->
         <section v-show="tab==='servicios'" class="space-y-3">
           <div class="flex items-center justify-between">
-            <h4 class="text-sm text-gray-300">Servicios</h4>
+            <h4 class="text-sm font-medium text-gray-800">Servicios</h4>
             <RouterLink class="text-xs text-apolo-primary hover:underline" :to="{name:'ServiciosLista'}">
               Administrar servicios
             </RouterLink>
           </div>
 
           <div v-if="loading.servicios" class="grid gap-2">
-            <div v-for="i in 4" :key="i" class="animate-pulse h-10 bg-gray-800/60 rounded"></div>
+            <div v-for="i in 4" :key="i" class="animate-pulse h-10 bg-gray-100 rounded"></div>
           </div>
 
           <div v-else class="grid sm:grid-cols-2 gap-3">
             <label
-              v-for="s in servicios" :key="s.id"
-              class="rounded-xl border border-gray-800 bg-gray-900/50 p-3 flex flex-col gap-2"
+              v-for="s in servicios"
+              :key="s.id"
+              class="rounded-xl border border-gray-200 bg-white p-3 flex flex-col gap-2"
             >
               <div class="flex items-center justify-between">
                 <div class="flex items-center gap-2">
-                  <input type="checkbox" v-model="svcState[s.id].checked"
-                         class="h-4 w-4 rounded border-gray-700 bg-gray-900" />
+                  <input
+                    type="checkbox"
+                    v-model="svcState[s.id].checked"
+                    class="h-4 w-4 rounded border-gray-300 text-apolo-primary focus:ring-apolo-primary"
+                  />
                   <span class="text-xl" :class="svcState[s.id].icono || s.icono"></span>
-                  <span class="text-sm font-medium">{{ s.nombre }}</span>
+                  <span class="text-sm font-medium text-gray-900">{{ s.nombre }}</span>
                 </div>
               </div>
 
@@ -136,49 +166,63 @@
                 class="grid sm:grid-cols-2 gap-2"
                 :class="{'opacity-50 pointer-events-none': !svcState[s.id].checked}"
               >
-                <input v-model="svcState[s.id].precio" @input="moneyMask(svcState[s.id],'precio')" inputmode="decimal"
-                       class="bg-gray-900 border border-gray-700 rounded px-2 py-1.5" placeholder="$ precio (opcional)" />
-                <input v-model="svcState[s.id].icono"
-                       class="bg-gray-900 border border-gray-700 rounded px-2 py-1.5" placeholder="icono (opcional)" />
+                <input
+                  v-model="svcState[s.id].precio"
+                  @input="moneyMask(svcState[s.id],'precio')"
+                  inputmode="decimal"
+                  class="bg-white border border-gray-300 rounded-lg px-2 py-1.5 text-gray-900 focus:outline-none focus:ring-2 focus:ring-apolo-primary/20"
+                  placeholder="$ precio (opcional)"
+                />
+                <input
+                  v-model="svcState[s.id].icono"
+                  class="bg-white border border-gray-300 rounded-lg px-2 py-1.5 text-gray-900 focus:outline-none focus:ring-2 focus:ring-apolo-primary/20"
+                  placeholder="icono (opcional)"
+                />
               </div>
             </label>
           </div>
 
-          <p v-if="errors.servicios" class="text-red-400 text-xs">{{ errors.servicios }}</p>
+          <p v-if="errors.servicios" class="text-red-600 text-xs">{{ errors.servicios }}</p>
         </section>
 
-        <!-- =================== TAB: BENEFICIOS =================== -->
+        <!-- ============ TAB: BENEFICIOS (CLARO) ============ -->
         <section v-show="tab==='beneficios'" class="space-y-3">
-          <details class="rounded-xl border border-gray-800 bg-gray-900/40">
-            <summary class="cursor-pointer px-4 py-3">Agregar beneficios</summary>
+          <details class="rounded-xl border border-gray-200 bg-white">
+            <summary class="cursor-pointer px-4 py-3 text-gray-800">Agregar beneficios</summary>
             <div class="p-4 space-y-3">
               <div v-if="loading.beneficios" class="grid gap-2">
-                <div v-for="i in 4" :key="i" class="animate-pulse h-8 bg-gray-800/60 rounded"></div>
+                <div v-for="i in 4" :key="i" class="animate-pulse h-8 bg-gray-100 rounded"></div>
               </div>
 
               <div v-else class="space-y-2 max-h-72 overflow-auto pr-1">
                 <label v-for="b in beneficios" :key="b.id" class="flex items-start gap-3">
-                  <input type="checkbox" v-model="beneficiosChecks" :value="b.id"
-                         class="h-4 w-4 rounded border-gray-700 bg-gray-900 mt-1.5" />
+                  <input
+                    type="checkbox"
+                    v-model="beneficiosChecks"
+                    :value="b.id"
+                    class="h-4 w-4 rounded border-gray-300 text-apolo-primary focus:ring-apolo-primary mt-1.5"
+                  />
                   <div class="w-full">
-                    <div class="text-sm font-medium">{{ b.nombre }}</div>
-                    <div class="text-xs text-gray-400">{{ b.descripcion || '—' }}</div>
+                    <div class="text-sm font-medium text-gray-900">{{ b.nombre }}</div>
+                    <div class="text-xs text-gray-500">{{ b.descripcion || '—' }}</div>
 
                     <!-- Aplica a: plan o servicio -->
                     <div v-if="beneficiosChecks.includes(b.id)" class="mt-2 grid sm:grid-cols-3 gap-2 items-center">
-                      <span class="text-xs text-gray-300">Aplica a</span>
+                      <span class="text-xs text-gray-700">Aplica a</span>
                       <div class="flex items-center gap-3 sm:col-span-2">
-                        <label class="flex items-center gap-2 text-sm">
-                          <input type="radio" :name="'aplica_'+b.id" value="plan"
-                                 v-model="beneficiosDestino[b.id]" /> Plan
+                        <label class="flex items-center gap-2 text-sm text-gray-800">
+                          <input type="radio" :name="'aplica_'+b.id" value="plan" v-model="beneficiosDestino[b.id]" />
+                          Plan
                         </label>
-                        <label class="flex items-center gap-2 text-sm">
-                          <input type="radio" :name="'aplica_'+b.id" value="servicio"
-                                 v-model="beneficiosDestino[b.id]" /> Servicio
+                        <label class="flex items-center gap-2 text-sm text-gray-800">
+                          <input type="radio" :name="'aplica_'+b.id" value="servicio" v-model="beneficiosDestino[b.id]" />
+                          Servicio
                         </label>
-                        <select v-if="beneficiosDestino[b.id]==='servicio'"
-                                v-model="beneficiosServicio[b.id]"
-                                class="bg-gray-900 border border-gray-700 rounded px-2 py-1">
+                        <select
+                          v-if="beneficiosDestino[b.id]==='servicio'"
+                          v-model="beneficiosServicio[b.id]"
+                          class="bg-white border border-gray-300 rounded-lg px-2 py-1 text-gray-900 focus:outline-none focus:ring-2 focus:ring-apolo-primary/20"
+                        >
                           <option disabled value="">Seleccione servicio…</option>
                           <option v-for="s in serviciosSeleccionados" :key="s.id" :value="s.id">{{ s.nombre }}</option>
                         </select>
@@ -191,99 +235,149 @@
           </details>
         </section>
 
-        <!-- =================== TAB: ESQUEMA DE PRECIOS =================== -->
+        <!-- ============ TAB: ESQUEMA DE PRECIOS (CLARO) ============ -->
         <section v-show="tab==='precios'" class="space-y-3">
           <div class="grid sm:grid-cols-5 gap-2 items-center">
-            <select v-model="priceForm.esquema" class="bg-gray-900 border border-gray-700 rounded px-2 py-2">
+            <select
+              v-model="priceForm.esquema"
+              class="bg-white border border-gray-300 rounded-lg px-2 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-apolo-primary/30"
+            >
               <option disabled value="">Esquema…</option>
               <option value="individual">Individual</option>
               <option value="grupal">Grupal</option>
               <option value="empresa">Empresa</option>
             </select>
 
-            <select v-model="priceForm.tipo" class="bg-gray-900 border border-gray-700 rounded px-2 py-2">
+            <select
+              v-model="priceForm.tipo"
+              class="bg-white border border-gray-300 rounded-lg px-2 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-apolo-primary/30"
+            >
               <option disabled value="">Periodicidad…</option>
               <option value="mensual">Mensual</option>
               <option value="semanal">Semanal</option>
               <option value="sesiones">Sesiones</option>
             </select>
 
-            <input v-model="priceForm.precio" type="number" min="0" step="0.01"
-                   class="bg-gray-900 border border-gray-700 rounded px-3 py-2"
-                   placeholder="Precio" />
-            <input v-model="priceForm.numero_visitas" type="number" min="0" step="1"
-                   class="bg-gray-900 border border-gray-700 rounded px-3 py-2"
-                   :placeholder="priceForm.tipo==='sesiones' ? '# visitas' : '# visitas (opcional)'" />
-            <button type="button" @click="agregarPrecio"
-                    class="px-3 py-2 rounded-lg bg-apolo-primary text-black hover:bg-apolo-secondary">
+            <input
+              v-model="priceForm.precio"
+              type="number"
+              min="0"
+              step="0.01"
+              class="bg-white border border-gray-300 rounded-lg px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-apolo-primary/30"
+              placeholder="Precio"
+            />
+            <input
+              v-model="priceForm.numero_visitas"
+              type="number"
+              min="0"
+              step="1"
+              class="bg-white border border-gray-300 rounded-lg px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-apolo-primary/30"
+              :placeholder="priceForm.tipo==='sesiones' ? '# visitas' : '# visitas (opcional)'"
+            />
+            <button
+              type="button"
+              @click="agregarPrecio"
+              class="px-3 py-2 rounded-lg bg-apolo-primary text-white hover:opacity-90"
+            >
               Agregar
             </button>
           </div>
 
-          <ul class="text-sm divide-y divide-gray-800">
-            <li v-for="(p,idx) in preciosList" :key="p.id || 'tmp-'+idx" class="py-2 flex items-center justify-between">
-              <div>{{ p.esquema }} · {{ p.tipo }} — {{ currency(p.precio) }} ({{ p.numero_visitas || 0 }} visitas)</div>
-              <button class="text-red-300 hover:text-red-200" @click="eliminarPrecio(p, idx)">Eliminar</button>
+          <ul class="text-sm divide-y divide-gray-200">
+            <li
+              v-for="(p,idx) in preciosList"
+              :key="p.id || 'tmp-'+idx"
+              class="py-2 flex items-center justify-between"
+            >
+              <div class="text-gray-800">
+                {{ p.esquema }} · {{ p.tipo }} — {{ currency(p.precio) }} ({{ p.numero_visitas || 0 }} visitas)
+              </div>
+              <button class="text-red-600 hover:text-red-700" @click="eliminarPrecio(p, idx)">Eliminar</button>
             </li>
           </ul>
         </section>
 
-        <!-- =================== TAB: RESTRICCIONES =================== -->
+        <!-- ============ TAB: RESTRICCIONES (CLARO) ============ -->
         <section v-show="tab==='restricciones'" class="space-y-4">
-          <div class="text-sm text-gray-300">Define reglas de acceso/uso para este plan.</div>
+          <div class="text-sm text-gray-700">Define reglas de acceso/uso para este plan.</div>
 
           <div class="grid sm:grid-cols-4 gap-2 items-end">
             <div class="sm:col-span-2">
-              <label class="block text-xs text-gray-400 mb-1">Nombre</label>
-              <input v-model.trim="restrForm.nombre" class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2" />
+              <label class="block text-xs text-gray-600 mb-1">Nombre</label>
+              <input
+                v-model.trim="restrForm.nombre"
+                class="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-apolo-primary/30"
+              />
             </div>
             <div class="sm:col-span-2">
-              <label class="block text-xs text-gray-400 mb-1">Descripción</label>
-              <input v-model.trim="restrForm.descripcion" class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2" />
+              <label class="block text-xs text-gray-600 mb-1">Descripción</label>
+              <input
+                v-model.trim="restrForm.descripcion"
+                class="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-apolo-primary/30"
+              />
             </div>
           </div>
 
           <div class="grid sm:grid-cols-4 gap-2 items-end">
             <div>
-              <label class="block text-xs text-gray-400 mb-1">Días/semana</label>
-              <input v-model.number="restrForm.dias_por_semana" type="number" min="0" step="1"
-                     class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2" />
+              <label class="block text-xs text-gray-600 mb-1">Días/semana</label>
+              <input
+                v-model.number="restrForm.dias_por_semana"
+                type="number"
+                min="0"
+                step="1"
+                class="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-apolo-primary/30"
+              />
             </div>
             <div>
-              <label class="block text-xs text-gray-400 mb-1">Minutos/visita</label>
-              <input v-model.number="restrForm.minutos_por_visita" type="number" min="0" step="1"
-                     class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2" />
+              <label class="block text-xs text-gray-600 mb-1">Minutos/visita</label>
+              <input
+                v-model.number="restrForm.minutos_por_visita"
+                type="number"
+                min="0"
+                step="1"
+                class="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-apolo-primary/30"
+              />
             </div>
             <div>
-              <label class="block text-xs text-gray-400 mb-1">Hora inicio</label>
-              <input v-model="restrForm.hora_inicio" type="time"
-                     class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2" />
+              <label class="block text-xs text-gray-600 mb-1">Hora inicio</label>
+              <input
+                v-model="restrForm.hora_inicio"
+                type="time"
+                class="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-apolo-primary/30"
+              />
             </div>
             <div>
-              <label class="block text-xs text-gray-400 mb-1">Hora fin</label>
-              <input v-model="restrForm.hora_fin" type="time"
-                     class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2" />
+              <label class="block text-xs text-gray-600 mb-1">Hora fin</label>
+              <input
+                v-model="restrForm.hora_fin"
+                type="time"
+                class="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-apolo-primary/30"
+              />
             </div>
           </div>
 
           <div class="flex justify-end">
-            <button type="button" @click="agregarRestr"
-                    class="px-3 py-2 rounded-lg bg-apolo-primary text-black hover:bg-apolo-secondary">
+            <button
+              type="button"
+              @click="agregarRestr"
+              class="px-3 py-2 rounded-lg bg-apolo-primary text-white hover:opacity-90"
+            >
               Agregar restricción
             </button>
           </div>
 
-          <ul class="text-sm divide-y divide-gray-800">
+          <ul class="text-sm divide-y divide-gray-200">
             <li v-for="(r,idx) in restrList" :key="r.id || 'r'+idx" class="py-2 flex items-center justify-between">
               <div class="flex-1">
-                <div class="font-medium">{{ r.nombre || '—' }}</div>
-                <div class="text-gray-400">
+                <div class="font-medium text-gray-900">{{ r.nombre || '—' }}</div>
+                <div class="text-gray-600">
                   {{ r.descripcion || '—' }} · {{ r.dias_por_semana || 0 }} d/sem · {{ r.minutos_por_visita || 0 }} min/visita
                   · {{ r.hora_inicio || '—' }} - {{ r.hora_fin || '—' }}
                 </div>
               </div>
               <div class="flex items-center gap-2">
-                <button class="text-red-300 hover:text-red-200" @click="eliminarRestr(r, idx)">Eliminar</button>
+                <button class="text-red-600 hover:text-red-700" @click="eliminarRestr(r, idx)">Eliminar</button>
               </div>
             </li>
           </ul>
@@ -291,10 +385,18 @@
 
         <!-- Footer -->
         <div class="flex items-center justify-end gap-2 pt-2">
-          <button type="button" @click="onClose"
-                  class="px-4 py-2 rounded border border-gray-700 bg-gray-800/60 hover:bg-gray-700">Cancelar</button>
-          <button type="submit" :disabled="saving"
-                  class="px-4 py-2 rounded bg-apolo-primary text-black hover:bg-apolo-secondary">
+          <button
+            type="button"
+            @click="onClose"
+            class="px-4 py-2 rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
+          >
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            :disabled="saving"
+            class="px-4 py-2 rounded-lg bg-apolo-primary text-white hover:opacity-90 disabled:opacity-60"
+          >
             {{ saving ? 'Guardando…' : 'Guardar plan' }}
           </button>
         </div>
@@ -321,7 +423,7 @@ const form = reactive({
   descripcion: '',
   acceso_multisucursal: false,
   tipo_plan: '',
-  periodicidad: '',
+  // periodicidad: '',
   preventa: false,
   desde: '',
   hasta: '',
@@ -364,16 +466,12 @@ const restrList = ref([])
 
 /* ================= methods ================= */
 function onClose () {
-  // 1) intentamos avisar al padre
   emit('close')
-  // 2) si nadie lo maneja, hacemos fallback de navegación
   const hasHistory = window.history.length > 1
   try {
     if (hasHistory) router.back()
     else router.push({ name: 'PlanesLista' })
-  } catch {
-    // último fallback: no-op
-  }
+  } catch {}
 }
 
 function moneyMask(target, key){
@@ -394,8 +492,6 @@ function agregarPrecio(){
   if (!priceForm.esquema || !priceForm.tipo || !priceForm.precio){
     return
   }
-
-  // regla: si es "sesiones", forzar numero_visitas > 0
   let numeroVisitas = priceForm.numero_visitas
   if (priceForm.tipo === 'sesiones') {
     if (!numeroVisitas && form.numero_sesiones) numeroVisitas = form.numero_sesiones
@@ -404,20 +500,17 @@ function agregarPrecio(){
       return
     }
   }
-
   preciosList.value.push({
     esquema: priceForm.esquema,
-    tipo: priceForm.tipo,                       // <- Periodicidad mapeada a "tipo"
+    tipo: priceForm.tipo,
     precio: Number(priceForm.precio),
     numero_visitas: numeroVisitas ? Number(numeroVisitas) : 0,
   })
-
   priceForm.esquema = ''
   priceForm.tipo = ''
   priceForm.precio = ''
   priceForm.numero_visitas = 0
 }
-
 
 async function eliminarPrecio(p, idx){
   if (p.id){
@@ -442,12 +535,10 @@ async function eliminarRestr(r, idx){
 /* ================= validation ================= */
 function validate(){
   Object.keys(errors).forEach(k => delete errors[k])
-
   if (!form.nombre) errors.nombre = 'El nombre es obligatorio'
   if (!form.tipo_plan) errors.tipo_plan = 'Selecciona el tipo de plan'
-  if (form.tipo_plan === 'tiempo' && !form.periodicidad) errors.periodicidad = 'Selecciona la periodicidad'
+  // if (form.tipo_plan === 'tiempo' && !form.periodicidad) errors.periodicidad = 'Selecciona la periodicidad'
   if (form.tipo_plan === 'sesiones' && !form.numero_sesiones) errors.numero_sesiones = 'Indica cuántas sesiones'
-
   return Object.keys(errors).length === 0
 }
 
@@ -460,14 +551,14 @@ async function save(){
     const empresa = ws.empresaId
     if (!empresa) throw new Error('No se pudo determinar la empresa activa.')
 
-    // 1) Crear plan (con empresa)
+    // 1) Crear plan
     const payloadPlan = {
       empresa,
       nombre: form.nombre,
       descripcion: form.descripcion,
       acceso_multisucursal: form.acceso_multisucursal,
       tipo_plan: form.tipo_plan,
-      periodicidad: form.tipo_plan==='tiempo' ? form.periodicidad : '',
+      // periodicidad: form.tipo_plan==='tiempo' ? form.periodicidad : '',
       preventa: form.preventa,
       desde: form.desde || null,
       hasta: form.hasta || null,
@@ -498,7 +589,7 @@ async function save(){
       }
     }
 
-    // 4) Precios (con defensas)
+    // 4) Precios
     for (const p of preciosList.value){
       const payload = {
         plan: plan.id,
@@ -510,7 +601,6 @@ async function save(){
           : (p.numero_visitas != null ? Number(p.numero_visitas) : 0),
       }
       if (payload.tipo === 'sesiones' && (!payload.numero_visitas || payload.numero_visitas <= 0)) {
-        // si algo se escapó, no intentes crear y avisa
         console.warn('Precio omitido por falta de numero_visitas para "sesiones"', payload)
         continue
       }
@@ -531,7 +621,6 @@ async function save(){
     saving.value = false
   }
 }
-
 
 /* ================= data loads ================= */
 async function loadServicios(){

@@ -1,87 +1,132 @@
 <!-- src/layouts/AppLayout.vue -->
 <template>
-  <div class="min-h-screen bg-black text-white flex">
+  <div class="min-h-screen bg-[#f6f7fb] text-[#0f172a] flex">
     <!-- Sidebar -->
     <aside
       :class="[
-        'fixed z-40 inset-y-0 left-0 w-72 bg-gradient-to-b from-gray-950 to-black border-r border-gray-800/70',
-        'transition-transform duration-200',
-        sidebarOpen ? 'translate-x-0' : '-translate-x-full',
-        'md:translate-x-0'
+        'fixed inset-y-0 left-0 z-40 w-64 bg-white border-r border-slate-200',
+        'transition-transform duration-200 md:translate-x-0',
+        sidebarOpen ? 'translate-x-0' : '-translate-x-full'
       ]"
     >
-      <div class="h-16 px-4 flex items-center gap-3 border-b border-gray-800/70">
-        <img :src="apoloImage" alt="Ágora" class="h-7 w-auto opacity-90" />
-        <div class="text-sm text-gray-300 leading-tight">
-          <!-- <div class="font-medium">{{ ui.branding.appName }}</div>s -->
-          <div class="text-[11px] text-gray-400 truncate">Empresa: {{ ws.empresaNombre || ws.empresaId }}</div>
+      <!-- Brand -->
+      <div class="h-16 px-5 flex items-center gap-3 border-b border-slate-200">
+        <div class="h-9 w-9 rounded-full bg-slate-100 grid place-items-center">
+          <i class="fa-solid fa-chart-line text-slate-600"></i>
+        </div>
+        <div class="leading-tight">
+          <div class="text-xs text-slate-500">LOGO</div>
+          <div class="text-[11px] text-slate-500 truncate">
+            Empresa: {{ ws.empresaNombre || ws.empresaId || '—' }}
+          </div>
         </div>
       </div>
 
-      <nav class="px-3 py-3 space-y-1 overflow-y-auto h-[calc(100vh-4rem)]">
+      <!-- Menu -->
+      <nav class="px-3 py-3 overflow-y-auto h-[calc(100vh-4rem)]">
         <RouterLink
           v-for="item in visibleNav"
-          :key="item.label"
+          :key="item.routeName || item.label"
           :to="{ name: item.routeName }"
-          class="flex items-center gap-3 px-3 py-2 rounded-xl border border-transparent hover:border-apolo-primary/40 hover:bg-gray-900/60"
-          :class="route.name === item.routeName ? 'bg-gray-900/70 border-apolo-primary/40' : ''"
+          class="group flex items-center gap-3 px-3 py-2 rounded-lg mb-1"
+          :class="route.name === item.routeName
+            ? 'bg-slate-100 text-slate-900'
+            : 'text-slate-700 hover:bg-slate-50'"
           @click="closeOnMobile"
         >
-          <i :class="['fa', item.icon, 'opacity-80']"></i>
-          <span class="text-sm">{{ item.label }}</span>
+          <i :class="['fa-solid', item.icon || 'fa-circle', 'w-5 text-slate-500 group-hover:text-slate-700']"></i>
+          <span class="text-sm truncate">{{ item.label }}</span>
         </RouterLink>
+
+        <div v-if="!visibleNav.length" class="text-xs text-slate-400 px-3 pt-2">
+          Sin opciones de menú.
+        </div>
       </nav>
     </aside>
 
-    <!-- Overlay mobile -->
-    <div v-if="sidebarOpen" class="fixed inset-0 bg-black/50 backdrop-blur-sm md:hidden" @click="sidebarOpen=false"></div>
+    <!-- Mobile overlay -->
+    <div
+      v-if="sidebarOpen"
+      class="fixed inset-0 bg-black/30 backdrop-blur-[2px] md:hidden"
+      @click="sidebarOpen=false"
+    ></div>
 
     <!-- Main -->
-    <div class="flex-1 md:pl-72 min-h-screen flex flex-col">
+    <div class="flex-1 md:pl-64 min-h-screen flex flex-col">
       <!-- Topbar -->
-      <header class="h-16 border-b border-gray-800/70 bg-gradient-to-r from-black via-gray-900 to-black">
-        <div class="h-full px-4 flex items-center justify-between">
+      <header class="h-16 bg-white border-b border-slate-200">
+        <div class="h-full px-4 sm:px-6 lg:px-8 flex items-center justify-between">
           <div class="flex items-center gap-2">
-            <button class="md:hidden p-2 rounded-lg border border-gray-800 hover:bg-gray-900" @click="sidebarOpen=true" aria-label="Abrir menú">
-              <i class="fa fa-bars"></i>
+            <button
+              class="md:hidden p-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50"
+              @click="sidebarOpen=true"
+              aria-label="Abrir menú"
+            >
+              <i class="fa-solid fa-bars"></i>
             </button>
-            <h1 class="text-lg font-light tracking-wide">{{ currentTitle }}</h1>
+            <h1 class="text-[15px] font-semibold tracking-tight">{{ currentTitle }}</h1>
           </div>
 
           <div class="flex items-center gap-3">
-            <!-- Chips informativos para todos -->
-            <div class="hidden sm:flex text-xs text-gray-400 mr-2">
-              <span class="px-2 py-1 rounded-full bg-gray-900/60 border border-gray-800">Rol: {{ ws.rol || '—' }}</span>
-              <span v-if="ws.sucursalNombre" class="ml-2 px-2 py-1 rounded-full bg-gray-900/60 border border-gray-800">Sucursal: {{ ws.sucursalNombre }}</span>
+            <!-- Chips informativos -->
+            <div class="hidden sm:flex text-[11px] text-slate-600 mr-1">
+              <span class="px-2 py-1 rounded-full bg-slate-100 border border-slate-200">
+                Rol: {{ ws.rol || '—' }}
+              </span>
+              <span
+                v-if="ws.sucursalNombre"
+                class="ml-2 px-2 py-1 rounded-full bg-slate-100 border border-slate-200"
+              >
+                Sucursal: {{ ws.sucursalNombre }}
+              </span>
             </div>
 
-            <!-- Selects solo para superuser -->
+            <!-- Selects superuser -->
             <div v-if="ws.isSuperuser" class="hidden md:flex items-center gap-2 mr-2">
-              <select v-model="tmpEmpresaId" @change="onEmpresaSelect" class="bg-gray-900/70 border border-gray-700 rounded-lg px-2 py-1.5 text-xs">
+              <select
+                v-model="tmpEmpresaId"
+                @change="onEmpresaSelect"
+                class="h-9 text-xs rounded-md border border-slate-300 bg-white px-2 hover:bg-slate-50"
+              >
                 <option disabled value="">Empresa…</option>
                 <option v-for="e in empresas" :key="e.id" :value="e.id">{{ e.nombre }}</option>
               </select>
-              <select v-model="tmpSucursalId" @change="onSucursalSelect" class="bg-gray-900/70 border border-gray-700 rounded-lg px-2 py-1.5 text-xs">
+              <select
+                v-model="tmpSucursalId"
+                @change="onSucursalSelect"
+                class="h-9 text-xs rounded-md border border-slate-300 bg-white px-2 hover:bg-slate-50"
+              >
                 <option disabled value="">Sucursal…</option>
                 <option v-for="s in sucursales" :key="s.id" :value="s.id">{{ s.nombre }}</option>
               </select>
             </div>
 
-            <!-- User menu -->
+            <!-- User -->
             <div class="relative" data-user-menu>
-              <button class="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-gray-800 bg-gray-900/50 hover:bg-gray-900"
-                      @click.stop="userMenuOpen = !userMenuOpen">
-                <i class="fa fa-circle-user"></i>
+              <button
+                class="flex items-center gap-2 h-9 px-3 rounded-md border border-slate-300 bg-white hover:bg-slate-50"
+                @click.stop="userMenuOpen = !userMenuOpen"
+              >
+                <div class="h-6 w-6 rounded-full bg-slate-100 grid place-items-center">
+                  <i class="fa-solid fa-user text-slate-600 text-[13px]"></i>
+                </div>
                 <span class="text-sm hidden sm:inline">{{ username || 'Usuario' }}</span>
-                <i class="fa fa-chevron-down text-xs opacity-70"></i>
+                <i class="fa-solid fa-chevron-down text-[11px] text-slate-500"></i>
               </button>
-              <div v-if="userMenuOpen"
-                   class="absolute right-0 mt-2 w-48 bg-gray-950 border border-gray-800 rounded-xl shadow-xl p-2">
-                <RouterLink :to="{name:'Perfil'}" class="block px-3 py-2 rounded-lg hover:bg-gray-900/70" @click="userMenuOpen=false">
-                  <i class="fa fa-id-badge mr-2"></i> Perfil
+
+              <div
+                v-if="userMenuOpen"
+                class="absolute right-0 mt-2 w-52 rounded-xl shadow-lg bg-white border border-slate-200 overflow-hidden"
+              >
+                <RouterLink
+                  :to="{name:'Perfil'}"
+                  class="block px-3 py-2 text-sm hover:bg-slate-50"
+                  @click="userMenuOpen=false"
+                >
+                  <i class="fa-solid fa-id-badge mr-2 text-slate-500"></i> Perfil
                 </RouterLink>
-                <button class="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-900/70" @click="logout">
-                  <i class="fa fa-right-from-bracket mr-2"></i> Cerrar sesión
+                <button class="w-full text-left px-3 py-2 text-sm hover:bg-slate-50" @click="logout">
+                  <i class="fa-solid fa-right-from-bracket mr-2 text-slate-500"></i> Cerrar sesión
                 </button>
               </div>
             </div>
@@ -89,11 +134,16 @@
         </div>
       </header>
 
+      <!-- Content -->
       <main class="flex-1">
-        <RouterView />
+        <!-- Wrapper de contenido para que todas las vistas luzcan como la captura -->
+        <div class="px-4 sm:px-6 lg:px-8 py-5">
+          <RouterView />
+        </div>
       </main>
     </div>
   </div>
+
   <Toasts />
   <ConfirmDialog />
 </template>
@@ -105,7 +155,6 @@ import { useWorkspaceStore } from '@/stores/workspace'
 import { useUiConfigStore } from '@/stores/uiConfig'
 import { useAuthStore } from '@/stores/auth'
 import api from '@/api/services'
-import apoloImage from '@/assets/images/apolo-name.png'
 import Toasts from '@/components/ui/Toasts.vue'
 import ConfirmDialog from '@/components/ui/ConfirmDialog.vue'
 
@@ -122,70 +171,68 @@ const username = ref('')
 const empresas = ref([])
 const sucursales = ref([])
 
-const visibleNav = computed(() => ui.menu)
+const visibleNav = computed(() => Array.isArray(ui.menu) ? ui.menu : [])
+
 const currentTitle = computed(() => {
-  const found = ui.menu.find(n => route.name === n.routeName)
-  return found?.label || 'Panel'
+  const found = visibleNav.value.find(n => route.name === n.routeName)
+  return found?.label || 'Dashboard'
 })
 
-function closeOnMobile() {
+function closeOnMobile () {
   if (window.innerWidth < 768) sidebarOpen.value = false
 }
 
-async function loadProfileHeader() {
+async function loadProfileHeader () {
   try {
     const { data: pr } = await api.accounts.perfil()
     username.value = pr?.username || ''
   } catch {}
 }
 
-// === Empresa/Sucursal (solo para superuser) ===
+// Superuser selectors
 const tmpEmpresaId = ref('')
 const tmpSucursalId = ref('')
 
-async function loadEmpresas() {
+async function loadEmpresas () {
   try {
     const { data } = await api.empresas.list({ page_size: 200 })
     empresas.value = data?.results || data || []
-    // Pre-seleccionar
     tmpEmpresaId.value = ws.empresaId || ''
   } catch { empresas.value = [] }
 }
 
-async function loadSucursales() {
+async function loadSucursales () {
   if (!tmpEmpresaId.value) { sucursales.value = []; return }
   try {
     const { data } = await api.sucursales.list({ empresa: tmpEmpresaId.value, page_size: 200 })
     sucursales.value = data?.results || data || []
-    // Pre-seleccionar
     tmpSucursalId.value = ws.sucursalId || ''
   } catch { sucursales.value = [] }
 }
 
-async function onEmpresaSelect() {
+async function onEmpresaSelect () {
   if (!ws.isSuperuser) return
   await ws.changeEmpresa(tmpEmpresaId.value)
   await loadSucursales()
-  // refrescar algo global si quieres (dashboard, etc) vía eventos o que cada vista observe ws.empresaId
 }
 
-function onSucursalSelect() {
+function onSucursalSelect () {
   if (!ws.isSuperuser) return
   ws.changeSucursal(tmpSucursalId.value)
 }
 
-function onClickOutside(e) {
+function onClickOutside (e) {
   if (!e.target.closest?.('[data-user-menu]')) userMenuOpen.value = false
 }
 
-function logout() {
+function logout () {
   auth.logout()
   router.replace({ name: 'Login' })
 }
 
 onMounted(async () => {
   await ws.ensureEmpresaSet()
-  await ui.loadForActiveCompany()
+  await ui.loadForActiveCompany() // mantiene menú
   loadProfileHeader()
   if (ws.isSuperuser) {
     await loadEmpresas()
@@ -194,3 +241,16 @@ onMounted(async () => {
   document.addEventListener('click', onClickOutside)
 })
 </script>
+
+<style scoped>
+/* look & feel de tarjetas como en la captura, disponible para que lo reutilices en tus vistas */
+.card {
+  @apply bg-white border border-slate-200 rounded-2xl shadow-sm;
+}
+.card-header {
+  @apply px-4 py-3 border-b border-slate-200 text-[13px] font-semibold text-slate-700;
+}
+.card-body {
+  @apply p-4;
+}
+</style>

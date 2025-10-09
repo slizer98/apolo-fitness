@@ -9,6 +9,7 @@ const DEFAULT_META = {
   PlanesLista:     { label: 'Membresías',  icon: 'fa-dumbbell' },
   ServiciosLista:  { label: 'Servicios',   icon: 'fa-screwdriver-wrench' },
   BeneficiosLista: { label: 'Beneficios',  icon: 'fa-gift' },
+  AlmacenesLista: { label: 'Almacenes', icon: 'fa-warehouse' },
   ProductosLista:  { label: 'Productos',   icon: 'fa-box' },
   Pos:  { label: 'POS',   icon: 'fa-box' },
   DisciplinasLista:{ label: 'Disciplinas', icon: 'fa-person-running' },

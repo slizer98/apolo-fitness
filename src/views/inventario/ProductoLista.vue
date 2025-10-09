@@ -5,7 +5,7 @@ import { useWorkspaceStore } from '@/stores/workspace'
 import api from '@/api/services'
 import TableBasic from '@/components/TableBasic.vue'
 
-/* ====== Constantes impuestos (globales de la vista) ====== */
+/* ====== Constantes impuestos (por producto) ====== */
 const IVA_PCT = 16   // 16%
 const IEPS_PCT = 8   // 8%
 
@@ -22,9 +22,7 @@ const page = ref(1)
 const pageSize = ref(24)
 const viewMode = ref(localStorage.getItem('prodViewMode') || 'grid') // grid | table
 
-// Impuestos (checks globales)
-const aplicarIVA = ref(true)
-const aplicarIEPS = ref(false)
+// 🔹 quitamos toggles globales IVA/IEPS
 
 const productos = ref([])
 const count = ref(0)
@@ -42,6 +40,8 @@ const form = reactive({
   descripcion: '',
   codigo_barras: '',
   precio: 0,
+  aplicar_iva: true,     // 🔹 default
+  aplicar_ieps: false,   // 🔹 default
 })
 
 function openNew() {
@@ -50,6 +50,8 @@ function openNew() {
     id: null, categoria: null, nombre: '',
     descripcion: '', codigo_barras: '',
     precio: 0,
+    aplicar_iva: true,
+    aplicar_ieps: false,
   })
   showModal.value = true
 }
@@ -63,6 +65,8 @@ function openEdit(p) {
     descripcion: p.descripcion || '',
     codigo_barras: p.codigo_barras || '',
     precio: Number(p.precio || 0),
+    aplicar_iva: !!p.aplicar_iva,
+    aplicar_ieps: !!p.aplicar_ieps,
   })
   showModal.value = true
 }
@@ -78,6 +82,8 @@ async function save() {
     descripcion: form.descripcion?.trim(),
     codigo_barras: (form.codigo_barras || '').trim(),
     precio: form.precio,
+    aplicar_iva: !!form.aplicar_iva,     // 🔹
+    aplicar_ieps: !!form.aplicar_ieps,   // 🔹
   }
   try {
     if (isEditing.value && form.id) {
@@ -87,7 +93,6 @@ async function save() {
     }
     showModal.value = false
     await load()
-    // si estamos en tabla, conviene cargar stocks de nuevo
     if (almacen.value) await fetchStocksForCurrent()
   } catch (e) {
     const msg = e?.response?.data
@@ -193,7 +198,7 @@ async function load() {
       empresa: empresaId.value,
       search: q.value || undefined,
       categoria: categoria.value || undefined,
-      page: viewMode.value === 'table' ? 1 : page.value,     // en tabla usamos page local del componente
+      page: viewMode.value === 'table' ? 1 : page.value,
       page_size: viewMode.value === 'table' ? 500 : pageSize.value,
       ordering: 'nombre',
     }
@@ -201,7 +206,6 @@ async function load() {
     productos.value = data?.results || data || []
     count.value = data?.count ?? productos.value.length
 
-    // si hay un almacén seleccionado, cargar stock de todos los productos listados
     if (almacen.value) {
       await nextTick()
       await fetchStocksForCurrent()
@@ -249,7 +253,6 @@ async function fetchStock(productId, almacenId) {
 async function fetchStocksForCurrent() {
   if (!almacen.value) return
   const current = productos.value || []
-  // limita concurrencia para no saturar
   const chunkSize = 12
   for (let i = 0; i < current.length; i += chunkSize) {
     const slice = current.slice(i, i + chunkSize)
@@ -263,12 +266,12 @@ function getStock(p) {
   return stockCache.get(key)
 }
 
-/* ====== Precios (globales) ====== */
+/* ====== Precios (por producto) ====== */
 function precioConImpuestos(p) {
   const base = Number(p.precio || 0)
   let total = base
-  if (aplicarIVA.value) total += base * (IVA_PCT / 100)
-  if (aplicarIEPS.value) total += base * (IEPS_PCT / 100)
+  if (p.aplicar_iva) total += base * (IVA_PCT / 100)
+  if (p.aplicar_ieps) total += base * (IEPS_PCT / 100)
   return total
 }
 
@@ -295,8 +298,20 @@ const tableColumns = computed(() => {
     },
     {
       accessorKey: 'precio_total',
-      header: () => `Total${aplicarIVA.value ? ' + IVA' : ''}${aplicarIEPS.value ? ' + IEPS' : ''}`,
+      header: () => 'Total (según flags)',
       cell: ({ row }) => `$ ${precioConImpuestos(row.original).toFixed(2)}`,
+      enableSorting: false,
+    },
+    {
+      accessorKey: 'impuestos',
+      header: 'Impuestos',
+      cell: ({ row }) => {
+        const p = row.original
+        const parts = []
+        if (p.aplicar_iva) parts.push(`IVA ${IVA_PCT}%`)
+        if (p.aplicar_ieps) parts.push(`IEPS ${IEPS_PCT}%`)
+        return parts.join(' + ') || '—'
+      },
       enableSorting: false,
     },
     {
@@ -320,10 +335,7 @@ const tableColumns = computed(() => {
   cols.push({
     accessorKey: 'acciones',
     header: 'Acciones',
-    cell: ({ row }) => {
-      // placeholder, el HTML real lo ponemos en slot usando el id del registro
-      return '—'
-    },
+    cell: () => '—',
     enableSorting: false,
   })
   return cols
@@ -347,7 +359,6 @@ watch(() => ws.empresaKey, async () => {
 })
 
 watch([q, categoria, page, pageSize, viewMode], async () => {
-  // si cambia a tabla, pedimos más para que TableBasic pagine en cliente
   await load()
 })
 
@@ -413,17 +424,8 @@ watch(almacen, async () => {
         </div>
       </div>
 
-      <!-- Impuestos globales + toggle vista -->
+      <!-- 🔹 quitamos los checks globales -->
       <div class="flex flex-wrap items-center gap-3 text-sm">
-        <label class="inline-flex items-center gap-2 text-gray-200">
-          <input type="checkbox" v-model="aplicarIVA" class="accent-white">
-          Aplicar IVA ({{ IVA_PCT }}%)
-        </label>
-        <label class="inline-flex items-center gap-2 text-gray-200">
-          <input type="checkbox" v-model="aplicarIEPS" class="accent-white">
-          Aplicar IEPS ({{ IEPS_PCT }}%)
-        </label>
-
         <div class="ml-auto border border-gray-800 rounded-lg overflow-hidden flex">
           <button
             class="px-3 py-2 text-gray-100"
@@ -462,8 +464,8 @@ watch(almacen, async () => {
               <div class="font-semibold">$ {{ precioConImpuestos(p).toFixed(2) }}</div>
               <div class="text-[11px] text-gray-400">
                 Base: $ {{ Number(p.precio||0).toFixed(2) }}
-                <template v-if="aplicarIVA"> + IVA {{ IVA_PCT }}%</template>
-                <template v-if="aplicarIEPS"> + IEPS {{ IEPS_PCT }}%</template>
+                <template v-if="p.aplicar_iva"> + IVA {{ IVA_PCT }}%</template>
+                <template v-if="p.aplicar_ieps"> + IEPS {{ IEPS_PCT }}%</template>
               </div>
             </div>
           </div>
@@ -534,15 +536,10 @@ watch(almacen, async () => {
 
       <div v-else>
         <TableBasic :rows="productos" :columns="tableColumns" :initialPageSize="10" />
-
-        <!-- Acciones por fila para la columna 'Acciones' (render por encima usando absolute sería complejo).
-             Simple: mostramos botones globales invisibles en tabla, pero práctico: nada extra necesario
-             porque TableBasic ya imprime el texto. Opcionalmente puedes añadir un slot en TableBasic. -->
-        <!-- Si quieres acciones reales dentro de la tabla, añade un slot a TableBasic para custom cell. -->
       </div>
     </div>
 
-    <!-- Modal NUEVA CATEGORÍA (combobox con filtro) -->
+    <!-- Modal NUEVA CATEGORÍA -->
     <div
       v-if="showCatModal"
       class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4"
@@ -603,7 +600,7 @@ watch(almacen, async () => {
       </div>
     </div>
 
-    <!-- Modal CRUD PRODUCTO (sin impuestos ni stock) -->
+    <!-- Modal CRUD PRODUCTO -->
     <div
       v-if="showModal"
       class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4"
@@ -665,6 +662,18 @@ watch(almacen, async () => {
                 type="number" min="0" step="0.01" required
                 class="w-full border border-gray-700 rounded-lg px-3 py-2 bg-gray-900 text-gray-100"
               />
+            </div>
+
+            <!-- 🔹 Impuestos por producto -->
+            <div class="sm:col-span-2 flex flex-wrap items-center gap-4 text-sm">
+              <label class="inline-flex items-center gap-2 text-gray-200">
+                <input type="checkbox" v-model="form.aplicar_iva" class="accent-white">
+                Aplicar IVA ({{ IVA_PCT }}%)
+              </label>
+              <label class="inline-flex items-center gap-2 text-gray-200">
+                <input type="checkbox" v-model="form.aplicar_ieps" class="accent-white">
+                Aplicar IEPS ({{ IEPS_PCT }}%)
+              </label>
             </div>
           </div>
 

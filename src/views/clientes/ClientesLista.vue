@@ -1,32 +1,233 @@
+<!-- src/views/clientes/ClientesLista.vue -->
 <template>
-  <div class="p-4 text-white">
+  <div class="p-4">
+    <!-- Encabezado -->
     <div class="flex items-center justify-between mb-4">
-      <h1 class="text-2xl font-light">Clientes</h1>
+      <h1 class="text-2xl font-semibold text-gray-800">Miembros</h1>
       <button
         @click="openCrear()"
-        class="bg-apolo-primary text-black px-4 py-2 rounded hover:bg-apolo-secondary transition"
+        class="bg-apolo-primary text-white px-4 py-2 rounded-lg hover:opacity-90 transition"
       >
-        + Nuevo
+        + Nuevo miembro
       </button>
     </div>
 
-    <!-- Tabla (con buscador y paginación integrados en TableBasic) -->
-    <div class="rounded-2xl bg-gradient-to-b from-gray-900/80 to-black border border-gray-800 shadow-xl p-4">
-      <div class="flex items-center justify-between mb-3">
-        <h2 class="text-lg font-medium">Listado</h2>
-        <span v-if="!loading" class="text-sm text-gray-400">{{ rows.length }} registros</span>
+    <!-- KPI Cards -->
+    <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+      <div class="rounded-2xl bg-white border border-gray-200 px-4 py-3">
+        <div class="text-[13px] text-gray-500 mb-1">Activos</div>
+        <div class="flex items-center justify-between">
+          <div class="text-3xl font-semibold">{{ kpi.activos }}</div>
+          <span class="text-xs px-2 py-1 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200">
+            {{ kpi.activosPct }}
+          </span>
+        </div>
+      </div>
+      <div class="rounded-2xl bg-white border border-gray-200 px-4 py-3">
+        <div class="text-[13px] text-gray-500 mb-1">En mora</div>
+        <div class="flex items-center justify-between">
+          <div class="text-3xl font-semibold">{{ kpi.mora }}</div>
+          <span class="text-xs px-2 py-1 rounded-md bg-red-50 text-red-700 border border-red-200">
+            {{ kpi.moraPct }}
+          </span>
+        </div>
+      </div>
+      <div class="rounded-2xl bg-white border border-gray-200 px-4 py-3">
+        <div class="text-[13px] text-gray-500 mb-1">Nuevos este mes</div>
+        <div class="flex items-center justify-between">
+          <div class="text-3xl font-semibold">{{ kpi.nuevosMes }}</div>
+          <span class="text-xs px-2 py-1 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200">
+            +{{ kpi.nuevosDelta }}
+          </span>
+        </div>
+      </div>
+      <div class="rounded-2xl bg-white border border-gray-200 px-4 py-3">
+        <div class="text-[13px] text-gray-500 mb-1">Suspendido</div>
+        <div class="flex items-center justify-between">
+          <div class="text-3xl font-semibold">{{ kpi.suspendidos }}</div>
+          <span class="text-xs px-2 py-1 rounded-md bg-red-50 text-red-700 border border-red-200">
+            {{ kpi.suspendidosPct }}
+          </span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Card principal -->
+    <div class="rounded-2xl bg-white border border-gray-200 shadow-sm overflow-hidden">
+      <!-- Top de filtros (solo Plan/Sucursal; el buscador lo trae TableBasic) -->
+      <div class="px-4 py-3 border-b border-gray-200 grid grid-cols-1 md:grid-cols-4 gap-3">
+        <div class="md:col-span-1">
+          <label class="block text-xs text-gray-500 mb-1">Plan</label>
+          <select v-model="fPlan" class="w-full pr-8 py-2 rounded-lg border border-gray-300">
+            <option value="">Todos</option>
+            <option v-for="p in planesOpciones" :key="p" :value="p">{{ p }}</option>
+          </select>
+        </div>
+
+        <div class="md:col-span-1">
+          <label class="block text-xs text-gray-500 mb-1">Sucursal</label>
+          <select v-model="fSede" class="w-full pr-8 py-2 rounded-lg border border-gray-300">
+            <option value="">Todas</option>
+            <option v-for="s in sucursalesOpciones" :key="s" :value="s">{{ s }}</option>
+          </select>
+        </div>
+
+        <div class="md:col-span-2 flex items-end justify-end">
+          <button
+            v-if="fPlan || fSede"
+            @click="clearFacetFilters"
+            class="text-sm text-gray-600 hover:underline"
+          >
+            Limpiar filtros
+          </button>
+        </div>
       </div>
 
-      <div v-if="loading" class="space-y-2">
-        <div class="animate-pulse h-8 bg-gray-800/60 rounded" v-for="i in 6" :key="i"></div>
-      </div>
+      <!-- Grid tabla + panel -->
+      <div class="grid" :class="expandedId ? 'grid-cols-[1fr_360px]' : 'grid-cols-1'">
+        <!-- Tabla -->
+        <div class="overflow-hidden">
+          <div class="max-h-[560px] overflow-y-auto p-3">
+            <template v-if="loading">
+              <table class="min-w-full text-sm">
+                <tbody>
+                  <tr v-for="i in 8" :key="'sk-'+i" class="border-b border-gray-100">
+                    <td class="px-3 py-3"><div class="h-8 w-8 rounded-lg bg-gray-100"></div></td>
+                    <td class="px-3 py-3"><div class="h-4 w-48 rounded bg-gray-100"></div></td>
+                    <td class="px-3 py-3"><div class="h-4 w-40 rounded bg-gray-100"></div></td>
+                    <td class="px-3 py-3"><div class="h-4 w-32 rounded bg-gray-100"></div></td>
+                    <td class="px-3 py-3"><div class="h-6 w-24 rounded-full bg-gray-100"></div></td>
+                    <td class="px-3 py-3"><div class="h-4 w-28 rounded bg-gray-100"></div></td>
+                    <td class="px-3 py-3 text-right"><div class="h-8 w-16 ml-auto rounded bg-gray-100"></div></td>
+                  </tr>
+                </tbody>
+              </table>
+            </template>
 
-      <div v-else>
-        <TableBasic :rows="rows" :columns="columns" :initialPageSize="10" />
+            <template v-else>
+              <!-- Pasamos SOLO el filtrado por plan/sucursal; el texto lo maneja TableBasic -->
+              <TableBasic
+                :rows="facetRows"
+                :columns="columns"
+                :initial-page-size="10"
+              />
+            </template>
+          </div>
+        </div>
+
+        <!-- Panel lateral -->
+        <aside v-if="expandedId" class="border-l border-gray-200 bg-white">
+          <div class="max-h-[560px] overflow-y-auto p-4">
+            <template v-if="detalleLoading">
+              <div class="animate-pulse">
+                <div class="h-6 w-40 bg-gray-200 rounded mb-3"></div>
+                <div class="rounded-xl border border-gray-200 p-4">
+                  <div class="mx-auto mb-3 h-20 w-20 rounded-full bg-gray-200"></div>
+                  <div class="h-4 w-20 bg-gray-200 rounded mx-auto mb-4"></div>
+                  <div class="space-y-3">
+                    <div class="h-4 w-full bg-gray-200 rounded"></div>
+                    <div class="h-4 w-5/6 bg-gray-200 rounded"></div>
+                    <div class="h-4 w-3/4 bg-gray-200 rounded"></div>
+                    <div class="h-4 w-2/3 bg-gray-200 rounded"></div>
+                  </div>
+                  <div class="mt-4 flex gap-2">
+                    <div class="h-9 w-24 bg-gray-200 rounded"></div>
+                    <div class="h-9 w-28 bg-gray-200 rounded"></div>
+                  </div>
+                </div>
+              </div>
+            </template>
+
+            <template v-else-if="detalle">
+              <div class="flex items-center justify-between mb-3">
+                <h3 class="text-base font-semibold text-gray-800">
+                  {{ detalle.nombre }} {{ detalle.apellidos }}
+                </h3>
+                <button
+                  class="h-8 w-8 inline-flex items-center justify-center rounded-lg border border-gray-200 hover:bg-gray-100"
+                  title="Ocultar"
+                  @click="hidePanel"
+                >
+                  <i class="fa-solid fa-angles-right text-gray-700"></i>
+                </button>
+              </div>
+
+              <div class="rounded-xl border border-gray-200 p-4">
+                <div class="flex items-center justify-center h-20 w-20 rounded-full bg-gray-100 mx-auto mb-3">
+                  <i class="fa-solid fa-user text-3xl text-gray-400"></i>
+                </div>
+
+                <p class="text-center mb-3">
+                  <span
+                    v-if="detalle.is_active"
+                    class="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200"
+                  >
+                    <i class="fa-solid fa-circle-check"></i>
+                    Activo
+                  </span>
+                  <span
+                    v-else
+                    class="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-red-50 text-red-700 border border-red-200"
+                  >
+                    <i class="fa-solid fa-circle-xmark"></i>
+                    Suspendido
+                  </span>
+                </p>
+
+                <p v-if="planNombre" class="text-center">
+                  <span class="inline-flex items-center gap-1 text-[11px] px-2 py-1 rounded-full bg-gray-100 text-gray-700 border border-gray-200">
+                    Plan: {{ planNombre }}
+                  </span>
+                </p>
+
+                <p class="text-xs text-gray-500 text-center mt-2 mb-4">
+                  {{ detalle.sucursal_nombre || '—' }}
+                </p>
+
+                <div class="space-y-2 text-sm">
+                  <div class="flex items-center justify-between">
+                    <span class="text-gray-500">Email</span>
+                    <span class="text-gray-800">{{ detalle.contacto?.email || detalle.email || '—' }}</span>
+                  </div>
+                  <div class="flex items-center justify-between">
+                    <span class="text-gray-500">Celular</span>
+                    <span class="text-gray-800">{{ detalle.contacto?.celular || '—' }}</span>
+                  </div>
+                  <div class="flex items-center justify-between">
+                    <span class="text-gray-500">Teléfono</span>
+                    <span class="text-gray-800">{{ detalle.contacto?.telefono || '—' }}</span>
+                  </div>
+                  <div class="flex items-center justify-between">
+                    <span class="text-gray-500">RFC</span>
+                    <span class="text-gray-800">{{ detalle.fiscal?.rfc || '—' }}</span>
+                  </div>
+                  <div class="flex items-center justify-between">
+                    <span class="text-gray-500">Razón social</span>
+                    <span class="text-gray-800 truncate max-w-[200px]" :title="detalle.fiscal?.razon_social || '—'">
+                      {{ detalle.fiscal?.razon_social || '—' }}
+                    </span>
+                  </div>
+                </div>
+
+                <div class="mt-4 flex gap-2">
+                  <button class="px-3 py-2 rounded-lg bg-apolo-primary text-white hover:opacity-90" @click="openAlta(detalle)">
+                    Cobrar
+                  </button>
+                  <RouterLink
+                    :to="{ name: 'ClienteEditar', params: { id: detalle.id } }"
+                    class="px-3 py-2 rounded-lg border border-gray-200 hover:bg-gray-50"
+                  >
+                    Ver / Editar
+                  </RouterLink>
+                </div>
+              </div>
+            </template>
+          </div>
+        </aside>
       </div>
     </div>
 
-    <!-- Modales -->
+    <!-- Modales (los tuyos) -->
     <ClienteCrearModal v-if="showCrear" @close="closeCrear" @saved="onAnySaved" />
     <DatosFiscalesModal
       v-if="showFiscales"
@@ -49,7 +250,6 @@
       @close="closeSucursal"
       @saved="onAnySaved"
     />
-    <!-- NUEVO: Asignar membresía -->
     <AsignarMembresiaModal
       v-if="showAlta"
       :show="showAlta"
@@ -61,28 +261,33 @@
 </template>
 
 <script setup>
-import { h, ref, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, h } from 'vue'
 import { RouterLink } from 'vue-router'
 import api from '@/api/services'
-
 import TableBasic from '@/components/TableBasic.vue'
-import { createColumnHelper, FlexRender } from '@tanstack/vue-table'
 
 import ClienteCrearModal from '@/views/clientes/modals/ClienteCrearModal.vue'
 import DatosFiscalesModal from '@/views/clientes/modals/DatosFiscalesModal.vue'
 import DatoContactoModal from '@/views/clientes/modals/DatoContactoModal.vue'
 import ClienteSucursalModal from '@/views/clientes/modals/ClienteSucursalModal.vue'
-import AsignarMembresiaModal from '@/views/clientes/modals/AsignarMembresiaModal.vue' // <- NUEVO
+import AsignarMembresiaModal from '@/views/clientes/modals/AsignarMembresiaModal.vue'
 
 /* ---------- Estado ---------- */
 const loading = ref(true)
-const rows = ref([]) // todos los registros cargados (client-side)
+const rows = ref([])
+
+const fPlan = ref('')
+const fSede = ref('')
+
+const expandedId = ref(null)
+const detalle = ref(null)
+const detalleLoading = ref(false)
 
 const showCrear = ref(false)
 const showFiscales = ref(false)
 const showContacto = ref(false)
 const showSucursal = ref(false)
-const showAlta = ref(false) // <- NUEVO
+const showAlta = ref(false)
 const currentCliente = ref(null)
 
 const openMenuId = ref(null)
@@ -95,7 +300,7 @@ function onDocClick (e) {
 function onEsc (e) { if (e.key === 'Escape') closeMenu() }
 
 onMounted(async () => {
-  await fetchAllClientSide()
+  await fetchAll()
   document.addEventListener('click', onDocClick)
   document.addEventListener('keydown', onEsc)
 })
@@ -104,39 +309,22 @@ onBeforeUnmount(() => {
   document.removeEventListener('keydown', onEsc)
 })
 
-/* ---------- Carga client-side (loop paginado) ---------- */
-async function fetchAllClientSide () {
+/* ---------- Carga: una sola llamada (backend sin paginación) ---------- */
+async function fetchAll () {
   loading.value = true
   try {
-    const pageSize = 200
-    let page = 1
-    const maxTotal = 2000  // tope de seguridad; ajusta si necesitas más
-    const out = []
-
-    while (out.length < maxTotal) {
-      const { data } = await api.clientes.list({
-        page,
-        page_size: pageSize,
-        ordering: '-id'
-        // OJO: sin "search"; el filtro es client-side como en el dashboard
-      })
-      const chunk = data?.results || data || []
-      if (!chunk.length) break
-      out.push(...chunk)
-      // si la API trae count, corta cuando alcances el total
-      const total = data?.count
-      if (total && out.length >= total) break
-      if (chunk.length < pageSize) break
-      page += 1
-    }
-
-    rows.value = out.map(r => ({
+    const { data } = await api.clientes.list({ ordering: '-id' })
+    const list = Array.isArray(data) ? data : (data?.results || [])
+    rows.value = list.map(r => ({
       id: r.id,
       nombre: r.nombre ?? '',
       apellidos: r.apellidos ?? '',
       email: r.email || '—',
       sucursal_nombre: r.sucursal_nombre || '—',
+      is_active: !!r.is_active,
       fecha: r.fecha_alta || r.created_at,
+      plan_nombre: r.plan_nombre || r.plan_actual || r?.alta?.plan_nombre || '',
+      plan_actual: r.plan_actual || r.plan_nombre || '',
       __raw: r,
     }))
   } finally {
@@ -144,22 +332,100 @@ async function fetchAllClientSide () {
   }
 }
 
+/* ---------- Opciones de filtros (desde dataset) ---------- */
+const planesOpciones = computed(() =>
+  [...new Set(rows.value.map(r => r.plan_nombre || r.plan_actual).filter(Boolean))].sort()
+)
+const sucursalesOpciones = computed(() =>
+  [...new Set(rows.value.map(r => r.sucursal_nombre).filter(Boolean))].sort()
+)
+
+/* ---------- Filtrado por facetas (Plan/Sucursal). El buscador de texto lo hace TableBasic. ---------- */
+const facetRows = computed(() => {
+  return rows.value.filter(r => {
+    const matchPlan = !fPlan.value || [r.plan_nombre, r.plan_actual].filter(Boolean).includes(fPlan.value)
+    const matchSede = !fSede.value || r.sucursal_nombre === fSede.value
+    return matchPlan && matchSede
+  })
+})
+
+function clearFacetFilters () { fPlan.value = ''; fSede.value = '' }
+
+/* ---------- KPIs ---------- */
+const kpi = computed(() => {
+  const total = rows.value.length || 1
+  let activos = 0, mora = 0, suspendidos = 0, nuevosMes = 0
+  const now = new Date()
+  const y = now.getFullYear(), m = now.getMonth()
+  for (const r of rows.value) {
+    if (r.is_active) activos++
+    const estado = String(r.__raw?.plan_estado || '').toLowerCase()
+    if (estado.includes('mora')) mora++
+    if (!r.is_active) suspendidos++
+    const created = new Date(r.fecha || r.__raw?.created_at)
+    if (created.getFullYear() === y && created.getMonth() === m) nuevosMes++
+  }
+  return {
+    activos, mora, suspendidos, nuevosMes,
+    activosPct: Math.round((activos/total)*100) + '%',
+    moraPct: Math.round((mora/total)*100) + '%',
+    suspendidosPct: Math.round((suspendidos/total)*100) + '%',
+    nuevosDelta: nuevosMes,
+  }
+})
+
 /* ---------- Utils ---------- */
 function fullName (c) { if (!c) return ''; return [c?.nombre, c?.apellidos].filter(Boolean).join(' ') }
 function formatDate (d) { try { return new Date(d).toLocaleDateString('es-MX') } catch { return d || '—' } }
 
+/* ---------- Expand / Collapse ---------- */
+async function toggleExpand (row) {
+  if (expandedId.value === row.id) {
+    expandedId.value = null
+    detalle.value = null
+    return
+  }
+  expandedId.value = row.id
+  detalle.value = null
+  detalleLoading.value = true
+  try {
+    const { data } = await api.clientes.resumen(row.id)
+    detalle.value = { ...data, is_active: data?.is_active ?? row.is_active }
+  } catch {
+    detalle.value = {
+      id: row.id,
+      nombre: row.nombre, apellidos: row.apellidos,
+      email: row.email,
+      sucursal_nombre: row.sucursal_nombre,
+      is_active: row.is_active,
+    }
+  } finally {
+    setTimeout(() => { detalleLoading.value = false }, 250)
+  }
+}
+function hidePanel () {
+  expandedId.value = null
+  detalle.value = null
+}
+
+/* Plan mostrado en el panel */
+const planNombre = computed(() => {
+  return (
+    detalle.value?.plan_actual ||
+    detalle.value?.alta?.plan_nombre ||
+    detalle.value?.plan_nombre ||
+    ''
+  )
+})
+
 /* ---------- Modales ---------- */
 function openCrear () { showCrear.value = true }
 function closeCrear () { showCrear.value = false }
-
 function openFiscales (c) { currentCliente.value = c; showFiscales.value = true; closeMenu() }
 function openContacto (c) { currentCliente.value = c; showContacto.value = true; closeMenu() }
 function openSucursal (c) { currentCliente.value = c; showSucursal.value = true; closeMenu() }
-
-// NUEVO: alta de membresía
 function openAlta (c) { currentCliente.value = c; showAlta.value = true; closeMenu() }
 function closeAlta () { showAlta.value = false }
-
 function closeFiscales () { showFiscales.value = false }
 function closeContacto () { showContacto.value = false }
 function closeSucursal () { showSucursal.value = false }
@@ -170,9 +436,8 @@ async function removeRow (c) {
   try {
     await api.clientes.delete(c.id)
     rows.value = rows.value.filter(x => x.id !== c.id)
-  } catch (e) {
-    console.error(e)
-  }
+    if (expandedId.value === c.id) hidePanel()
+  } catch (e) { console.error(e) }
 }
 
 async function onAnySaved () {
@@ -180,96 +445,133 @@ async function onAnySaved () {
   showFiscales.value = false
   showContacto.value = false
   showSucursal.value = false
-  await fetchAllClientSide()
+  await fetchAll()
 }
+async function onAltaSaved () { showAlta.value = false }
 
-// NUEVO: después de crear la membresía
-async function onAltaSaved () {
-  showAlta.value = false
-  // si quieres, refresca la lista o lanza un toast
-  // await fetchAllClientSide()
-}
-
-/* ---------- Columnas (TanStack) ---------- */
-const col = createColumnHelper()
-
+/* ---------- Columnas para TableBasic ---------- */
 const columns = [
-  col.accessor(row => fullName(row), {
-    id: 'nombre',
-    header: () => 'Nombre',
-    cell: ({ row }) => fullName(row.original),
-    enableSorting: true,
-  }),
-  col.accessor('email', {
-    header: () => 'Correo',
-    enableSorting: true,
-  }),
-  col.accessor('sucursal_nombre', {
-    header: () => 'Sucursal',
-    enableSorting: true,
-  }),
-  col.accessor('fecha', {
-    header: () => 'Fecha alta',
-    cell: ({ getValue }) => formatDate(getValue()),
-    enableSorting: true,
-  }),
-  col.display({
-    id: 'acciones',
-    header: () => h('div', { class: 'text-right' }, 'Acciones'),
+  {
+    id: 'toggle',
+    header: '',
+    enableSorting: false,
     cell: ({ row }) => {
-      const c = row.original
+      const r = row.original
+      return h(
+        'button',
+        {
+          class: 'h-8 w-8 inline-flex items-center justify-center rounded-lg border border-gray-200 hover:bg-gray-100',
+          title: expandedId.value === r.id ? 'Ocultar' : 'Ver detalle',
+          onClick: () => toggleExpand(r),
+        },
+        [ h('i', { class: `fa-solid ${expandedId.value === r.id ? 'fa-angles-left' : 'fa-angles-right'} text-gray-700` }) ],
+      )
+    },
+  },
+  {
+    accessorKey: 'nombre',
+    header: 'Nombre',
+    cell: ({ row }) => h('span', { class: 'text-gray-800 font-medium' }, `${row.original.nombre} ${row.original.apellidos}`),
+  },
+  { accessorKey: 'plan_nombre', header: 'Plan' },
+  { accessorKey: 'sucursal_nombre', header: 'Sucursal' },
+  {
+    id: 'estado',
+    header: 'Estado',
+    enableSorting: false,
+    cell: ({ row }) => {
+      const active = !!row.original.is_active
+      return h(
+        'span',
+        {
+          class:
+            'inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full border ' +
+            (active
+              ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+              : 'bg-red-50 text-red-700 border-red-200'),
+        },
+        [
+          h('i', { class: `fa-solid ${active ? 'fa-circle-check' : 'fa-circle-xmark'}` }),
+          active ? 'Activo' : 'Suspendido',
+        ],
+      )
+    },
+  },
+  {
+    accessorKey: 'fecha',
+    header: 'Alta',
+    cell: ({ getValue }) => h('span', {}, formatDate(getValue())),
+    sortingFn: 'datetime',
+  },
+  {
+    id: 'acciones',
+    header: () => h('span', { class: 'float-right' }, 'Acciones'),
+    enableSorting: false,
+    cell: ({ row }) => {
+      const r = row.original
       return h(
         'div',
         { class: 'relative flex justify-end', 'data-menu-root': '' },
         [
-          h('button', {
-            class: 'px-2 py-1 rounded hover:bg-gray-800',
-            onClick: (e) => { e.stopPropagation(); toggleMenu(c.id) },
-            'aria-expanded': openMenuId.value === c.id,
-            'aria-haspopup': 'menu'
-          }, '⋯'),
-          openMenuId.value === c.id
-            ? h('div', {
-                class: 'absolute right-0 mt-1 w-56 bg-gray-950 border border-gray-800 rounded-xl shadow-xl p-1 z-20',
-                role: 'menu'
-              }, [
-                h(RouterLink, {
-                  to: { name: 'ClienteEditar', params: { id: c.id } },
-                  class: 'block px-3 py-2 rounded-lg hover:bg-gray-900/70',
-                  role: 'menuitem',
-                  onClick: () => closeMenu()
-                }, () => 'Editar datos básicos'),
-                h('button', {
-                  class: 'w-full text-left px-3 py-2 rounded-lg hover:bg-gray-900/70',
-                  role: 'menuitem',
-                  onClick: () => openContacto(c)
-                }, 'Datos de contacto'),
-                h('button', {
-                  class: 'w-full text-left px-3 py-2 rounded-lg hover:bg-gray-900/70',
-                  role: 'menuitem',
-                  onClick: () => openFiscales(c)
-                }, 'Datos fiscales'),
-                h('button', {
-                  class: 'w-full text-left px-3 py-2 rounded-lg hover:bg-gray-900/70',
-                  role: 'menuitem',
-                  onClick: () => openSucursal(c)
-                }, 'Asignar a sucursal'),
-                // NUEVO: Asignar membresía (alta de plan)
-                h('button', {
-                  class: 'w-full text-left px-3 py-2 rounded-lg hover:bg-gray-900/70 text-apolo-primary',
-                  role: 'menuitem',
-                  onClick: () => openAlta(c)
-                }, 'Asignar membresía'),
-                h('button', {
-                  class: 'w-full text-left px-3 py-2 rounded-lg hover:bg-red-900/40',
-                  role: 'menuitem',
-                  onClick: () => removeRow(c)
-                }, 'Eliminar'),
-              ])
-            : null
-        ]
+          h(
+            'button',
+            {
+              class: 'px-2 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-100',
+              onClick: (e) => { e.stopPropagation(); toggleMenu(r.id) },
+              'aria-expanded': openMenuId.value === r.id,
+              'aria-haspopup': 'menu',
+            },
+            '⋯',
+          ),
+          openMenuId.value === r.id &&
+            h(
+              'div',
+              {
+                class:
+                  'absolute right-0 mt-1 w-56 bg-white border border-gray-200 rounded-xl shadow-lg p-1 z-20',
+                role: 'menu',
+              },
+              [
+                h(
+                  RouterLink,
+                  {
+                    to: { name: 'ClienteEditar', params: { id: r.id } },
+                    class: 'block px-3 py-2 rounded-lg hover:bg-gray-50',
+                    role: 'menuitem',
+                    onClick: () => closeMenu(),
+                  },
+                  { default: () => 'Editar datos básicos' },
+                ),
+                h(
+                  'button',
+                  { class: 'w-full text-left px-3 py-2 rounded-lg hover:bg-gray-50', role: 'menuitem', onClick: () => { openContacto(r) } },
+                  'Datos de contacto',
+                ),
+                h(
+                  'button',
+                  { class: 'w-full text-left px-3 py-2 rounded-lg hover:bg-gray-50', role: 'menuitem', onClick: () => { openFiscales(r) } },
+                  'Datos fiscales',
+                ),
+                h(
+                  'button',
+                  { class: 'w-full text-left px-3 py-2 rounded-lg hover:bg-gray-50', role: 'menuitem', onClick: () => { openSucursal(r) } },
+                  'Asignar a sucursal',
+                ),
+                h(
+                  'button',
+                  { class: 'w-full text-left px-3 py-2 rounded-lg hover:bg-gray-50 text-apolo-primary', role: 'menuitem', onClick: () => { openAlta(r) } },
+                  'Asignar membresía',
+                ),
+                h(
+                  'button',
+                  { class: 'w-full text-left px-3 py-2 rounded-lg hover:bg-red-50 text-red-700', role: 'menuitem', onClick: () => { removeRow(r) } },
+                  'Eliminar',
+                ),
+              ],
+            ),
+        ],
       )
-    }
-  })
+    },
+  },
 ]
 </script>
