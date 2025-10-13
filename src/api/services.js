@@ -492,12 +492,12 @@ const inventario = {
     stock(id, params){ return http.get(`inventario/productos/${id}/stock/`, { params }) },
   },
   movimientos: {
-    list(params){ return http.get("inventario/movimientos/", { params }) }, // ?empresa=&producto=&almacen=&fecha_after=&fecha_before=
-    retrieve(id){ return http.get(`inventario/movimientos/${id}/`) },
-    create(payload){ return http.post("inventario/movimientos/", payload) },
-    update(id, payload){ return http.put(`inventario/movimientos/${id}/`, payload) },
-    patch(id, payload){ return http.patch(`inventario/movimientos/${id}/`, payload) },
-    delete(id){ return http.delete(`inventario/movimientos/${id}/`) },
+    list(params){ return http.get("inventario/movimientos-producto/", { params }) }, // ?empresa=&producto=&almacen=&fecha_after=&fecha_before=
+    retrieve(id){ return http.get(`inventario/movimientos-producto/${id}/`) },
+    create(payload){ return http.post("inventario/movimientos-producto/", payload) },
+    update(id, payload){ return http.put(`inventario/movimientos-producto/${id}/`, payload) },
+    patch(id, payload){ return http.patch(`inventario/movimientos-producto/${id}/`, payload) },
+    delete(id){ return http.delete(`inventario/movimientos-producto/${id}/`) },
      entrada({ empresa, producto, destino, cantidad, nota="" }) {
       return this.create({
         empresa, producto, cantidad, nota,

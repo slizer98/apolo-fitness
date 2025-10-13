@@ -34,6 +34,7 @@ const MembresiaCrear  = () => import('@/views/membresias/MembresiaCrear.vue')
 const UsuariosEmpresa = () => import('@/views/usuarios/UsuariosEmpresa.vue')
 const Configuraciones = () => import('@/views/config/Configuraciones.vue')
 const UiConfigurator = () => import('@/views/config/UiConfigurator.vue')
+const ReportesAuditoria = () => import('@/views/reportes/ReportesAuditoria.vue')
 const Perfil          = () => import('@/views/cuenta/Perfil.vue')
 
 const routes = [
@@ -78,6 +79,7 @@ const routes = [
       { path: 'config/ui', name: 'UiConfigurator', component: UiConfigurator, meta: { perms: ['config:manage'] } },
       // Cuenta
       { path: 'perfil', name: 'Perfil', component: Perfil },
+      { path: 'reportes', name: 'Reportes', component: ReportesAuditoria },
 
       // default child
       { path: '', redirect: { name: 'Dashboard' } },

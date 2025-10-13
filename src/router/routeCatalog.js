@@ -17,6 +17,7 @@ const DEFAULT_META = {
   Configuraciones: { label: 'Config',      icon: 'fa-gear' },
   UiConfigurator:  { label: 'Config UI',   icon: 'fa-sliders' },
   Perfil:          { label: 'Perfil',      icon: 'fa-circle-user' },
+  ReportesAuditoria:          { label: 'Repostes',      icon: 'fa-circle-user' },
 }
 
 export function getRouteCatalog() {
