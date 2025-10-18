@@ -1,4 +1,3 @@
-<!-- src/views/clientes/ClientesLista.vue -->
 <template>
   <div class="p-4">
     <!-- Encabezado -->
@@ -92,7 +91,6 @@
               <table class="min-w-full text-sm">
                 <tbody>
                   <tr v-for="i in 8" :key="'sk-'+i" class="border-b border-gray-100">
-                    <td class="px-3 py-3"><div class="h-8 w-8 rounded-lg bg-gray-100"></div></td>
                     <td class="px-3 py-3"><div class="h-4 w-48 rounded bg-gray-100"></div></td>
                     <td class="px-3 py-3"><div class="h-4 w-40 rounded bg-gray-100"></div></td>
                     <td class="px-3 py-3"><div class="h-4 w-32 rounded bg-gray-100"></div></td>
@@ -105,7 +103,6 @@
             </template>
 
             <template v-else>
-              <!-- Pasamos SOLO el filtrado por plan/sucursal; el texto lo maneja TableBasic -->
               <TableBasic
                 :rows="facetRows"
                 :columns="columns"
@@ -139,17 +136,18 @@
             </template>
 
             <template v-else-if="detalle">
-              <div class="flex items-center justify-between mb-3">
+              <div class="mb-3 flex justify-between">
                 <h3 class="text-base font-semibold text-gray-800">
                   {{ detalle.nombre }} {{ detalle.apellidos }}
                 </h3>
-                <button
-                  class="h-8 w-8 inline-flex items-center justify-center rounded-lg border border-gray-200 hover:bg-gray-100"
-                  title="Ocultar"
-                  @click="hidePanel"
-                >
-                  <i class="fa-solid fa-angles-right text-gray-700"></i>
-                </button>
+                <!-- Cerrar panel -->
+                  <button
+                    class="h-9 w-9 inline-flex items-center justify-center rounded-lg border border-gray-200 hover:bg-gray-100"
+                    title="Ocultar"
+                    @click="hidePanel"
+                  >
+                    <i class="fa-solid fa-angles-right text-gray-700"></i>
+                  </button>
               </div>
 
               <div class="rounded-xl border border-gray-200 p-4">
@@ -184,32 +182,32 @@
                   {{ detalle.sucursal_nombre || '—' }}
                 </p>
 
+                <!-- Datos (alineado con dashboard) -->
                 <div class="space-y-2 text-sm">
                   <div class="flex items-center justify-between">
                     <span class="text-gray-500">Email</span>
                     <span class="text-gray-800">{{ detalle.contacto?.email || detalle.email || '—' }}</span>
                   </div>
                   <div class="flex items-center justify-between">
-                    <span class="text-gray-500">Celular</span>
-                    <span class="text-gray-800">{{ detalle.contacto?.celular || '—' }}</span>
-                  </div>
-                  <div class="flex items-center justify-between">
-                    <span class="text-gray-500">Teléfono</span>
-                    <span class="text-gray-800">{{ detalle.contacto?.telefono || '—' }}</span>
-                  </div>
-                  <div class="flex items-center justify-between">
                     <span class="text-gray-500">RFC</span>
                     <span class="text-gray-800">{{ detalle.fiscal?.rfc || '—' }}</span>
                   </div>
                   <div class="flex items-center justify-between">
-                    <span class="text-gray-500">Razón social</span>
-                    <span class="text-gray-800 truncate max-w-[200px]" :title="detalle.fiscal?.razon_social || '—'">
-                      {{ detalle.fiscal?.razon_social || '—' }}
-                    </span>
+                    <span class="text-gray-500">Inscripción</span>
+                    <span class="text-gray-800">{{ formatDate(detalle.inscripcion) }}</span>
+                  </div>
+                  <div class="flex items-center justify-between">
+                    <span class="text-gray-500">Próximo cobro</span>
+                    <span class="text-gray-800">{{ formatDate(detalle.proximo_cobro) }}</span>
+                  </div>
+                  <div class="flex items-center justify-between">
+                    <span class="text-gray-500">Último pago</span>
+                    <span class="text-gray-800">{{ formatDate(detalle.ultimo_pago) }}</span>
                   </div>
                 </div>
 
-                <div class="mt-4 flex gap-2">
+                <!-- Acciones -->
+                <div class="mt-4 flex items-center gap-2">
                   <button class="px-3 py-2 rounded-lg bg-apolo-primary text-white hover:opacity-90" @click="openAlta(detalle)">
                     Cobrar
                   </button>
@@ -219,6 +217,47 @@
                   >
                     Ver / Editar
                   </RouterLink>
+
+                  <!-- Menú 3 puntos al lado del botón Ver/Editar -->
+                  <div class="relative ml-auto" data-menu-root>
+                    <button
+                      class="h-9 w-9 inline-flex items-center justify-center rounded-lg border border-gray-200 hover:bg-gray-100"
+                      title="Opciones"
+                      @click.stop="panelMenuOpen = !panelMenuOpen"
+                      aria-haspopup="menu"
+                      :aria-expanded="panelMenuOpen"
+                    >
+                      ⋯
+                    </button>
+                    <div
+                      v-if="panelMenuOpen"
+                      class="absolute right-0 mt-1 w-56 bg-white border border-gray-200 rounded-xl shadow-lg p-1 z-20"
+                      role="menu"
+                    >
+                      <RouterLink
+                        :to="{ name: 'ClienteEditar', params: { id: detalle.id } }"
+                        class="block px-3 py-2 rounded-lg hover:bg-gray-50"
+                        role="menuitem"
+                        @click="closePanelMenu"
+                      >
+                        Editar datos básicos
+                      </RouterLink>
+                      <button class="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-50" role="menuitem" @click="openContacto(detalle); closePanelMenu()">
+                        Datos de contacto
+                      </button>
+                      <button class="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-50" role="menuitem" @click="openFiscales(detalle); closePanelMenu()">
+                        Datos fiscales
+                      </button>
+                      <button class="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-50" role="menuitem" @click="openSucursal(detalle); closePanelMenu()">
+                        Asignar a sucursal
+                      </button>
+                      <button class="w-full text-left px-3 py-2 rounded-lg hover:bg-red-50 text-red-700" role="menuitem" @click="removeRow(detalle); closePanelMenu()">
+                        Eliminar
+                      </button>
+                    </div>
+                  </div>
+
+                  
                 </div>
               </div>
             </template>
@@ -283,21 +322,22 @@ const expandedId = ref(null)
 const detalle = ref(null)
 const detalleLoading = ref(false)
 
-const showCrear = ref(false)
-const showFiscales = ref(false)
-const showContacto = ref(false)
-const showSucursal = ref(false)
-const showAlta = ref(false)
-const currentCliente = ref(null)
+/* Menú de 3 puntos dentro del panel */
+const panelMenuOpen = ref(false)
+function closePanelMenu(){ panelMenuOpen.value = false }
 
-const openMenuId = ref(null)
-function toggleMenu (id) { openMenuId.value = openMenuId.value === id ? null : id }
-function closeMenu () { openMenuId.value = null }
+/* Cierre de menú por click afuera / ESC */
 function onDocClick (e) {
   const inside = e.target.closest?.('[data-menu-root]')
-  if (!inside) closeMenu()
+  if (!inside) {
+    panelMenuOpen.value = false
+  }
 }
-function onEsc (e) { if (e.key === 'Escape') closeMenu() }
+function onEsc (e) {
+  if (e.key === 'Escape') {
+    panelMenuOpen.value = false
+  }
+}
 
 onMounted(async () => {
   await fetchAll()
@@ -309,7 +349,7 @@ onBeforeUnmount(() => {
   document.removeEventListener('keydown', onEsc)
 })
 
-/* ---------- Carga: una sola llamada (backend sin paginación) ---------- */
+/* ---------- Carga ---------- */
 async function fetchAll () {
   loading.value = true
   try {
@@ -332,7 +372,7 @@ async function fetchAll () {
   }
 }
 
-/* ---------- Opciones de filtros (desde dataset) ---------- */
+/* ---------- Opciones de filtros ---------- */
 const planesOpciones = computed(() =>
   [...new Set(rows.value.map(r => r.plan_nombre || r.plan_actual).filter(Boolean))].sort()
 )
@@ -340,7 +380,7 @@ const sucursalesOpciones = computed(() =>
   [...new Set(rows.value.map(r => r.sucursal_nombre).filter(Boolean))].sort()
 )
 
-/* ---------- Filtrado por facetas (Plan/Sucursal). El buscador de texto lo hace TableBasic. ---------- */
+/* ---------- Filtrado de facetas ---------- */
 const facetRows = computed(() => {
   return rows.value.filter(r => {
     const matchPlan = !fPlan.value || [r.plan_nombre, r.plan_actual].filter(Boolean).includes(fPlan.value)
@@ -348,7 +388,6 @@ const facetRows = computed(() => {
     return matchPlan && matchSede
   })
 })
-
 function clearFacetFilters () { fPlan.value = ''; fSede.value = '' }
 
 /* ---------- KPIs ---------- */
@@ -376,7 +415,7 @@ const kpi = computed(() => {
 
 /* ---------- Utils ---------- */
 function fullName (c) { if (!c) return ''; return [c?.nombre, c?.apellidos].filter(Boolean).join(' ') }
-function formatDate (d) { try { return new Date(d).toLocaleDateString('es-MX') } catch { return d || '—' } }
+function formatDate (d) { if (!d) return '—'; try { return new Date(d).toLocaleDateString('es-MX') } catch { return d || '—' } }
 
 /* ---------- Expand / Collapse ---------- */
 async function toggleExpand (row) {
@@ -388,6 +427,7 @@ async function toggleExpand (row) {
   expandedId.value = row.id
   detalle.value = null
   detalleLoading.value = true
+  panelMenuOpen.value = false
   try {
     const { data } = await api.clientes.resumen(row.id)
     detalle.value = { ...data, is_active: data?.is_active ?? row.is_active }
@@ -406,6 +446,7 @@ async function toggleExpand (row) {
 function hidePanel () {
   expandedId.value = null
   detalle.value = null
+  panelMenuOpen.value = false
 }
 
 /* Plan mostrado en el panel */
@@ -419,19 +460,26 @@ const planNombre = computed(() => {
 })
 
 /* ---------- Modales ---------- */
+const showCrear = ref(false)
+const showFiscales = ref(false)
+const showContacto = ref(false)
+const showSucursal = ref(false)
+const showAlta = ref(false)
+const currentCliente = ref(null)
+
 function openCrear () { showCrear.value = true }
 function closeCrear () { showCrear.value = false }
-function openFiscales (c) { currentCliente.value = c; showFiscales.value = true; closeMenu() }
-function openContacto (c) { currentCliente.value = c; showContacto.value = true; closeMenu() }
-function openSucursal (c) { currentCliente.value = c; showSucursal.value = true; closeMenu() }
-function openAlta (c) { currentCliente.value = c; showAlta.value = true; closeMenu() }
+
+function openFiscales (c) { currentCliente.value = c; showFiscales.value = true }
+function openContacto (c) { currentCliente.value = c; showContacto.value = true }
+function openSucursal (c) { currentCliente.value = c; showSucursal.value = true }
+function openAlta (c) { currentCliente.value = c; showAlta.value = true }
 function closeAlta () { showAlta.value = false }
 function closeFiscales () { showFiscales.value = false }
 function closeContacto () { showContacto.value = false }
 function closeSucursal () { showSucursal.value = false }
 
 async function removeRow (c) {
-  closeMenu()
   if (!confirm(`Eliminar cliente "${fullName(c)}"?`)) return
   try {
     await api.clientes.delete(c.id)
@@ -451,23 +499,7 @@ async function onAltaSaved () { showAlta.value = false }
 
 /* ---------- Columnas para TableBasic ---------- */
 const columns = [
-  {
-    id: 'toggle',
-    header: '',
-    enableSorting: false,
-    cell: ({ row }) => {
-      const r = row.original
-      return h(
-        'button',
-        {
-          class: 'h-8 w-8 inline-flex items-center justify-center rounded-lg border border-gray-200 hover:bg-gray-100',
-          title: expandedId.value === r.id ? 'Ocultar' : 'Ver detalle',
-          onClick: () => toggleExpand(r),
-        },
-        [ h('i', { class: `fa-solid ${expandedId.value === r.id ? 'fa-angles-left' : 'fa-angles-right'} text-gray-700` }) ],
-      )
-    },
-  },
+  /* Eliminado el toggle izquierdo */
   {
     accessorKey: 'nombre',
     header: 'Nombre',
@@ -503,73 +535,27 @@ const columns = [
     cell: ({ getValue }) => h('span', {}, formatDate(getValue())),
     sortingFn: 'datetime',
   },
+  /* Acciones: botón »» para abrir panel */
   {
-    id: 'acciones',
-    header: () => h('span', { class: 'float-right' }, 'Acciones'),
+    id: 'openPanel',
+    header: () => h('span', { class: 'float-right' }, 'Detalle'),
     enableSorting: false,
     cell: ({ row }) => {
       const r = row.original
       return h(
         'div',
-        { class: 'relative flex justify-end', 'data-menu-root': '' },
+        { class: 'flex justify-end' },
         [
           h(
             'button',
             {
-              class: 'px-2 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-100',
-              onClick: (e) => { e.stopPropagation(); toggleMenu(r.id) },
-              'aria-expanded': openMenuId.value === r.id,
-              'aria-haspopup': 'menu',
+              class: 'px-3 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-100 text-sm',
+              title: 'Ver detalle',
+              onClick: (e) => { e.stopPropagation(); toggleExpand(r) },
             },
-            '⋯',
-          ),
-          openMenuId.value === r.id &&
-            h(
-              'div',
-              {
-                class:
-                  'absolute right-0 mt-1 w-56 bg-white border border-gray-200 rounded-xl shadow-lg p-1 z-20',
-                role: 'menu',
-              },
-              [
-                h(
-                  RouterLink,
-                  {
-                    to: { name: 'ClienteEditar', params: { id: r.id } },
-                    class: 'block px-3 py-2 rounded-lg hover:bg-gray-50',
-                    role: 'menuitem',
-                    onClick: () => closeMenu(),
-                  },
-                  { default: () => 'Editar datos básicos' },
-                ),
-                h(
-                  'button',
-                  { class: 'w-full text-left px-3 py-2 rounded-lg hover:bg-gray-50', role: 'menuitem', onClick: () => { openContacto(r) } },
-                  'Datos de contacto',
-                ),
-                h(
-                  'button',
-                  { class: 'w-full text-left px-3 py-2 rounded-lg hover:bg-gray-50', role: 'menuitem', onClick: () => { openFiscales(r) } },
-                  'Datos fiscales',
-                ),
-                h(
-                  'button',
-                  { class: 'w-full text-left px-3 py-2 rounded-lg hover:bg-gray-50', role: 'menuitem', onClick: () => { openSucursal(r) } },
-                  'Asignar a sucursal',
-                ),
-                h(
-                  'button',
-                  { class: 'w-full text-left px-3 py-2 rounded-lg hover:bg-gray-50 text-apolo-primary', role: 'menuitem', onClick: () => { openAlta(r) } },
-                  'Asignar membresía',
-                ),
-                h(
-                  'button',
-                  { class: 'w-full text-left px-3 py-2 rounded-lg hover:bg-red-50 text-red-700', role: 'menuitem', onClick: () => { removeRow(r) } },
-                  'Eliminar',
-                ),
-              ],
-            ),
-        ],
+            '»',
+          )
+        ]
       )
     },
   },
