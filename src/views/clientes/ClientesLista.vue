@@ -53,9 +53,9 @@
 
     <!-- Card principal -->
     <div class="rounded-2xl bg-white border border-gray-200 shadow-sm overflow-hidden">
-      <!-- Top de filtros (solo Plan/Sucursal; el buscador lo trae TableBasic) -->
+      <!-- Filtros (Plan/Sucursal) -->
       <div class="px-4 py-3 border-b border-gray-200 grid grid-cols-1 md:grid-cols-4 gap-3">
-        <div class="md:col-span-1">
+        <div>
           <label class="block text-xs text-gray-500 mb-1">Plan</label>
           <select v-model="fPlan" class="w-full pr-8 py-2 rounded-lg border border-gray-300">
             <option value="">Todos</option>
@@ -63,7 +63,7 @@
           </select>
         </div>
 
-        <div class="md:col-span-1">
+        <div>
           <label class="block text-xs text-gray-500 mb-1">Sucursal</label>
           <select v-model="fSede" class="w-full pr-8 py-2 rounded-lg border border-gray-300">
             <option value="">Todas</option>
@@ -112,7 +112,7 @@
           </div>
         </div>
 
-        <!-- Panel lateral -->
+        <!-- Panel lateral con ClientSummaryCard -->
         <aside v-if="expandedId" class="border-l border-gray-200 bg-white">
           <div class="max-h-[560px] overflow-y-auto p-4">
             <template v-if="detalleLoading">
@@ -140,133 +140,30 @@
                 <h3 class="text-base font-semibold text-gray-800">
                   {{ detalle.nombre }} {{ detalle.apellidos }}
                 </h3>
-                <!-- Cerrar panel -->
-                  <button
-                    class="h-9 w-9 inline-flex items-center justify-center rounded-lg border border-gray-200 hover:bg-gray-100"
-                    title="Ocultar"
-                    @click="hidePanel"
-                  >
-                    <i class="fa-solid fa-angles-right text-gray-700"></i>
-                  </button>
+                <button
+                  class="h-9 w-9 inline-flex items-center justify-center rounded-lg border border-gray-200 hover:bg-gray-100"
+                  title="Ocultar"
+                  @click="hidePanel"
+                >
+                  <i class="fa-solid fa-angles-right text-gray-700"></i>
+                </button>
               </div>
 
-              <div class="rounded-xl border border-gray-200 p-4">
-                <div class="flex items-center justify-center h-20 w-20 rounded-full bg-gray-100 mx-auto mb-3">
-                  <i class="fa-solid fa-user text-3xl text-gray-400"></i>
-                </div>
-
-                <p class="text-center mb-3">
-                  <span
-                    v-if="detalle.is_active"
-                    class="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200"
-                  >
-                    <i class="fa-solid fa-circle-check"></i>
-                    Activo
-                  </span>
-                  <span
-                    v-else
-                    class="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-red-50 text-red-700 border border-red-200"
-                  >
-                    <i class="fa-solid fa-circle-xmark"></i>
-                    Suspendido
-                  </span>
-                </p>
-
-                <p v-if="planNombre" class="text-center">
-                  <span class="inline-flex items-center gap-1 text-[11px] px-2 py-1 rounded-full bg-gray-100 text-gray-700 border border-gray-200">
-                    Plan: {{ planNombre }}
-                  </span>
-                </p>
-
-                <p class="text-xs text-gray-500 text-center mt-2 mb-4">
-                  {{ detalle.sucursal_nombre || '—' }}
-                </p>
-
-                <!-- Datos (alineado con dashboard) -->
-                <div class="space-y-2 text-sm">
-                  <div class="flex items-center justify-between">
-                    <span class="text-gray-500">Email</span>
-                    <span class="text-gray-800">{{ detalle.contacto?.email || detalle.email || '—' }}</span>
-                  </div>
-                  <div class="flex items-center justify-between">
-                    <span class="text-gray-500">RFC</span>
-                    <span class="text-gray-800">{{ detalle.fiscal?.rfc || '—' }}</span>
-                  </div>
-                  <div class="flex items-center justify-between">
-                    <span class="text-gray-500">Inscripción</span>
-                    <span class="text-gray-800">{{ formatDate(detalle.inscripcion) }}</span>
-                  </div>
-                  <div class="flex items-center justify-between">
-                    <span class="text-gray-500">Próximo cobro</span>
-                    <span class="text-gray-800">{{ formatDate(detalle.proximo_cobro) }}</span>
-                  </div>
-                  <div class="flex items-center justify-between">
-                    <span class="text-gray-500">Último pago</span>
-                    <span class="text-gray-800">{{ formatDate(detalle.ultimo_pago) }}</span>
-                  </div>
-                </div>
-
-                <!-- Acciones -->
-                <div class="mt-4 flex items-center gap-2">
-                  <button class="px-3 py-2 rounded-lg bg-apolo-primary text-white hover:opacity-90" @click="openAlta(detalle)">
-                    Cobrar
-                  </button>
-                  <RouterLink
-                    :to="{ name: 'ClienteEditar', params: { id: detalle.id } }"
-                    class="px-3 py-2 rounded-lg border border-gray-200 hover:bg-gray-50"
-                  >
-                    Ver / Editar
-                  </RouterLink>
-
-                  <!-- Menú 3 puntos al lado del botón Ver/Editar -->
-                  <div class="relative ml-auto" data-menu-root>
-                    <button
-                      class="h-9 w-9 inline-flex items-center justify-center rounded-lg border border-gray-200 hover:bg-gray-100"
-                      title="Opciones"
-                      @click.stop="panelMenuOpen = !panelMenuOpen"
-                      aria-haspopup="menu"
-                      :aria-expanded="panelMenuOpen"
-                    >
-                      ⋯
-                    </button>
-                    <div
-                      v-if="panelMenuOpen"
-                      class="absolute right-0 mt-1 w-56 bg-white border border-gray-200 rounded-xl shadow-lg p-1 z-20"
-                      role="menu"
-                    >
-                      <RouterLink
-                        :to="{ name: 'ClienteEditar', params: { id: detalle.id } }"
-                        class="block px-3 py-2 rounded-lg hover:bg-gray-50"
-                        role="menuitem"
-                        @click="closePanelMenu"
-                      >
-                        Editar datos básicos
-                      </RouterLink>
-                      <button class="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-50" role="menuitem" @click="openContacto(detalle); closePanelMenu()">
-                        Datos de contacto
-                      </button>
-                      <button class="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-50" role="menuitem" @click="openFiscales(detalle); closePanelMenu()">
-                        Datos fiscales
-                      </button>
-                      <button class="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-50" role="menuitem" @click="openSucursal(detalle); closePanelMenu()">
-                        Asignar a sucursal
-                      </button>
-                      <button class="w-full text-left px-3 py-2 rounded-lg hover:bg-red-50 text-red-700" role="menuitem" @click="removeRow(detalle); closePanelMenu()">
-                        Eliminar
-                      </button>
-                    </div>
-                  </div>
-
-                  
-                </div>
-              </div>
+              <ClientSummaryCard
+                :cliente="detalle"
+                @cobrar="openAlta(detalle)"
+                @renovar="goClienteDatos(detalle.id)"
+                @ver="goClienteDatos(detalle.id)"
+                @contacto="openContacto(detalle)"
+                @fiscales="openFiscales(detalle)"
+              />
             </template>
           </div>
         </aside>
       </div>
     </div>
 
-    <!-- Modales (los tuyos) -->
+    <!-- Modales -->
     <ClienteCrearModal v-if="showCrear" @close="closeCrear" @saved="onAnySaved" />
     <DatosFiscalesModal
       v-if="showFiscales"
@@ -301,15 +198,18 @@
 
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount, h } from 'vue'
-import { RouterLink } from 'vue-router'
+import { RouterLink, useRouter } from 'vue-router'
 import api from '@/api/services'
 import TableBasic from '@/components/TableBasic.vue'
+import ClientSummaryCard from '@/components/ClientSummaryCard.vue'
 
 import ClienteCrearModal from '@/views/clientes/modals/ClienteCrearModal.vue'
 import DatosFiscalesModal from '@/views/clientes/modals/DatosFiscalesModal.vue'
 import DatoContactoModal from '@/views/clientes/modals/DatoContactoModal.vue'
 import ClienteSucursalModal from '@/views/clientes/modals/ClienteSucursalModal.vue'
 import AsignarMembresiaModal from '@/views/clientes/modals/AsignarMembresiaModal.vue'
+
+const router = useRouter()
 
 /* ---------- Estado ---------- */
 const loading = ref(true)
@@ -322,34 +222,8 @@ const expandedId = ref(null)
 const detalle = ref(null)
 const detalleLoading = ref(false)
 
-/* Menú de 3 puntos dentro del panel */
-const panelMenuOpen = ref(false)
-function closePanelMenu(){ panelMenuOpen.value = false }
-
-/* Cierre de menú por click afuera / ESC */
-function onDocClick (e) {
-  const inside = e.target.closest?.('[data-menu-root]')
-  if (!inside) {
-    panelMenuOpen.value = false
-  }
-}
-function onEsc (e) {
-  if (e.key === 'Escape') {
-    panelMenuOpen.value = false
-  }
-}
-
-onMounted(async () => {
-  await fetchAll()
-  document.addEventListener('click', onDocClick)
-  document.addEventListener('keydown', onEsc)
-})
-onBeforeUnmount(() => {
-  document.removeEventListener('click', onDocClick)
-  document.removeEventListener('keydown', onEsc)
-})
-
 /* ---------- Carga ---------- */
+onMounted(fetchAll)
 async function fetchAll () {
   loading.value = true
   try {
@@ -380,7 +254,7 @@ const sucursalesOpciones = computed(() =>
   [...new Set(rows.value.map(r => r.sucursal_nombre).filter(Boolean))].sort()
 )
 
-/* ---------- Filtrado de facetas ---------- */
+/* ---------- Filtrado ---------- */
 const facetRows = computed(() => {
   return rows.value.filter(r => {
     const matchPlan = !fPlan.value || [r.plan_nombre, r.plan_actual].filter(Boolean).includes(fPlan.value)
@@ -416,8 +290,9 @@ const kpi = computed(() => {
 /* ---------- Utils ---------- */
 function fullName (c) { if (!c) return ''; return [c?.nombre, c?.apellidos].filter(Boolean).join(' ') }
 function formatDate (d) { if (!d) return '—'; try { return new Date(d).toLocaleDateString('es-MX') } catch { return d || '—' } }
+function goClienteDatos (id) { if (id) router.push({ name: 'ClienteDatos', params: { id } }) }
 
-/* ---------- Expand / Collapse ---------- */
+/* ---------- Panel ---------- */
 async function toggleExpand (row) {
   if (expandedId.value === row.id) {
     expandedId.value = null
@@ -427,7 +302,6 @@ async function toggleExpand (row) {
   expandedId.value = row.id
   detalle.value = null
   detalleLoading.value = true
-  panelMenuOpen.value = false
   try {
     const { data } = await api.clientes.resumen(row.id)
     detalle.value = { ...data, is_active: data?.is_active ?? row.is_active }
@@ -446,18 +320,7 @@ async function toggleExpand (row) {
 function hidePanel () {
   expandedId.value = null
   detalle.value = null
-  panelMenuOpen.value = false
 }
-
-/* Plan mostrado en el panel */
-const planNombre = computed(() => {
-  return (
-    detalle.value?.plan_actual ||
-    detalle.value?.alta?.plan_nombre ||
-    detalle.value?.plan_nombre ||
-    ''
-  )
-})
 
 /* ---------- Modales ---------- */
 const showCrear = ref(false)
@@ -499,11 +362,22 @@ async function onAltaSaved () { showAlta.value = false }
 
 /* ---------- Columnas para TableBasic ---------- */
 const columns = [
-  /* Eliminado el toggle izquierdo */
+  // Nombre clickeable -> navega a ClienteDatos
   {
     accessorKey: 'nombre',
     header: 'Nombre',
-    cell: ({ row }) => h('span', { class: 'text-gray-800 font-medium' }, `${row.original.nombre} ${row.original.apellidos}`),
+    cell: ({ row }) => {
+      const r = row.original
+      return h(
+        'button',
+        {
+          class: 'text-slate-500 hover:underline font-medium',
+          title: 'Abrir ficha del cliente',
+          onClick: (e) => { e.stopPropagation(); goClienteDatos(r.id) },
+        },
+        `${r.nombre} ${r.apellidos}`.trim()
+      )
+    },
   },
   { accessorKey: 'plan_nombre', header: 'Plan' },
   { accessorKey: 'sucursal_nombre', header: 'Sucursal' },
@@ -535,7 +409,7 @@ const columns = [
     cell: ({ getValue }) => h('span', {}, formatDate(getValue())),
     sortingFn: 'datetime',
   },
-  /* Acciones: botón »» para abrir panel */
+  // Acción: botón » para abrir el panel lateral (detalle rápido)
   {
     id: 'openPanel',
     header: () => h('span', { class: 'float-right' }, 'Detalle'),

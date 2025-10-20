@@ -11,7 +11,6 @@
               <span class="chip chip--ok">+2.5%</span>
             </div>
           </div>
-
           <div class="card-kpi">
             <div class="kpi-title">Miembros activos</div>
             <div class="kpi-row">
@@ -19,7 +18,6 @@
               <span class="chip chip--ok">+2.0%</span>
             </div>
           </div>
-
           <div class="card-kpi">
             <div class="kpi-title">Visitas del día</div>
             <div class="kpi-row">
@@ -27,7 +25,6 @@
               <span class="chip chip--ok">+4.7%</span>
             </div>
           </div>
-
           <div class="card-kpi">
             <div class="kpi-title">Ocupaciones de clases</div>
             <div class="kpi-row">
@@ -41,33 +38,16 @@
         <section class="mt-5 grid grid-cols-1 lg:grid-cols-3 gap-5">
           <!-- Columna izquierda -->
           <div class="lg:col-span-2 space-y-5">
-            <div class="card">
-              <div class="card-head">
-                <h3 class="card-title">Ingresos – Últimos 30 días</h3>
-                <button class="icon-btn" @click="loadIngresos" title="Actualizar">⟳</button>
-              </div>
-
+            <!-- Ingresos / Plan -->
+            <div class="card overflow-hidden">
               <div class="grid grid-cols-1 md:grid-cols-2">
                 <!-- Línea -->
                 <div class="p-4 sm:p-5">
-                  <div class="h-56 rounded-2xl border border-[#e6e9ef] bg-white overflow-hidden">
-                    <VChart :option="lineOption" autoresize class="h-56" />
-                  </div>
-                  <div class="mt-2 text-[12px] text-[#667]">
-                    Total 30d: <strong class="text-[#222]">{{ money(total30d) }}</strong>
-                  </div>
+                  <VChart :option="lineOption" autoresize class="h-56" />
                 </div>
-
                 <!-- Dona -->
                 <div class="p-4 sm:p-5">
-                  <div class="h-56 rounded-2xl border border-[#e6e9ef] bg-white overflow-hidden grid place-items-center p-2">
-                    <VChart :option="pieOption" autoresize class="h-48 w-full" />
-                  </div>
-                  <div class="mt-2 text-xs text-[#445] flex items-center gap-3 justify-center">
-                    <span class="legend" style="--c:#1d4ed8">Estandar</span>
-                    <span class="legend" style="--c:#2563eb">Plus</span>
-                    <span class="legend" style="--c:#60a5fa">Premium</span>
-                  </div>
+                  <VChart :option="pieOption" autoresize class="h-56" />
                 </div>
               </div>
             </div>
@@ -78,13 +58,14 @@
               <div class="card">
                 <div class="card-head">
                   <h3 class="card-title">Próximos cobros</h3>
-                  <button class="icon-btn" @click="loadCobros">≡</button>
+                  <button class="icon-btn" @click="loadCobros" title="Actualizar">⟳</button>
                 </div>
-                <div class="p-4 sm:p-5 space-y-4" v-if="!loading.cobros">
+
+                <div class="p-4 sm:p-5 space-y-4 max-h-64 overflow-auto" v-if="!loading.cobros">
                   <div v-for="c in proximosCobros" :key="c.id" class="flex items-center justify-between">
-                    <div>
-                      <div class="font-medium">{{ c.nombre }}</div>
-                      <div class="text-xs text-[#667]">{{ fmtFecha(c.fecha) }} <span v-if="c.tipo">({{ c.tipo }})</span></div>
+                    <div class="min-w-0">
+                      <div class="font-medium truncate max-w-[260px]">{{ c.nombre }}</div>
+                      <div class="text-xs text-[#667]">{{ fmtFecha(c.fecha) }}<span v-if="c.tipo"> ({{ c.tipo }})</span></div>
                     </div>
                     <button class="btn-ghost" @click="cobrar(c)">Cobrar</button>
                   </div>
@@ -93,17 +74,24 @@
                 <div v-else class="p-4 text-[#667] text-sm">Cargando…</div>
               </div>
 
-              <!-- Equipos (hardcode) -->
+              <!-- Equipos (único hardcodeado) con filtros -->
               <div class="card">
                 <div class="card-head">
                   <h3 class="card-title">Equipos</h3>
+                  <div class="flex gap-2">
+                    <button
+                      v-for="f in filtrosEquipos"
+                      :key="f.key"
+                      @click="toggleFiltroEquipo(f.key)"
+                      class="text-[11px] px-2 py-1 rounded-md text-white"
+                      :style="{ background: eqFilter === f.key ? f.color : '#a3a3a3' }"
+                    >
+                      {{ f.text }}
+                    </button>
+                  </div>
                 </div>
                 <div class="p-4 sm:p-5 space-y-3">
-                  <div
-                    v-for="e in equipos"
-                    :key="e.id"
-                    class="flex items-center justify-between"
-                  >
+                  <div v-for="e in equiposFiltrados" :key="e.id" class="flex items-center justify-between">
                     <div>
                       <div class="font-medium">{{ e.nombre }}</div>
                       <div class="text-xs text-[#667]">{{ e.estadoTexto }}</div>
@@ -120,7 +108,7 @@
                       <button class="btn-ghost">Ver</button>
                     </div>
                   </div>
-                  <div v-if="!equipos.length" class="text-[13px] text-[#667]">Sin equipos</div>
+                  <div v-if="!equiposFiltrados.length" class="text-[13px] text-[#667]">Sin equipos</div>
                 </div>
               </div>
             </div>
@@ -144,14 +132,14 @@
                 <div class="font-semibold mb-1">{{ clase.nombre }}</div>
                 <div class="text-[12px] text-[#667] mb-2">{{ clase.instructor || '—' }}</div>
 
-                <div class="flex items-center justify-between text-[12px] mb-1">
+                <div v-if="clase.cupo && clase.inscritos != null" class="flex items-center justify-between text-[12px] mb-1">
                   <span :class="{'text-emerald-600': clase.delta>0, 'text-rose-600': clase.delta<0, 'text-[#667]': clase.delta===0}">
                     {{ clase.delta>0 ? ('+'+clase.delta) : (clase.delta<0 ? clase.delta : '0') }}
                   </span>
                   <span class="text-[#667]">({{ formatMiles(clase.inscritos) }}/{{ formatMiles(clase.cupo) }})</span>
                 </div>
 
-                <div class="h-2 rounded-full bg-[#eef2f7] overflow-hidden">
+                <div v-if="clase.cupo && clase.inscritos != null" class="h-2 rounded-full bg-[#eef2f7] overflow-hidden">
                   <div
                     class="h-full rounded-full"
                     :style="{ width: Math.min(100, Math.round((clase.inscritos / Math.max(1, clase.cupo)) * 100)) + '%', background: clase.colorBarra }"
@@ -164,7 +152,7 @@
           </div>
         </section>
 
-        <!-- Link con color del tema -->
+        <!-- Link -->
         <div class="mt-5 text-right">
           <RouterLink :to="{ name: 'ClientesLista' }" class="link-theme">Ver todos los clientes</RouterLink>
         </div>
@@ -199,7 +187,7 @@
             <input
               v-model="buscarInput"
               type="text"
-              placeholder="Buscar cliente por nombre o email…"
+              placeholder="Buscar cliente por nombre, email, RFC o CURP…"
               class="flex-1 outline-none text-[14px] placeholder-[#99a] py-1.5"
               autofocus
             />
@@ -235,7 +223,7 @@
       </div>
     </div>
 
-    <!-- Slide-over Cliente (card) -->
+    <!-- Slide-over Cliente usando tu ClientSummaryCard -->
     <transition
       enter-active-class="transition transform duration-200"
       enter-from-class="opacity-0 translate-x-3"
@@ -251,93 +239,16 @@
           </div>
           <button class="icon-btn" @click="closePanelCliente" title="Cerrar">✕</button>
         </div>
-
         <div class="p-4 overflow-auto h-[calc(100%-52px)]">
-          <div class="rounded-2xl border border-[#e6e9ef] bg-white p-4">
-            <!-- Top: avatar + chips -->
-            <div class="flex items-start justify-between">
-              <div class="flex items-center gap-3">
-                <div class="h-14 w-14 rounded-full bg-[#f1f3f9] grid place-items-center">
-                  <i class="fa-regular fa-user text-[#9aa3b2] text-xl"></i>
-                </div>
-                <div class="leading-tight">
-                  <div class="font-semibold text-[15px] max-w-[240px] truncate">
-                    {{ (resumen?.nombre || '') + ' ' + (resumen?.apellidos || '') }}
-                  </div>
-                  <div class="mt-2">
-                    <span
-                      class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium border"
-                      :class="badgeClass(resumen?.plan_estado || (resumen?.is_active ? 'activo' : 'inactivo'))"
-                    >
-                      <i class="fa-solid fa-circle-check text-[12px]"></i>
-                      {{ resumen?.plan_estado || (resumen?.is_active ? 'Activo' : 'Inactivo') }}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <!-- <button class="h-8 w-8 rounded-full border border-[#e6e9ef] hover:bg-[#f5f7fa]" @click="verEditar">
-                <i class="fa-solid fa-angles-right text-[#445]"></i>
-              </button> -->
-            </div>
-
-            <!-- Pill plan y sucursal -->
-            <div class="mt-3">
-              <div v-if="resumen?.plan_actual" class="inline-flex items-center px-3 py-1 rounded-full bg-[#f1f4ff] text-[#2741d9] text-[12px] border border-[#dfe6ff]">
-                Plan: {{ resumen.plan_actual }}
-              </div>
-              <div class="text-[13px] text-[#667] mt-2">
-                {{ resumen?.sucursal_nombre || '—' }}
-              </div>
-            </div>
-
-            <!-- Campos -->
-            <div class="mt-4 space-y-2">
-              <div v-if="resumen?.email" class="rowi">
-                <span>Email</span>
-                <span class="text-[#111] font-medium truncate">{{ resumen.email }}</span>
-              </div>
-
-              <div v-if="resumen?.fiscal?.rfc" class="rowi">
-                <span>RFC</span>
-                <span class="text-[#111] font-medium">{{ resumen.fiscal.rfc }}</span>
-              </div>
-
-              <div class="rowi">
-                <span>Próximo cobro</span>
-                <span class="text-[#111] font-medium">{{ formatDate(resumen?.proximo_cobro) }}</span>
-              </div>
-
-              <div class="rowi">
-                <span>Fecha límite</span>
-                <span class="text-[#111] font-medium">{{ formatDate(resumen?.fecha_limite) }}</span>
-              </div>
-
-              <div class="rowi">
-                <span>Alta</span>
-                <span class="text-[#111] font-medium">{{ formatDate(resumen?.fecha_alta) }}</span>
-              </div>
-
-              <div class="rowi">
-                <span>Costo inscripción</span>
-                <span class="text-[#111] font-medium">{{ resumen?.costo_inscripcion!=null ? money(resumen.costo_inscripcion) : '—' }}</span>
-              </div>
-            </div>
-
-            <!-- Botones -->
-            <div class="mt-4 flex items-center gap-2">
-              <button
-                class="px-4 py-2 rounded-xl text-white"
-                style="background:#b86a34"
-                @click="cobrar({ id: resumen?.id, nombre: (resumen?.nombre||'') + ' ' + (resumen?.apellidos||'') })"
-              >
-                Cobrar
-              </button>
-              <button class="px-4 py-2 rounded-xl bg-white border border-[#e6e9ef] hover:bg-[#f5f7fa]" @click="verEditar">
-                Ver / Editar
-              </button>
-            </div>
-          </div>
+          <ClientSummaryCard
+            v-if="resumen"
+            :cliente="resumen"
+            @ver="verEditar"
+            @contacto="() => {}"
+            @fiscales="() => {}"
+            @cobrar="() => cobrar({ id: resumen.id, nombre: (resumen.nombre||'') + ' ' + (resumen.apellidos||'') })"
+            @renovar="() => {}"
+          />
         </div>
       </aside>
     </transition>
@@ -351,6 +262,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useUiConfigStore } from '@/stores/uiConfig'
 import ClienteCrearModal from '@/views/clientes/modals/ClienteCrearModal.vue'
+import ClientSummaryCard from '@/components/ClientSummaryCard.vue'
 import api from '@/api/services'
 import http from '@/api/http'
 
@@ -359,8 +271,8 @@ import { use } from 'echarts/core'
 import VChart from 'vue-echarts'
 import { CanvasRenderer } from 'echarts/renderers'
 import { LineChart, PieChart } from 'echarts/charts'
-import { GridComponent, TooltipComponent, LegendComponent, TitleComponent, DatasetComponent } from 'echarts/components'
-use([CanvasRenderer, LineChart, PieChart, GridComponent, TooltipComponent, LegendComponent, TitleComponent, DatasetComponent])
+import { GridComponent, TooltipComponent, LegendComponent, TitleComponent } from 'echarts/components'
+use([CanvasRenderer, LineChart, PieChart, GridComponent, TooltipComponent, LegendComponent, TitleComponent])
 
 const router = useRouter()
 const auth = useAuthStore()
@@ -381,42 +293,31 @@ const loading = ref({ kpis: true, ingresos: true, cobros: false, clases: true, b
 const kpis = ref({ ingresosHoy: 0, ingresosDelta: 0, miembrosActivos: 0, miembrosDelta: 0, visitasHoy: 0, visitasDelta: 0, ocupacion: 0, ocupacionDelta: 0 })
 const proximosCobros = ref([])
 const clases = ref([])
+
+/* Equipos + filtros (único hardcode) */
+const filtrosEquipos = [
+  { key: 'piso',  text: 'En piso',        color: '#10b981' },
+  { key: 'manto', text: 'Mantenimiento',  color: '#f59e0b' },
+  { key: 'da',    text: 'Dañado',         color: '#ef4444' },
+]
+const eqFilter = ref('piso')
 const equipos = ref([
-  {
-    id: 1,
-    nombre: 'Cinta de correr (#0012)',
-    estadoTexto: 'En mantenimiento',
-    badges: [
-      { text: 'En piso',        color: '#10b981' },
-      { text: 'Mantenimiento',  color: '#f59e0b' },
-    ],
-  },
-  {
-    id: 2,
-    nombre: 'Bicicleta estática (#0007)',
-    estadoTexto: 'Dañado',
-    badges: [
-      { text: 'Dañado', color: '#ef4444' },
-    ],
-  },
-  {
-    id: 3,
-    nombre: 'Máquina de remo (#0102)',
-    estadoTexto: 'En piso',
-    badges: [
-      { text: 'En piso', color: '#10b981' },
-    ],
-  },
+  { id: 1, nombre: 'Cinta de correr (#0012)',   estadoTexto: 'En mantenimiento', tags:['manto','piso'], badges:[{text:'En piso', color:'#10b981'},{text:'Mantenimiento', color:'#f59e0b'}] },
+  { id: 2, nombre: 'Bicicleta estática (#0007)', estadoTexto: 'Dañado',         tags:['da'],           badges:[{text:'Dañado', color:'#ef4444'}] },
+  { id: 3, nombre: 'Máquina de remo (#0102)',    estadoTexto: 'En piso',        tags:['piso'],        badges:[{text:'En piso', color:'#10b981'}] },
+  { id: 4, nombre: 'Prensa de piernas (#0110)',  estadoTexto: 'En piso',        tags:['piso'],        badges:[{text:'En piso', color:'#10b981'}] },
 ])
+const equiposFiltrados = computed(() => equipos.value.filter(e => e.tags.includes(eqFilter.value)))
+function toggleFiltroEquipo(key){ eqFilter.value = key }
 
 /* === Serie ingresos === */
 const ingresosFechas = ref([])
 const ingresosSerie = ref([])
-const total30d = computed(() => ingresosSerie.value.reduce((a,b)=>a+(Number(b)||0),0))
 
 /* ====== OPTIONS ECHARTS ====== */
 const lineOption = computed(() => ({
-  grid: { left: 28, right: 12, top: 10, bottom: 22 },
+  title: { text: 'Ingresos – Últimos 30 días', left: 'left', top: 6, textStyle: { fontSize: 14, fontWeight: 600 } },
+  grid: { left: 28, right: 12, top: 38, bottom: 22 },
   tooltip: { trigger: 'axis', valueFormatter: v => money(v) },
   xAxis: {
     type: 'category',
@@ -429,17 +330,36 @@ const lineOption = computed(() => ({
     axisLabel: { formatter: (v) => formatMiles(v), fontSize: 11 },
     splitLine: { lineStyle: { color: '#eef2f7' } }
   },
-  series: [{ type: 'line', smooth: true, areaStyle: {}, data: ingresosSerie.value }]
-}))
-const pieOption = computed(() => ({
-  tooltip: { trigger: 'item', valueFormatter: v => formatMiles(v) },
-  legend: { bottom: 0, itemWidth: 10, itemHeight: 10, textStyle: { fontSize: 12 } },
   series: [{
-    name: 'Plan', type: 'pie', radius: ['55%','80%'],
-    label: { show: false }, emphasis: { label: { show: true, fontSize: 14, formatter: '{b}: {d}%' } },
-    data: [{ value:60, name:'Estandar' }, { value:25, name:'Plus' }, { value:15, name:'Premium' }]
+    type: 'line',
+    smooth: true,
+    symbol: 'none',
+    lineStyle: { width: 2 },
+    areaStyle: {
+      opacity: 0.35,
+      color: { type:'linear', x:0, y:0, x2:0, y2:1, colorStops:[{offset:0,color:'#60a5fa'},{offset:1,color:'#ffffff'}] }
+    },
+    data: ingresosSerie.value
   }]
 }))
+
+const pieOption = computed(() => ({
+  title: { text: 'Plan', left: 'center', top: 6, textStyle: { fontSize: 14, fontWeight: 600 } },
+  tooltip: { trigger: 'item', valueFormatter: v => formatMiles(v) },
+  legend: { top: 6, right: 10, orient: 'horizontal', itemWidth: 10, itemHeight: 10, textStyle: { fontSize: 12 } },
+  series: [{
+    name: 'Plan',
+    type: 'pie',
+    radius: ['55%','80%'],
+    center: ['50%','58%'],
+    label: { show: false },
+    emphasis: { label: { show: true, fontSize: 14, formatter: '{b}: {d}%' } },
+    data: planesDona.value
+  }]
+}))
+
+/* Dona real por plan (cuenta de altas por plan en 30 días) */
+const planesDona = ref([])
 
 /* ==== Carga de datos ==== */
 async function loadKpis() {
@@ -468,16 +388,18 @@ async function loadKpis() {
       visitasHoy = acc?.count ?? (acc?.results?.length ?? 0)
     } catch {}
 
-    let ocupacion = 75
+    let ocupacion
     try {
-      const { data: horarios } = await api.horariosDisciplinas.list({ page_size: 500 })
+      const { data: horarios } = await api.horariosDisciplinas.list({ page_size: 200 })
       const items = horarios?.results || horarios || []
-      if (items.length) {
+      if (items.length && items[0].inscritos != null && items[0].cupo != null) {
         const ratios = items.map(h => Math.min(1, (Number(h.inscritos)||0) / Math.max(1, Number(h.cupo)||1)))
         const avg = ratios.length ? (ratios.reduce((a,b)=>a+b,0)/ratios.length) : 0
         ocupacion = Math.round(avg * 100)
+      } else {
+        ocupacion = 75
       }
-    } catch {}
+    } catch { ocupacion = 75 }
 
     kpis.value = { ingresosHoy, ingresosDelta: 0, miembrosActivos, miembrosDelta: 0, visitasHoy, visitasDelta: 0, ocupacion, ocupacionDelta: 0 }
   } finally { loading.value.kpis = false }
@@ -491,6 +413,7 @@ async function loadIngresos() {
     const inicio = new Date(hoy); inicio.setDate(inicio.getDate() - 29)
     const fin = new Date(hoy); fin.setDate(fin.getDate() + 1)
 
+    // ventas por día
     const { data } = await api.ventas.ventas.list({
       empresa, fecha_after: inicio.toISOString(), fecha_before: fin.toISOString(), page_size: 1000, ordering: 'fecha'
     })
@@ -509,28 +432,53 @@ async function loadIngresos() {
       fechas.push(key)
       valores.push(Number(map.get(key) || 0))
     }
-    if (!valores.some(v => v > 0)) {
-      valores.splice(0, valores.length, ...[900,0,800,600,500,650,300,650,0,600,450,700,200,100,50,900,850,0,950,700,800,900,0,950,800,600,950,880,420,500])
-    }
     ingresosFechas.value = fechas
     ingresosSerie.value = valores
+
+    // dona por plan: contar altas de últimos 30 días por nombre de plan
+    const { data: altasData } = await api.altasPlan.list({ fecha_after: inicio.toISOString(), fecha_before: fin.toISOString(), page_size: 1000 })
+    const altas = altasData?.results || altasData || []
+    const cuenta = new Map()
+    for (const a of altas) {
+      const nombre = a.plan_nombre || `Plan ${a.plan}`
+      cuenta.set(nombre, (cuenta.get(nombre) || 0) + 1)
+    }
+    planesDona.value = Array.from(cuenta.entries()).map(([name, value]) => ({ name, value }))
   } finally { loading.value.ingresos = false }
 }
 
-async function loadCobros(){
+async function loadCobros() {
   loading.value.cobros = true
-  try{
-    const { data } = await api.clientes.list({ ordering: 'proximo_cobro', page_size: 10 })
+  try {
+    // ALTAS con fecha_limite_pago, y completamos nombre de cliente si falta
+    const { data } = await api.altasPlan.list({ ordering: 'fecha_limite_pago', page_size: 50 })
     const arr = data?.results || data || []
-    proximosCobros.value = arr
-      .filter(r => !!r.proximo_cobro)
-      .slice(0,6)
-      .map(r => ({
-        id: r.id,
-        nombre: `${r.nombre||''} ${r.apellidos||''}`.trim() || `Cliente ${r.id}`,
-        fecha: r.proximo_cobro,
-        tipo: r.tipo_cobro || null
+
+    // reunir ids de cliente sin nombre
+    const items = arr
+      .filter(a => !!a.fecha_limite_pago)
+      .map(a => ({
+        id: a.id,
+        clienteId: a.cliente,
+        nombre: a.cliente_nombre || null,
+        fecha: a.fecha_limite_pago,
+        tipo: a.renovacion ? 'Renovación' : 'Prepago'
       }))
+      
+    // completar nombres faltantes con llamadas puntuales
+    for (const it of items) {
+      if (!it.nombre && it.clienteId) {
+        try {
+          const { data: cli } = await api.clientes.retrieve(it.clienteId)
+          it.nombre = `${cli?.nombre || ''} ${cli?.apellidos || ''}`.trim() || `Cliente ${it.clienteId}`
+        } catch {}
+      }
+    }
+    console.log(proximosCobros.value)
+    proximosCobros.value = items
+      .filter(i => !!i.nombre && !!i.fecha)
+      .sort((a,b) => (a.fecha > b.fecha ? 1 : -1))
+      .slice(0, 20)
   } finally { loading.value.cobros = false }
 }
 
@@ -554,11 +502,11 @@ async function loadClases(){
         id: h.id,
         nombre: h.disciplina_nombre || d.nombre || 'Clase',
         instructor: d.instructor_nombre || '—',
-        sede: d.sucursal_nombre || 'Gimnasio',
+        sede: d.empresa_nombre || 'Gimnasio',
         hora_inicio: h.hora_inicio,
         hora_fin: h.hora_fin,
-        inscritos: Number(h.inscritos || 8 + (i%7)),
-        cupo: Number(d.limite_personas || 15),
+        inscritos: (h.inscritos != null) ? Number(h.inscritos) : null,
+        cupo: (d.limite_personas != null) ? Number(d.limite_personas) : null,
         delta: (i%3===0)? 2 : (i%3===1? 1 : -1),
         colorBarra: palette[i++ % palette.length],
       }
@@ -584,6 +532,7 @@ async function doSearch(q) {
   if (!q || !q.trim()) { resultados.value = []; return }
   loading.value.buscar = true
   try {
+    // En el backend, haz que search incluya RFC/CURP
     const { data } = await api.clientes.list({ search: q.trim(), page_size: 10, ordering: '-id' })
     resultados.value = (data?.results || data || []).map(r => ({
       id: r.id, nombre: r.nombre ?? '', apellidos: r.apellidos ?? '', email: r.email || '—',
@@ -606,7 +555,7 @@ async function openResumen(id) {
 function verEditar(){
   const id = resumen.value?.id
   if(!id) return
-  try { router.push({ name: 'ClientesLista', query: { sel: id } }) } catch { /* noop */ }
+  try { router.push({ name: 'ClientesLista', query: { sel: id } }) } catch {}
 }
 
 /* Helpers */
@@ -614,24 +563,15 @@ function money (n) { return Number(n||0).toLocaleString('es-MX',{ style:'currenc
 function formatMiles(n){ return Number(n||0).toLocaleString('es-MX') }
 function fmtFecha (iso) { try { return new Date(iso).toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'}) } catch { return iso } }
 function onClienteCreado () { modalCliente.value = false }
-function formatDate (d) { if (!d) return '—'; try { return new Date(d).toLocaleDateString('es-MX') } catch { return d } }
 function cobrar (c) { console.log('Cobrar a:', c) }
-function badgeClass (estado) {
-  const v = String(estado || '').toLowerCase()
-  if (v === 'activo')  return 'border-emerald-200 bg-emerald-50 text-emerald-700'
-  if (v === 'inactivo' || v === 'vencido') return 'border-rose-200 bg-rose-50 text-rose-700'
-  return 'border-[#e6e9ef] bg-[#fafbfe] text-[#445]'
-}
 </script>
 
 <style scoped>
-/* Cards */
 .card { @apply rounded-2xl bg-white border border-[#e6e9ef] shadow-sm; }
 .card-head { @apply px-4 sm:px-5 py-4 border-b border-[#e6e9ef] flex items-center justify-between; }
 .card-title { @apply font-semibold; }
 .icon-btn { @apply h-8 w-8 rounded-lg border border-[#e6e9ef] grid place-items-center hover:bg-[#f5f7fa] text-[#445]; }
 
-/* KPI */
 .card-kpi { @apply rounded-2xl bg-white border border-[#e6e9ef] shadow-sm px-4 py-3; }
 .kpi-title { @apply text-[13px] text-[#556] mb-2; }
 .kpi-row { @apply flex items-center justify-between; }
@@ -640,23 +580,12 @@ function badgeClass (estado) {
 .chip--ok   { background: #e7f8ef; color: #0f8f57; }
 .chip--warn { background: #fde8ea; color: #dc3545; }
 
-/* Link */
 .link-theme { color: v-bind(primary); }
 .link-theme:hover { text-decoration: underline; }
 
-/* Ghost */
 .btn-ghost { @apply px-3 py-1.5 rounded-md text-[13px] border; border-color:#e6e9ef; background:#fafbfe; }
 .btn-ghost:hover { background:#f0f3f9; }
 
-/* Leyenda dona */
-.legend { display:inline-flex; align-items:center; gap:6px; color:#445; }
-.legend::before{ content:''; width:8px; height:8px; border-radius:9999px; background: var(--c); display:inline-block; }
-
-/* Slide card rows */
-.rowi { display:grid; grid-template-columns: 1fr 1fr; gap:12px; align-items:center; font-size:14px; }
-.rowi > span:first-child { color:#667; }
-
-/* FABs */
 .fab { position: fixed; right: 1.5rem; bottom: 6.5rem; height: 3.5rem; width: 3.5rem;
   border-radius: 9999px; color:#fff; display:flex; align-items:center; justify-content:center;
   box-shadow: 0 8px 24px rgba(0,0,0,.15); }
