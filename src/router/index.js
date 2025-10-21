@@ -50,7 +50,7 @@ const routes = [
     meta: { requiresAuth: true },
     children: [
       { path: 'dashboard', name: 'Dashboard', component: Dashboard },
-      { path: '/empresas', name: 'EmpresasLista', component: EmpresasLista },
+      { path: 'empresas', name: 'EmpresasLista', component: EmpresasLista },
       { path: '/empresas/:id', name: 'EmpresaDetalle', component: EmpresaDetalle, props: true },
       // Clientes
       { path: 'clientes',       name: 'ClientesLista', component: ClientesLista, meta: { perms: ['clientes:read'] } },

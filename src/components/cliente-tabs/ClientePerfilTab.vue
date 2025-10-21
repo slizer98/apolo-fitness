@@ -7,37 +7,37 @@
         <div class="card-head">Perfil</div>
         <div class="p-5 grid grid-cols-1 sm:grid-cols-2 gap-6">
           <div class="field">
-            <span class="label">Edad</span>
+            <span class="label">EDAD</span>
             <span class="value">{{ edad || '—' }}</span>
           </div>
 
           <div class="field">
-            <span class="label">Sexo</span>
+            <span class="label">SEXO</span>
             <span class="value">{{ resumen?.sexo || '—' }}</span>
           </div>
 
           <div class="field">
-            <span class="label">Email</span>
+            <span class="label">EMAIL</span>
             <span class="value">{{ email || '—' }}</span>
           </div>
 
           <div class="field">
-            <span class="label">Teléfono</span>
+            <span class="label">TELÉFONO</span>
             <span class="value">{{ telefono || '—' }}</span>
           </div>
 
           <div class="field">
-            <span class="label">Inicio de membresía</span>
+            <span class="label">INICIO DE MEMBRESIA</span>
             <span class="value">{{ f(resumen?.inscripcion) }}</span>
           </div>
 
           <div class="field">
-            <span class="label">Contacto de emergencia</span>
+            <span class="label">CONTACTO DE EMERGENCIA</span>
             <span class="value">{{ emergencia || '—' }}</span>
           </div>
 
           <div class="sm:col-span-2 field">
-            <span class="label">Dirección</span>
+            <span class="label">DIRECCIÓN</span>
             <span class="value">{{ direccion || '—' }}</span>
           </div>
         </div>

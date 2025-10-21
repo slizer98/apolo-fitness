@@ -4,6 +4,7 @@ import router from '@/router'
 // Mapa de títulos/íconos por defecto (si el meta no lo trae)
 const DEFAULT_META = {
   Dashboard:       { label: 'Dashboard',   icon: 'fa-house' },
+  EmpresasLista:       { label: 'Empresa',   icon: 'fa-house' },
   ClientesLista:   { label: 'Clientes',    icon: 'fa-id-card' },
   ConveniosLista:   { label: 'Convenios',    icon: 'fa-id-card' },
   PlanesLista:     { label: 'Membresías',  icon: 'fa-dumbbell' },
