@@ -30,6 +30,29 @@
       </div>
     </div>
 
+    <!-- ======== Identidad (nombre y logo) ======== -->
+    <section class="rounded-2xl border border-gray-200 mb-4">
+      <header class="px-4 py-3 border-b border-gray-200">
+        <div class="flex items-center justify-between">
+          <h2 class="text-sm font-medium">Identidad</h2>
+          <span class="text-xs text-gray-500">Nombre y logo visibles en el dashboard</span>
+        </div>
+      </header>
+      <div class="p-4 grid md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs text-gray-500 mb-1">Nombre de la empresa (ui.app_name)</label>
+          <input v-model.trim="appName" class="w-full border border-gray-300 rounded px-2 py-1.5" placeholder="Mi Empresa" />
+        </div>
+        <div>
+          <label class="block text-xs text-gray-500 mb-1">Logo URL (ui.logo_url)</label>
+          <input v-model.trim="logoUrl" class="w-full border border-gray-300 rounded px-2 py-1.5" placeholder="https://…/logo.png" />
+          <div v-if="logoUrl" class="mt-2">
+            <img :src="logoUrl" alt="logo preview" class="h-10 object-contain" />
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- ======== Card: Tema (COLORES) ======== -->
     <section class="rounded-2xl border border-gray-200 mb-4">
       <header class="px-4 py-3 border-b border-gray-200">
@@ -61,6 +84,36 @@
           </div>
 
           <div class="text-sm font-medium text-gray-700 mt-2">Fondo (sidebar/app)</div>
+          <!-- Fondo general -->
+          <div class="text-sm font-medium text-gray-700 mt-2">Fondo general</div>
+
+          <div class="grid sm:grid-cols-2 gap-3 items-start">
+            <div>
+              <label class="block text-xs text-gray-500 mb-1">Modo</label>
+              <div class="flex items-center gap-4 text-sm">
+                <label class="inline-flex items-center gap-2">
+                  <input type="radio" value="gradient" v-model="formTheme.bgMode">
+                  <span>Gradiente</span>
+                </label>
+                <label class="inline-flex items-center gap-2">
+                  <input type="radio" value="solid" v-model="formTheme.bgMode">
+                  <span>Sólido</span>
+                </label>
+              </div>
+              <p class="text-xs text-gray-500 mt-1">
+                Si eliges <b>Sólido</b>, se usará solo el color siguiente y se ignorará el gradiente.
+              </p>
+            </div>
+
+            <div>
+              <label class="block text-xs text-gray-500 mb-1">Color sólido</label>
+              <div class="flex items-center gap-2">
+                <input type="color" v-model="formTheme.bgSolid" class="h-9 w-10 bg-transparent" />
+                <input v-model="formTheme.bgSolid" class="flex-1 border border-gray-300 rounded px-2 py-1.5" />
+              </div>
+            </div>
+          </div>
+
           <div class="grid sm:grid-cols-2 gap-3">
             <div>
               <label class="block text-xs text-gray-500 mb-1">BG Start</label>
@@ -95,6 +148,49 @@
               </div>
             </div>
           </div>
+
+          <!-- Texto global -->
+          <div class="text-sm font-medium text-gray-700 mt-2">Texto</div>
+          <div class="grid sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs text-gray-500 mb-1">Texto base</label>
+              <div class="flex items-center gap-2">
+                <input type="color" v-model="formTheme.text" class="h-9 w-10 bg-transparent" />
+                <input v-model="formTheme.text" class="flex-1 border border-gray-300 rounded px-2 py-1.5" />
+              </div>
+            </div>
+          </div>
+
+          <div class="grid sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs text-gray-500 mb-1">Texto secundario (subtext)</label>
+            <div class="flex items-center gap-2">
+              <!-- Si usas color sólido, puedes poner input color;
+                  si vas a permitir rgba(), deja solo el text -->
+              <input v-model="formTheme.subtext" class="flex-1 border border-gray-300 rounded px-2 py-1.5" placeholder="#64748b o rgba(15,23,42,.55)"/>
+            </div>
+          </div>
+        </div>
+
+
+          <!-- Cards -->
+          <div class="text-sm font-medium text-gray-700 mt-2">Cards</div>
+          <div class="grid sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs text-gray-500 mb-1">Card BG</label>
+              <div class="flex items-center gap-2">
+                <input type="color" v-model="formTheme.cardBg" class="h-9 w-10 bg-transparent" />
+                <input v-model="formTheme.cardBg" class="flex-1 border border-gray-300 rounded px-2 py-1.5" />
+              </div>
+            </div>
+            <div>
+              <label class="block text-xs text-gray-500 mb-1">Card Text</label>
+              <div class="flex items-center gap-2">
+                <input type="color" v-model="formTheme.cardText" class="h-9 w-10 bg-transparent" />
+                <input v-model="formTheme.cardText" class="flex-1 border border-gray-300 rounded px-2 py-1.5" />
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- Vista previa -->
@@ -102,7 +198,9 @@
           <div class="text-sm text-gray-700 mb-2">Vista previa</div>
           <div
             class="rounded-xl overflow-hidden border border-gray-200 shadow"
-            :style="{ background: `linear-gradient(120deg, ${formTheme.bgStart}, ${formTheme.bgEnd})` }"
+            :style="formTheme.bgMode === 'solid'
+              ? { background: formTheme.bgSolid }
+              : { background: `linear-gradient(120deg, ${formTheme.bgStart}, ${formTheme.bgEnd})` }"
           >
             <div
               class="h-12 px-3 flex items-center justify-between text-sm text-white"
@@ -114,8 +212,11 @@
                 <span class="h-6 w-6 rounded-lg border border-white/40" :style="{ background: formTheme.secondary }"></span>
               </span>
             </div>
-            <div class="p-3 text-gray-800 text-xs bg-white">
-              Fondo con gradiente (preview). No afecta tus datos.
+            <div class="p-3 text-xs" :style="{ color: formTheme.text }">
+              <div class="rounded-lg border px-3 py-2"
+                   :style="{ background: formTheme.cardBg, color: formTheme.cardText, borderColor: '#e5e7eb' }">
+                Card preview — texto de card
+              </div>
             </div>
           </div>
 
@@ -337,7 +438,11 @@ const saveMessageType = ref('info') // info | ok | warn | err
 const menu = ref([])         // Menú actual (ui.nav)
 const newRoutes = ref([])    // Catálogo - menú
 
-// Tema (form local)
+// ===== Identidad =====
+const appName = ref('')   // ui.app_name
+const logoUrl = ref('')   // ui.logo_url
+
+// ===== Tema (form local)
 const formTheme = reactive({
   primary:   '#1a5eff',
   secondary: '#4ae364',
@@ -345,6 +450,12 @@ const formTheme = reactive({
   bgEnd:     '#070a12',
   topStart:  '#0b0f1e',
   topEnd:    '#0c142a',
+  text:      '#111827',   // texto base
+  cardBg:    '#ffffff',   // fondo de cards
+  cardText:  '#1a1a1a',   // texto de cards
+  bgMode:    'gradient',   // 'gradient' | 'solid'
+  bgSolid:   '#f6f7fb',
+  subtext:   'rgba(15,23,42,0.55)',
 })
 
 // Drag state
@@ -427,7 +538,7 @@ async function load(force = false) {
       ;({ data: cfg } = await api.valoresConfiguracion.getPorEmpresa(empresaId.value))
     }
 
-    // 3) Menú actual (no pisar si no existe)
+    // 3) Menú actual
     let nav = cfg['ui.nav']
     if (typeof nav === 'string') {
       try { nav = JSON.parse(nav) } catch { nav = [] }
@@ -441,6 +552,18 @@ async function load(force = false) {
     formTheme.bgEnd     = cfg['ui.bgEnd']     || ui.theme.bgEnd     || formTheme.bgEnd
     formTheme.topStart  = cfg['ui.topStart']  || ui.theme.topStart  || formTheme.topStart
     formTheme.topEnd    = cfg['ui.topEnd']    || ui.theme.topEnd    || formTheme.topEnd
+    formTheme.text      = cfg['ui.text']      || ui.theme.text      || formTheme.text
+    formTheme.cardBg    = cfg['ui.card.bg']   || ui.theme.cardBg    || formTheme.cardBg
+    formTheme.cardText  = cfg['ui.card.text'] || ui.theme.cardText  || formTheme.cardText
+    formTheme.bgMode  = cfg['ui.bg.mode'] || ui.theme.bgMode || formTheme.bgMode
+    formTheme.bgSolid = cfg['ui.bgSolid'] || ui.theme.bgSolid || formTheme.bgSolid
+    formTheme.subtext = cfg['ui.subtext'] || ui.theme.subtext || formTheme.subtext
+
+
+
+    // 3c) Identidad
+    appName.value = cfg['ui.app_name'] || appName.value || ''
+    logoUrl.value = cfg['ui.logo_url'] || logoUrl.value || ''
 
     // 4) Catálogo - diferencia
     const catalog = loadCatalog() || []
@@ -470,12 +593,19 @@ async function saveColors() {
     await api.valoresConfiguracion.upsertMany({
       empresa: empresaId.value,
       items: [
-        { nombre: 'ui.primary',   valor: formTheme.primary },
-        { nombre: 'ui.secondary', valor: formTheme.secondary },
-        { nombre: 'ui.bgStart',   valor: formTheme.bgStart },
-        { nombre: 'ui.bgEnd',     valor: formTheme.bgEnd },
-        { nombre: 'ui.topStart',  valor: formTheme.topStart },
-        { nombre: 'ui.topEnd',    valor: formTheme.topEnd },
+        { nombre: 'ui.primary',    valor: formTheme.primary },
+        { nombre: 'ui.secondary',  valor: formTheme.secondary },
+        { nombre: 'ui.bgStart',    valor: formTheme.bgStart },
+        { nombre: 'ui.bgEnd',      valor: formTheme.bgEnd },
+        { nombre: 'ui.topStart',   valor: formTheme.topStart },
+        { nombre: 'ui.topEnd',     valor: formTheme.topEnd },
+        { nombre: 'ui.text',       valor: formTheme.text },
+        { nombre: 'ui.card.bg',    valor: formTheme.cardBg },
+        { nombre: 'ui.card.text',  valor: formTheme.cardText },
+        { nombre: 'ui.bg.mode',    valor: formTheme.bgMode },
+        { nombre: 'ui.bgSolid',    valor: formTheme.bgSolid },
+        { nombre: 'ui.subtext', valor: formTheme.subtext },
+
       ]
     })
     // recargar store para que AppLayout tome los cambios
@@ -499,16 +629,27 @@ async function saveAll () {
   saveMessageType.value = 'info'
 
   try {
-    // 1) Guardar tema en DB (nombres con puntos)
+    // 1) Guardar tema + identidad en DB
     await api.valoresConfiguracion.upsertMany({
       empresa: empresaId.value,
       items: [
+        // tema
         { nombre: 'ui.primary',    valor: formTheme.primary },
         { nombre: 'ui.secondary',  valor: formTheme.secondary },
-        { nombre: 'ui.bg.start',   valor: formTheme.bgStart },
-        { nombre: 'ui.bg.end',     valor: formTheme.bgEnd },
-        { nombre: 'ui.top.start',  valor: formTheme.topStart },
-        { nombre: 'ui.top.end',    valor: formTheme.topEnd },
+        { nombre: 'ui.bgStart',    valor: formTheme.bgStart },
+        { nombre: 'ui.bgEnd',      valor: formTheme.bgEnd },
+        { nombre: 'ui.topStart',   valor: formTheme.topStart },
+        { nombre: 'ui.topEnd',     valor: formTheme.topEnd },
+        { nombre: 'ui.text',       valor: formTheme.text },
+        { nombre: 'ui.card.bg',    valor: formTheme.cardBg },
+        { nombre: 'ui.card.text',  valor: formTheme.cardText },
+        // identidad
+        { nombre: 'ui.app_name',   valor: appName.value || 'Mi App' },
+        { nombre: 'ui.logo_url',   valor: logoUrl.value || '' },
+        { nombre: 'ui.bg.mode',    valor: formTheme.bgMode },
+        { nombre: 'ui.bgSolid',    valor: formTheme.bgSolid },
+        { nombre: 'ui.subtext', valor: formTheme.subtext },
+
       ],
     })
 
@@ -519,13 +660,12 @@ async function saveAll () {
       valor: JSON.stringify(menu.value),
     })
 
-    // 3) Recargar store para reflejar cambios (menu + colores)
+    // 3) Recargar store para reflejar cambios
     await ui.loadForActiveCompany()
 
     saveMessage.value = '✔ Guardado'
     saveMessageType.value = 'ok'
   } catch (e) {
-    // muestra detalle si viene del backend
     const msg =
       e?.response?.data?.detail ||
       e?.response?.data?.error ||
@@ -538,8 +678,6 @@ async function saveAll () {
     saving.value = false
   }
 }
-
-
 
 /* =========================
    Drag & Drop (con reorden exacto)

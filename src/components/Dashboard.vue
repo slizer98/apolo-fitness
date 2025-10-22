@@ -1,34 +1,35 @@
 <template>
-  <div class="min-h-screen bg-[#f5f7fb] text-[#1a1a1a] flex flex-col">
+  <!-- Fondo y color vienen del layout/CSS global; aquí no forzamos bg/text -->
+  <div class="min-h-screen flex flex-col">
     <main class="flex-1">
       <div class="mx-auto w-full max-w-[1200px] px-5 py-6">
         <!-- KPIs -->
         <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div class="card-kpi">
-            <div class="kpi-title">Ingresos del día</div>
+            <div class="kpi-title" :style="{ color: subtext }">Ingresos del día</div>
             <div class="kpi-row">
-              <div class="kpi-value">{{ loading.kpis ? '—' : money(kpis.ingresosHoy) }}</div>
+              <div class="kpi-value" :style="{ color: theme.text }">{{ loading.kpis ? '—' : money(kpis.ingresosHoy) }}</div>
               <span class="chip chip--ok">+2.5%</span>
             </div>
           </div>
           <div class="card-kpi">
-            <div class="kpi-title">Miembros activos</div>
+            <div class="kpi-title" :style="{ color: subtext }">Miembros activos</div>
             <div class="kpi-row">
-              <div class="kpi-value">{{ loading.kpis ? '—' : formatMiles(kpis.miembrosActivos) }}</div>
+              <div class="kpi-value" :style="{ color: theme.text }">{{ loading.kpis ? '—' : formatMiles(kpis.miembrosActivos) }}</div>
               <span class="chip chip--ok">+2.0%</span>
             </div>
           </div>
           <div class="card-kpi">
-            <div class="kpi-title">Visitas del día</div>
+            <div class="kpi-title" :style="{ color: subtext }">Visitas del día</div>
             <div class="kpi-row">
-              <div class="kpi-value">{{ loading.kpis ? '—' : formatMiles(kpis.visitasHoy) }}</div>
+              <div class="kpi-value" :style="{ color: theme.text }">{{ loading.kpis ? '—' : formatMiles(kpis.visitasHoy) }}</div>
               <span class="chip chip--ok">+4.7%</span>
             </div>
           </div>
           <div class="card-kpi">
-            <div class="kpi-title">Ocupaciones de clases</div>
+            <div class="kpi-title" :style="{ color: subtext }">Ocupaciones de clases</div>
             <div class="kpi-row">
-              <div class="kpi-value">{{ loading.kpis ? '—' : (kpis.ocupacion + '%') }}</div>
+              <div class="kpi-value" :style="{ color: theme.text }">{{ loading.kpis ? '—' : (kpis.ocupacion + '%') }}</div>
               <span class="chip chip--warn">-1.2%</span>
             </div>
           </div>
@@ -57,27 +58,27 @@
               <!-- Próximos cobros -->
               <div class="card">
                 <div class="card-head">
-                  <h3 class="card-title">Próximos cobros</h3>
-                  <button class="icon-btn" @click="loadCobros" title="Actualizar">⟳</button>
+                  <h3 class="card-title" :style="{ color: theme.text }">Próximos cobros</h3>
+                  <button class="icon-btn" @click="loadCobros" title="Actualizar" :style="iconBtnStyle">⟳</button>
                 </div>
 
                 <div class="p-4 sm:p-5 space-y-4 max-h-64 overflow-auto" v-if="!loading.cobros">
                   <div v-for="c in proximosCobros" :key="c.id" class="flex items-center justify-between">
                     <div class="min-w-0">
-                      <div class="font-medium truncate max-w-[260px]">{{ c.nombre }}</div>
-                      <div class="text-xs text-[#667]">{{ fmtFecha(c.fecha) }}<span v-if="c.tipo"> ({{ c.tipo }})</span></div>
+                      <div class="font-medium truncate max-w-[260px]" :style="{ color: theme.text }">{{ c.nombre }}</div>
+                      <div class="text-xs truncate" :style="{ color: subtext }">{{ fmtFecha(c.fecha) }}<span v-if="c.tipo"> ({{ c.tipo }})</span></div>
                     </div>
-                    <button class="btn-ghost" @click="cobrar(c)">Cobrar</button>
+                    <button class="btn-ghost">Cobrar</button>
                   </div>
-                  <div v-if="!proximosCobros.length" class="text-[13px] text-[#667]">Sin cobros próximos</div>
+                  <div v-if="!proximosCobros.length" class="text-[13px]" :style="{ color: subtext }">Sin cobros próximos</div>
                 </div>
-                <div v-else class="p-4 text-[#667] text-sm">Cargando…</div>
+                <div v-else class="p-4 text-sm" :style="{ color: subtext }">Cargando…</div>
               </div>
 
-              <!-- Equipos (único hardcodeado) con filtros -->
+              <!-- Equipos (hardcode) con filtros -->
               <div class="card">
                 <div class="card-head">
-                  <h3 class="card-title">Equipos</h3>
+                  <h3 class="card-title" :style="{ color: theme.text }">Equipos</h3>
                   <div class="flex gap-2">
                     <button
                       v-for="f in filtrosEquipos"
@@ -93,8 +94,8 @@
                 <div class="p-4 sm:p-5 space-y-3">
                   <div v-for="e in equiposFiltrados" :key="e.id" class="flex items-center justify-between">
                     <div>
-                      <div class="font-medium">{{ e.nombre }}</div>
-                      <div class="text-xs text-[#667]">{{ e.estadoTexto }}</div>
+                      <div class="font-medium" :style="{ color: theme.text }">{{ e.nombre }}</div>
+                      <div class="text-xs" :style="{ color: subtext }">{{ e.estadoTexto }}</div>
                     </div>
                     <div class="flex items-center gap-2">
                       <span
@@ -108,7 +109,7 @@
                       <button class="btn-ghost">Ver</button>
                     </div>
                   </div>
-                  <div v-if="!equiposFiltrados.length" class="text-[13px] text-[#667]">Sin equipos</div>
+                  <div v-if="!equiposFiltrados.length" class="text-[13px]" :style="{ color: subtext }">Sin equipos</div>
                 </div>
               </div>
             </div>
@@ -117,38 +118,39 @@
           <!-- Columna derecha: Clases (disciplinas) -->
           <div class="card">
             <div class="card-head">
-              <h3 class="card-title">Clases</h3>
-              <button class="icon-btn" @click="loadClases">≡</button>
+              <h3 class="card-title" :style="{ color: theme.text }">Clases</h3>
+              <button class="icon-btn" @click="loadClases" title="Recargar" :style="iconBtnStyle">≡</button>
             </div>
             <div class="p-4 sm:p-5 space-y-4" v-if="!loading.clases">
               <div
                 v-for="clase in clases"
                 :key="clase.id"
-                class="rounded-2xl border border-[#e6e9ef] bg-white p-4"
+                class="rounded-2xl border p-4"
+                :style="{ background: theme.cardBg, color: theme.cardText, borderColor }"
               >
-                <div class="text-[12px] text-[#667] mb-1">
+                <div class="text-[12px] mb-1" :style="{ color: subtext }">
                   {{ clase.hora_inicio }}–{{ clase.hora_fin }} — {{ clase.sede || 'Gimnasio' }}
                 </div>
-                <div class="font-semibold mb-1">{{ clase.nombre }}</div>
-                <div class="text-[12px] text-[#667] mb-2">{{ clase.instructor || '—' }}</div>
+                <div class="font-semibold mb-1" :style="{ color: theme.text }">{{ clase.nombre }}</div>
+                <div class="text-[12px] mb-2" :style="{ color: subtext }">{{ clase.instructor || '—' }}</div>
 
                 <div v-if="clase.cupo && clase.inscritos != null" class="flex items-center justify-between text-[12px] mb-1">
-                  <span :class="{'text-emerald-600': clase.delta>0, 'text-rose-600': clase.delta<0, 'text-[#667]': clase.delta===0}">
+                  <span :style="{ color: clase.delta>0 ? '#059669' : (clase.delta<0 ? '#e11d48' : subtext) }">
                     {{ clase.delta>0 ? ('+'+clase.delta) : (clase.delta<0 ? clase.delta : '0') }}
                   </span>
-                  <span class="text-[#667]">({{ formatMiles(clase.inscritos) }}/{{ formatMiles(clase.cupo) }})</span>
+                  <span :style="{ color: subtext }">({{ formatMiles(clase.inscritos) }}/{{ formatMiles(clase.cupo) }})</span>
                 </div>
 
-                <div v-if="clase.cupo && clase.inscritos != null" class="h-2 rounded-full bg-[#eef2f7] overflow-hidden">
+                <div v-if="clase.cupo && clase.inscritos != null" class="h-2 rounded-full overflow-hidden" :style="{ background: trackBg }">
                   <div
                     class="h-full rounded-full"
                     :style="{ width: Math.min(100, Math.round((clase.inscritos / Math.max(1, clase.cupo)) * 100)) + '%', background: clase.colorBarra }"
                   />
                 </div>
               </div>
-              <div v-if="!clases.length" class="text-[13px] text-[#667]">No hay clases para mostrar.</div>
+              <div v-if="!clases.length" class="text-[13px]" :style="{ color: subtext }">No hay clases para mostrar.</div>
             </div>
-            <div v-else class="p-4 text-[#667] text-sm">Cargando…</div>
+            <div v-else class="p-4 text-sm" :style="{ color: subtext }">Cargando…</div>
           </div>
         </section>
 
@@ -160,10 +162,10 @@
     </main>
 
     <!-- FABs -->
-    <button class="fab" :style="{ backgroundColor: primary }" @click="modalCliente = true" title="Nuevo miembro">
+    <button class="fab" :style="{ backgroundColor: primary, color: contrastOnPrimary }" @click="modalCliente = true" title="Nuevo miembro">
       <i class="fa-solid fa-plus"></i>
     </button>
-    <button class="fab fab--secondary" title="Buscar cliente" @click="openBuscarModal">
+    <button class="fab fab--secondary" title="Buscar cliente" @click="openBuscarModal" :style="fabSecondaryStyle">
       <i class="fa-regular fa-clipboard"></i>
     </button>
 
@@ -181,40 +183,42 @@
     <div v-if="modalBuscar" class="fixed inset-0 z-50">
       <div class="absolute inset-0 bg-black/30" @click="closeBuscarModal"></div>
       <div class="absolute right-6 bottom-24 sm:bottom-28 w-[92vw] max-w-md">
-        <div class="rounded-2xl bg-white border border-[#e6e9ef] shadow-xl overflow-hidden">
-          <div class="px-4 py-3 border-b border-[#e6e9ef] flex items-center gap-2">
-            <i class="fa fa-magnifying-glass text-[#667]"></i>
+        <div class="rounded-2xl border shadow-xl overflow-hidden" :style="{ background: theme.cardBg, color: theme.cardText, borderColor }">
+          <div class="px-4 py-3 border-b flex items-center gap-2" :style="{ borderColor }">
+            <i class="fa fa-magnifying-glass" :style="{ color: subtext }"></i>
             <input
               v-model="buscarInput"
               type="text"
               placeholder="Buscar cliente por nombre, email, RFC o CURP…"
-              class="flex-1 outline-none text-[14px] placeholder-[#99a] py-1.5"
+              class="flex-1 outline-none text-[14px]"
+              :style="{ color: theme.cardText, '::placeholder': { color: subtext } }"
               autofocus
             />
-            <button class="icon-btn" @click="closeBuscarModal">✕</button>
+            <button class="icon-btn" @click="closeBuscarModal" :style="iconBtnStyle">✕</button>
           </div>
 
           <div class="max-h-72 overflow-auto">
             <div v-if="loading.buscar" class="p-3 space-y-2">
-              <div class="h-4 bg-[#eef2f7] rounded animate-pulse"></div>
-              <div class="h-4 bg-[#eef2f7] rounded animate-pulse w-2/3"></div>
-              <div class="h-4 bg-[#eef2f7] rounded animate-pulse w-1/2"></div>
+              <div class="h-4 rounded animate-pulse" :style="{ background: skeletonBg }"></div>
+              <div class="h-4 rounded animate-pulse w-2/3" :style="{ background: skeletonBg }"></div>
+              <div class="h-4 rounded animate-pulse w-1/2" :style="{ background: skeletonBg }"></div>
             </div>
 
             <template v-else>
               <button
                 v-for="c in resultados"
                 :key="c.id"
-                class="w-full text-left px-4 py-2 hover:bg-[#f5f7fa] flex items-center justify-between"
+                class="w-full text-left px-4 py-2 flex items-center justify-between"
+                :style="rowHoverStyle"
                 @click="selectCliente(c)"
               >
                 <div class="min-w-0">
-                  <div class="font-medium truncate">{{ c.nombre }} {{ c.apellidos }}</div>
-                  <div class="text-[12px] text-[#667] truncate">{{ c.email || '—' }}</div>
+                  <div class="font-medium truncate" :style="{ color: theme.cardText }">{{ c.nombre }} {{ c.apellidos }}</div>
+                  <div class="text-[12px] truncate" :style="{ color: subtext }">{{ c.email || '—' }}</div>
                 </div>
-                <span class="text-[11px] px-2 py-1 rounded-md border border-[#e6e9ef] bg-[#fafbfe] text-[#445]">Ver</span>
+                <span class="text-[11px] px-2 py-1 rounded-md border" :style="{ borderColor, background: chipBg, color: chipText }">Ver</span>
               </button>
-              <div v-if="!resultados.length" class="px-4 py-8 text-center text-[13px] text-[#667]">
+              <div v-if="!resultados.length" class="px-4 py-8 text-center text-[13px]" :style="{ color: subtext }">
                 Sin resultados
               </div>
             </template>
@@ -223,7 +227,7 @@
       </div>
     </div>
 
-    <!-- Slide-over Cliente usando tu ClientSummaryCard -->
+    <!-- Slide-over Cliente -->
     <transition
       enter-active-class="transition transform duration-200"
       enter-from-class="opacity-0 translate-x-3"
@@ -232,12 +236,12 @@
       leave-from-class="opacity-100 translate-x-0"
       leave-to-class="opacity-0 translate-x-3"
     >
-      <aside v-if="panelClienteOpen" class="fixed top-0 right-0 h-full w-[420px] bg-white border-l border-[#e6e9ef] shadow-2xl z-40">
-        <div class="px-4 py-3 border-b border-[#e6e9ef] flex items-center justify-between">
-          <div class="font-semibold truncate max-w-[300px]">
+      <aside v-if="panelClienteOpen" class="fixed top-0 right-0 h-full w-[420px] shadow-2xl z-40 border-l" :style="{ background: theme.cardBg, color: theme.cardText, borderColor }">
+        <div class="px-4 py-3 border-b flex items-center justify-between" :style="{ borderColor }">
+          <div class="font-semibold truncate max-w-[300px]" :style="{ color: theme.cardText }">
             {{ (resumen && (resumen.nombre + ' ' + (resumen.apellidos||''))) || 'Cliente' }}
           </div>
-          <button class="icon-btn" @click="closePanelCliente" title="Cerrar">✕</button>
+          <button class="icon-btn" @click="closePanelCliente" title="Cerrar" :style="iconBtnStyle">✕</button>
         </div>
         <div class="p-4 overflow-auto h-[calc(100%-52px)]">
           <ClientSummaryCard
@@ -281,10 +285,52 @@ const ui = useUiConfigStore()
 
 /* === Tema === */
 const theme = computed(() => {
-  const t = (ui?.theme && 'value' in ui.theme) ? (ui.theme?.value || {}) : (ui.theme || {})
-  return { primary: t.primary || '#1a5eff', secondary: t.secondary || '#4ae364' }
+  const t = ui.theme?.value || ui.theme || {}
+  return {
+    primary:   t.primary   || '#1a5eff',
+    secondary: t.secondary || '#4ae364',
+    text:      t.text      || '#0f172a',
+    cardBg:    t.cardBg    || '#ffffff',
+    cardText:  t.cardText  || '#0f172a',
+    subtext:   t.subtext   || null, 
+  }
 })
 const primary = computed(() => theme.value.primary)
+
+/* Derivados (contrast, subtext, borders, hovers) */
+function hexToRgb(hex) {
+  const h = hex?.replace('#','')
+  if (!h || (h.length!==6 && h.length!==3)) return { r:15,g:23,b:42 }
+  const v = h.length===3 ? h.split('').map(x=>x+x).join('') : h
+  const r = parseInt(v.slice(0,2),16), g = parseInt(v.slice(2,4),16), b = parseInt(v.slice(4,6),16)
+  return { r,g,b }
+}
+function isDark(hex) {
+  const {r,g,b} = hexToRgb(hex)
+  const L = (0.2126*(r/255) + 0.7152*(g/255) + 0.0722*(b/255))
+  return L < 0.6
+}
+const subtext = computed(() => theme.value.subtext || (isDark(theme.value.text) ? 'rgba(255,255,255,0.7)' : 'rgba(15,23,42,0.55)'))
+const borderColor = computed(() => isDark(theme.value.text) ? 'rgba(255,255,255,0.18)' : 'rgba(15,23,42,0.08)')
+const trackBg = computed(() => isDark(theme.value.text) ? 'rgba(255,255,255,0.12)' : '#eef2f7')
+const skeletonBg = computed(() => isDark(theme.value.text) ? 'rgba(255,255,255,0.10)' : '#eef2f7')
+const chipBg = computed(() => isDark(theme.value.text) ? 'rgba(255,255,255,0.08)' : '#fafbfe')
+const chipText = computed(() => theme.value.cardText)
+const rowHoverStyle = computed(() => ({
+  background: 'transparent'
+}))
+const iconBtnStyle = computed(() => ({
+  color: theme.value.cardText,
+  borderColor: borderColor.value,
+  background: 'transparent'
+}))
+const fabSecondaryStyle = computed(() => ({
+  background: theme.value.cardBg,
+  color: theme.value.cardText,
+  border: `1px solid ${borderColor.value}`,
+  boxShadow: '0 8px 24px rgba(0,0,0,.08)'
+}))
+const contrastOnPrimary = computed(() => (isDark(theme.value.primary) ? '#fff' : '#0f172a'))
 
 /* ===== Estado ===== */
 const modalCliente = ref(false)
@@ -316,44 +362,48 @@ const ingresosSerie = ref([])
 
 /* ====== OPTIONS ECHARTS ====== */
 const lineOption = computed(() => ({
-  title: { text: 'Ingresos – Últimos 30 días', left: 'left', top: 6, textStyle: { fontSize: 14, fontWeight: 600 } },
+  color: [theme.value.primary],
+  title: { text: 'Ingresos – Últimos 30 días', left: 'left', top: 6, textStyle: { fontSize: 14, fontWeight: 600, color: theme.value.cardText } },
   grid: { left: 28, right: 12, top: 38, bottom: 22 },
   tooltip: { trigger: 'axis', valueFormatter: v => money(v) },
   xAxis: {
     type: 'category',
     data: ingresosFechas.value.map(d => new Date(d).toLocaleDateString('es-MX', { day:'2-digit', month:'short' })),
     boundaryGap: false,
-    axisLabel: { fontSize: 11 }
+    axisLabel: { fontSize: 11, color: subtext.value },
+    axisLine: { lineStyle: { color: borderColor.value } },
+    axisTick: { show: false }
   },
   yAxis: {
     type: 'value',
-    axisLabel: { formatter: (v) => formatMiles(v), fontSize: 11 },
-    splitLine: { lineStyle: { color: '#eef2f7' } }
+    axisLabel: { formatter: (v) => formatMiles(v), fontSize: 11, color: subtext.value },
+    splitLine: { lineStyle: { color: borderColor.value } }
   },
   series: [{
     type: 'line',
     smooth: true,
     symbol: 'none',
-    lineStyle: { width: 2 },
+    lineStyle: { width: 2, color: theme.value.primary },
     areaStyle: {
       opacity: 0.35,
-      color: { type:'linear', x:0, y:0, x2:0, y2:1, colorStops:[{offset:0,color:'#60a5fa'},{offset:1,color:'#ffffff'}] }
+      color: { type:'linear', x:0, y:0, x2:0, y2:1, colorStops:[{offset:0,color:theme.value.primary},{offset:1,color:theme.value.cardBg}] }
     },
     data: ingresosSerie.value
   }]
 }))
 
 const pieOption = computed(() => ({
-  title: { text: 'Plan', left: 'center', top: 6, textStyle: { fontSize: 14, fontWeight: 600 } },
+  color: [theme.value.primary, '#10b981', '#f59e0b', '#ef4444', '#6366f1', '#f97316'],
+  title: { text: 'Plan', left: 'center', top: 6, textStyle: { fontSize: 14, fontWeight: 600, color: theme.value.cardText } },
   tooltip: { trigger: 'item', valueFormatter: v => formatMiles(v) },
-  legend: { top: 6, right: 10, orient: 'horizontal', itemWidth: 10, itemHeight: 10, textStyle: { fontSize: 12 } },
+  legend: { top: 6, right: 10, orient: 'horizontal', itemWidth: 10, itemHeight: 10, textStyle: { fontSize: 12, color: subtext.value } },
   series: [{
     name: 'Plan',
     type: 'pie',
     radius: ['55%','80%'],
     center: ['50%','58%'],
     label: { show: false },
-    emphasis: { label: { show: true, fontSize: 14, formatter: '{b}: {d}%' } },
+    emphasis: { label: { show: true, fontSize: 14, formatter: '{b}: {d}%', color: theme.value.cardText } },
     data: planesDona.value
   }]
 }))
@@ -435,7 +485,7 @@ async function loadIngresos() {
     ingresosFechas.value = fechas
     ingresosSerie.value = valores
 
-    // dona por plan: contar altas de últimos 30 días por nombre de plan
+    // dona por plan (altas en 30 días)
     const { data: altasData } = await api.altasPlan.list({ fecha_after: inicio.toISOString(), fecha_before: fin.toISOString(), page_size: 1000 })
     const altas = altasData?.results || altasData || []
     const cuenta = new Map()
@@ -450,11 +500,8 @@ async function loadIngresos() {
 async function loadCobros() {
   loading.value.cobros = true
   try {
-    // ALTAS con fecha_limite_pago, y completamos nombre de cliente si falta
     const { data } = await api.altasPlan.list({ ordering: 'fecha_limite_pago', page_size: 50 })
     const arr = data?.results || data || []
-
-    // reunir ids de cliente sin nombre
     const items = arr
       .filter(a => !!a.fecha_limite_pago)
       .map(a => ({
@@ -464,8 +511,7 @@ async function loadCobros() {
         fecha: a.fecha_limite_pago,
         tipo: a.renovacion ? 'Renovación' : 'Prepago'
       }))
-      
-    // completar nombres faltantes con llamadas puntuales
+
     for (const it of items) {
       if (!it.nombre && it.clienteId) {
         try {
@@ -474,7 +520,6 @@ async function loadCobros() {
         } catch {}
       }
     }
-    console.log(proximosCobros.value)
     proximosCobros.value = items
       .filter(i => !!i.nombre && !!i.fecha)
       .sort((a,b) => (a.fecha > b.fecha ? 1 : -1))
@@ -532,7 +577,6 @@ async function doSearch(q) {
   if (!q || !q.trim()) { resultados.value = []; return }
   loading.value.buscar = true
   try {
-    // En el backend, haz que search incluya RFC/CURP
     const { data } = await api.clientes.list({ search: q.trim(), page_size: 10, ordering: '-id' })
     resultados.value = (data?.results || data || []).map(r => ({
       id: r.id, nombre: r.nombre ?? '', apellidos: r.apellidos ?? '', email: r.email || '—',
@@ -567,28 +611,60 @@ function cobrar (c) { console.log('Cobrar a:', c) }
 </script>
 
 <style scoped>
-.card { @apply rounded-2xl bg-white border border-[#e6e9ef] shadow-sm; }
-.card-head { @apply px-4 sm:px-5 py-4 border-b border-[#e6e9ef] flex items-center justify-between; }
+/* Cards base */
+.card {
+  @apply rounded-2xl border shadow-sm;
+  background: v-bind('theme.cardBg');
+  color: v-bind('theme.cardText');
+  border-color: v-bind('borderColor');
+}
+.card-head {
+  @apply px-4 sm:px-5 py-4 border-b flex items-center justify-between;
+  border-color: v-bind('borderColor');
+}
 .card-title { @apply font-semibold; }
-.icon-btn { @apply h-8 w-8 rounded-lg border border-[#e6e9ef] grid place-items-center hover:bg-[#f5f7fa] text-[#445]; }
 
-.card-kpi { @apply rounded-2xl bg-white border border-[#e6e9ef] shadow-sm px-4 py-3; }
-.kpi-title { @apply text-[13px] text-[#556] mb-2; }
+/* Icon buttons */
+.icon-btn {
+  @apply h-8 w-8 rounded-lg grid place-items-center;
+  border: 1px solid;
+}
+
+/* KPI cards */
+.card-kpi {
+  @apply rounded-2xl border shadow-sm px-4 py-3;
+  background: v-bind('theme.cardBg');
+  color: v-bind('theme.cardText');
+  border-color: v-bind('borderColor');
+}
+.kpi-title { @apply text-[13px] mb-2; }
 .kpi-row { @apply flex items-center justify-between; }
 .kpi-value { @apply text-3xl font-semibold tracking-tight; }
+
 .chip { @apply text-xs px-2 py-1 rounded-md; }
 .chip--ok   { background: #e7f8ef; color: #0f8f57; }
 .chip--warn { background: #fde8ea; color: #dc3545; }
 
+/* Links */
 .link-theme { color: v-bind(primary); }
 .link-theme:hover { text-decoration: underline; }
 
-.btn-ghost { @apply px-3 py-1.5 rounded-md text-[13px] border; border-color:#e6e9ef; background:#fafbfe; }
-.btn-ghost:hover { background:#f0f3f9; }
+/* Ghost button inside lists/cards */
+.btn-ghost {
+  @apply px-3 py-1.5 rounded-md text-[13px] border;
+  border-color: v-bind('borderColor');
+  background: v-bind('chipBg');
+  color: v-bind('theme.cardText');
+}
+.btn-ghost:hover { filter: brightness(0.97); }
 
-.fab { position: fixed; right: 1.5rem; bottom: 6.5rem; height: 3.5rem; width: 3.5rem;
-  border-radius: 9999px; color:#fff; display:flex; align-items:center; justify-content:center;
-  box-shadow: 0 8px 24px rgba(0,0,0,.15); }
-.fab--secondary { right: 1.5rem; bottom: 1.5rem; height:3.5rem; width:3.5rem; border-radius:9999px; color:#1a1a1a;
-  background:#fff; border:1px solid #e6e9ef; box-shadow: 0 8px 24px rgba(0,0,0,.08); }
+/* FABs */
+.fab {
+  position: fixed; right: 1.5rem; bottom: 6.5rem; height: 3.5rem; width: 3.5rem;
+  border-radius: 9999px; display:flex; align-items:center; justify-content:center;
+  box-shadow: 0 8px 24px rgba(0,0,0,.15);
+}
+.fab--secondary {
+  right: 1.5rem; bottom: 1.5rem; height:3.5rem; width:3.5rem; border-radius:9999px;
+}
 </style>
