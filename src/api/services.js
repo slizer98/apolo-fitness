@@ -526,37 +526,106 @@ const inventario = {
 };
 
 // VENTAS
+// const ventas = {
+//   codigos: {
+//     list(params){ return http.get("ventas/codigos-descuento/", { params }) },
+//     retrieve(id){ return http.get(`ventas/codigos-descuento/${id}/`) },
+//     create(payload){ return http.post("ventas/codigos-descuento/", payload) },
+//     update(id, payload){ return http.put(`ventas/codigos-descuento/${id}/`, payload) },
+//     patch(id, payload){ return http.patch(`ventas/codigos-descuento/${id}/`, payload) },
+//     delete(id){ return http.delete(`ventas/codigos-descuento/${id}/`) },
+//     validar(params){ return http.get("ventas/codigos-descuento/validar/", { params }) }, // empresa, codigo, (opcional) total
+//     canjear(id){ return http.post(`ventas/codigos-descuento/${id}/canjear/`) },
+
+//   },
+//   ventas: {
+//     list(params){ return http.get("ventas/", { params }) }, // ?empresa=&cliente=&fecha_after=&fecha_before=
+//     retrieve(id){ return http.get(`ventas/${id}/`) },
+//     create(payload){ return http.post("ventas/", payload) },
+//     update(id, payload){ return http.put(`ventas/${id}/`, payload) },
+//     patch(id, payload){ return http.patch(`ventas/${id}/`, payload) },
+//     delete(id){ return http.delete(`ventas/${id}/`) },
+//     posCheckout(payload){ return http.post("ventas/pos-checkout/", payload) },
+//   },
+//   detalles: {
+//     list(params){ return http.get("ventas/detalles/", { params }) }, // ?venta=&producto=&plan=
+//     retrieve(id){ return http.get(`ventas/detalles/${id}/`) },
+//     create(payload){ return http.post("ventas/detalles/", payload) },
+//     update(id, payload){ return http.put(`ventas/detalles/${id}/`, payload) },
+//     patch(id, payload){ return http.patch(`ventas/detalles/${id}/`, payload) },
+//     delete(id){ return http.delete(`ventas/detalles/${id}/`) },
+//   },
+// };
+function buildVentasListParams({
+  empresa,
+  cliente,
+  fechaDesde,
+  fechaHasta,
+  forma_pago,
+  ordering = "-fecha",
+  page,
+  page_size,
+  ...rest
+} = {}) {
+  const params = { ...rest };
+
+  if (empresa != null) params.empresa = empresa;
+  if (cliente != null) params.cliente = cliente;
+  if (forma_pago) params.forma_pago = forma_pago;
+  if (ordering) params.ordering = ordering;
+  if (page) params.page = page;
+  if (page_size) params.page_size = page_size;
+
+  // Rango de fecha para DateTimeFromToRangeFilter
+  const toIso = (v) => (v instanceof Date ? v.toISOString() : v);
+  if (fechaDesde) params.fecha_after = toIso(fechaDesde);
+  if (fechaHasta) params.fecha_before = toIso(fechaHasta);
+
+  return params;
+}
+
 const ventas = {
   codigos: {
-    list(params){ return http.get("ventas/codigos-descuento/", { params }) },
-    retrieve(id){ return http.get(`ventas/codigos-descuento/${id}/`) },
-    create(payload){ return http.post("ventas/codigos-descuento/", payload) },
-    update(id, payload){ return http.put(`ventas/codigos-descuento/${id}/`, payload) },
-    patch(id, payload){ return http.patch(`ventas/codigos-descuento/${id}/`, payload) },
-    delete(id){ return http.delete(`ventas/codigos-descuento/${id}/`) },
-    validar(params){ return http.get("ventas/codigos-descuento/validar/", { params }) }, // empresa, codigo, (opcional) total
-    canjear(id){ return http.post(`ventas/codigos-descuento/${id}/canjear/`) },
+    list(params)        { return http.get("ventas/codigos-descuento/", { params }); },
+    retrieve(id)        { return http.get(`ventas/codigos-descuento/${id}/`); },
+    create(payload)     { return http.post("ventas/codigos-descuento/", payload); },
+    update(id, payload) { return http.put(`ventas/codigos-descuento/${id}/`, payload); },
+    patch(id, payload)  { return http.patch(`ventas/codigos-descuento/${id}/`, payload); },
+    delete(id)          { return http.delete(`ventas/codigos-descuento/${id}/`); },
+    validar(params)     { return http.get("ventas/codigos-descuento/validar/", { params }); }, // empresa, codigo, (opcional) total
+    canjear(id)         { return http.post(`ventas/codigos-descuento/${id}/canjear/`); },
+  },
 
-  },
   ventas: {
-    list(params){ return http.get("ventas/ventas/", { params }) }, // ?empresa=&cliente=&fecha_after=&fecha_before=
-    retrieve(id){ return http.get(`ventas/ventas/${id}/`) },
-    create(payload){ return http.post("ventas/ventas/", payload) },
-    update(id, payload){ return http.put(`ventas/ventas/${id}/`, payload) },
-    patch(id, payload){ return http.patch(`ventas/ventas/${id}/`, payload) },
-    delete(id){ return http.delete(`ventas/ventas/${id}/`) },
-    posCheckout(payload){ return http.post("ventas/ventas/pos-checkout/", payload) },
+    // usa buildVentasListParams para mapear fecha/forma_pago y defaults
+    list(params)            { return http.get("ventas/", { params: buildVentasListParams(params) }); },
+    retrieve(id)            { return http.get(`ventas/${id}/`); },
+    create(payload)         { return http.post("ventas/", payload); },
+    update(id, payload)     { return http.put(`ventas/${id}/`, payload); },
+    patch(id, payload)      { return http.patch(`ventas/${id}/`, payload); },
+    delete(id)              { return http.delete(`ventas/${id}/`); },
+    posCheckout(payload)    { return http.post("ventas/pos-checkout/", payload); },
   },
+
   detalles: {
-    list(params){ return http.get("ventas/detalles/", { params }) }, // ?venta=&producto=&plan=
-    retrieve(id){ return http.get(`ventas/detalles/${id}/`) },
-    create(payload){ return http.post("ventas/detalles/", payload) },
-    update(id, payload){ return http.put(`ventas/detalles/${id}/`, payload) },
-    patch(id, payload){ return http.patch(`ventas/detalles/${id}/`, payload) },
-    delete(id){ return http.delete(`ventas/detalles/${id}/`) },
+    list(params)            { return http.get("ventas/detalles/", { params }); }, // ?venta=&producto=&plan=
+    retrieve(id)            { return http.get(`ventas/detalles/${id}/`); },
+    create(payload)         { return http.post("ventas/detalles/", payload); },
+    update(id, payload)     { return http.put(`ventas/detalles/${id}/`, payload); },
+    patch(id, payload)      { return http.patch(`ventas/detalles/${id}/`, payload); },
+    delete(id)              { return http.delete(`ventas/detalles/${id}/`); },
+  },
+
+  // NUEVO: métodos de pago (ruta: ventas/metodos-pago/)
+  pagos: {
+    list(params)            { return http.get("ventas/metodos-pago/", { params }); }, // ?venta=&forma_pago=
+    retrieve(id)            { return http.get(`ventas/metodos-pago/${id}/`); },
+    create(payload)         { return http.post("ventas/metodos-pago/", payload); },
+    update(id, payload)     { return http.put(`ventas/metodos-pago/${id}/`, payload); },
+    patch(id, payload)      { return http.patch(`ventas/metodos-pago/${id}/`, payload); },
+    delete(id)              { return http.delete(`ventas/metodos-pago/${id}/`); },
   },
 };
-
 // FINANZAS
 const finanzas = {
   proveedores: {

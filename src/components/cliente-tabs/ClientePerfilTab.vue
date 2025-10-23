@@ -222,7 +222,7 @@ const loadingPagos = ref(false)
 async function loadPagos () {
   loadingPagos.value = true
   try {
-    const { data } = await api.ventas.ventas.list({ empresa: ws.empresaId, cliente: props.clienteId, ordering: '-fecha', page_size: 100 })
+    const { data } = await api.ventas.ventas.list({ empresa: ws.empresaId, cliente: props.clienteId, ordering: '-fecha', page_size: 20, item_tipo: 'PLAN', })
     const arr = data?.results || data || []
     pagos.value = arr.map(v => ({
       id: v.id,
