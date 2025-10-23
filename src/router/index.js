@@ -22,6 +22,7 @@ const ClienteDetalle = () => import('@/views/clientes/ClienteDetalle.vue')
 const ClienteDatos   = () => import('@/views/clientes/ClienteDatos.vue')
 const PlanesLista     = () => import('@/views/planes/PlanesLista.vue')
 const PlanDetalle = () => import('@/views/planes/PlanDetalle.vue')
+const Planes = () => import('@/views/planes/Planes.vue')
 const PlanCrear = () => import('@/views/planes/PlanCrear.vue')
 const PlanEditar = () => import('@/views/planes/PlanEditar.vue')
 const ServiciosLista   = () => import('@/views/servicios/ServiciosLista.vue')
@@ -60,7 +61,7 @@ const routes = [
       { path: 'clientes/:id/editar', name: 'ClienteEditar',  component: ClienteEditar, props: true },
       { path: 'clientes/:id', name: 'ClienteDatos', component: ClienteDatos, props: true },
       // Planes
-      { path: 'planes', name: 'PlanesLista', component: PlanesLista, meta: { perms: ['planes:read'] } },
+      { path: 'planes', name: 'PlanesLista', component: Planes, meta: { perms: ['planes:read'] } },
       { path: 'planes/:id', name: 'PlanDetalle', component: PlanDetalle, props: true, meta: { perms: ['planes:read'] } },
       { path: 'planes/nuevo', name: 'PlanCrear', component: PlanCrear, meta: { perms: ['planes:create'] } },
       { path: 'planes/:id/editar', name: 'PlanEditar', component: PlanEditar, meta: { perms: ['planes:update'] }, props: true },

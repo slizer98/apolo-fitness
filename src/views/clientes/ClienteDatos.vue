@@ -84,6 +84,9 @@ import http from '@/api/http'
 
 // Tabs (cargamos sólo Perfil ahora)
 import ClientePerfilTab from '@/components/cliente-tabs/ClientePerfilTab.vue'
+import ClienteTabsPagos from '@/components/cliente-tabs/ClienteTabsPagos.vue'
+import TabServicios from '@/components/cliente-tabs/TabServicios.vue'
+import TabAsistencias from '@/components/cliente-tabs/TabAsistencias.vue'
 
 const route = useRoute()
 const clienteId = computed(() => Number(route.params.id))
@@ -116,9 +119,9 @@ function d (v) { try { return v ? new Date(v).toLocaleDateString('es-MX', { day:
 /* Tabs */
 const tabs = [
   { key: 'perfil', label: 'Perfil', component: ClientePerfilTab },
-  { key: 'pagos', label: 'Pagos', component: null },
-  { key: 'asistencias', label: 'Asistencias', component: null },
-  { key: 'servicios', label: 'Servicios', component: null },
+  { key: 'pagos', label: 'Pagos', component: ClienteTabsPagos },
+  { key: 'asistencias', label: 'Asistencias', component: TabAsistencias },
+  { key: 'servicios', label: 'Servicios', component: TabServicios },
   { key: 'compras', label: 'Compras', component: null },
   { key: 'documentos', label: 'Documentos', component: null },
   { key: 'notas', label: 'Notas', component: null },
