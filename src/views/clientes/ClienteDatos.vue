@@ -5,9 +5,33 @@
       <header class="rounded-2xl bg-white border border-gray-200 shadow-sm p-5">
         <div class="flex items-start gap-4">
           <!-- Avatar -->
-          <div class="h-16 w-16 rounded-full bg-gray-100 grid place-items-center">
-            <i class="fa-regular fa-user text-2xl text-gray-400"></i>
+         <div class="relative">
+            <div
+              class="h-16 w-16 rounded-full bg-gray-100 grid place-items-center overflow-hidden cursor-pointer"
+              @click="openLightbox = !!cliente?.avatar_url"
+              :title="cliente?.avatar_url ? 'Ver foto' : ''"
+            >
+              <template v-if="cliente?.avatar_url">
+                <img :src="cliente.avatar_url" alt="avatar" class="h-full w-full object-cover" />
+              </template>
+              <template v-else>
+                <i class="fa-regular fa-user text-2xl text-gray-400"></i>
+              </template>
+            </div>
+
+            <!-- Botón cámara sobre avatar (opcional, como ya lo tienes) -->
+            <button
+              class="absolute -bottom-2 -right-2 w-8 h-8 rounded-full grid place-items-center bg-[#1a5eff] text-white shadow hover:opacity-90 z-[210]"
+              title="Actualizar foto"
+              @click.stop="cameraOpenHeader = true"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h3l2-3h8l2 3h3a2 2 0 0 1 2 2z"/>
+                <circle cx="12" cy="13" r="4"/>
+              </svg>
+            </button>
           </div>
+
 
           <div class="flex-1 min-w-0">
             <h1 class="text-xl sm:text-2xl font-semibold truncate">
@@ -74,15 +98,30 @@
         />
       </section>
     </div>
+
+    <!-- Modal de cámara (desde header) -->
+    <CameraModal
+      v-if="clienteId"
+      v-model:open="cameraOpenHeader"
+      :cliente-id="clienteId"
+      @saved="fetchResumen"
+    />
   </div>
+  <ImageLightbox v-model:open="openLightbox" :src="cliente?.avatar_url || ''" />
+
 </template>
 
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import http from '@/api/http'
+import CameraModal from '@/components/CameraModal.vue'
+import ImageLightbox from '@/components/ImageLightbox.vue'
 
-// Tabs (cargamos sólo Perfil ahora)
+const openLightbox = ref(false)
+
+
+// Tabs
 import ClientePerfilTab from '@/components/cliente-tabs/ClientePerfilTab.vue'
 import ClienteTabsPagos from '@/components/cliente-tabs/ClienteTabsPagos.vue'
 import TabServicios from '@/components/cliente-tabs/TabServicios.vue'
@@ -131,6 +170,9 @@ const currentComponent = computed(() => {
   const t = tabs.find(x => x.key === currentTab.value)
   return (t && t.component) || ClientePerfilTab
 })
+
+/* Cámara desde el header */
+const cameraOpenHeader = ref(false)
 
 /* Acciones top (hooks para tus modales/flows) */
 function emitCobrar(){ /* abre tu modal de cobro */ }

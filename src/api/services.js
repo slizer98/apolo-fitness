@@ -176,6 +176,18 @@ const clientes = {
     return http.delete(`clientes/${id}/`);
   },
   resumen: (id) => http.get(`/clientes/${id}/resumen/`),
+  
+  setAvatar(id, file){
+    const form = new FormData()
+    form.append('avatar', file)
+    return http.post(`clientes/${id}/avatar/`, form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      onUploadProgress: e => {
+        // opcional: progreso
+        // console.log(Math.round((e.loaded * 100) / e.total))
+      }
+    })
+  },
 
   datosContacto: {
     create(payload) { return http.post("clientes/datos-contacto/", payload); },
