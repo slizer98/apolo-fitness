@@ -464,6 +464,7 @@ const altasPlan = {
 
 const accesos = {
   list(params){ return http.get("accesos/", { params }) },
+  resumen(params){ return http.get("accesos/resumen/", { params }) }, // <-- nuevo
   create(payload){ return http.post("accesos/", payload) },
 }
 
