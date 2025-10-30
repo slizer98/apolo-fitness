@@ -466,6 +466,9 @@ const accesos = {
   list(params){ return http.get("accesos/", { params }) },
   resumen(params){ return http.get("accesos/resumen/", { params }) },
   create(payload){ return http.post("accesos/", payload) },
+  update(id, payload){ return http.put(`accesos/${id}/`, payload) },
+  patch(id, payload){ return http.patch(`accesos/${id}/`, payload) },
+  delete(id){ return http.delete(`accesos/${id}/`) },
 }
 
 // INVENTARIO
