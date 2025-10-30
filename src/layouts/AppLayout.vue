@@ -1,6 +1,10 @@
 <!-- src/layouts/AppLayout.vue -->
 <template>
-  <div class="min-h-screen flex" :style="{ color: theme.text }">
+  <!-- ⬇️ SIN background inline: el fondo viene de --app-bg en styles.css -->
+  <div
+    class="min-h-screen flex"
+    :style="{ color: theme.text }"
+  >
     <!-- Sidebar -->
     <aside
       :class="[
@@ -19,10 +23,8 @@
         class="h-16 px-5 flex items-center gap-3 border-b"
         :style="{ borderColor: 'rgba(15, 23, 42, 0.08)' }"
       >
-        <div
-          class="h-9 w-9 rounded-full grid place-items-center overflow-hidden"
-          :style="{ background: '#f1f5f9', border: '1px solid rgba(15,23,42,0.08)' }"
-        >
+        <div class="h-9 w-9 rounded-full grid place-items-center overflow-hidden"
+             :style="{ background: '#f1f5f9', border: '1px solid rgba(15,23,42,0.08)' }">
           <img v-if="ui.logoUrl" :src="ui.logoUrl" alt="logo" class="h-9 w-9 object-contain" />
           <i v-else class="fa-solid fa-chart-line" :style="{ color: '#64748b' }"></i>
         </div>
@@ -31,7 +33,7 @@
             {{ ui.appName || 'Mi App' }}
           </div>
           <div class="text-[11px] truncate" :style="{ color: subtext }">
-            Empresa: {{ empresaLabel }}
+            Empresa: {{ ws.empresaNombre || ws.empresaId || '—' }}
           </div>
         </div>
       </div>
@@ -99,24 +101,25 @@
           </div>
 
           <div class="flex items-center gap-3">
-            <!-- Chips -->
+            <!-- Chips informativos -->
             <div class="hidden sm:flex text-[11px] mr-1" :style="{ color: topbarChipText }">
-              <span class="px-2 py-1 rounded-full border" :style="{ background: chipBg, borderColor: chipBorder }">
+              <span
+                class="px-2 py-1 rounded-full border"
+                :style="{ background: chipBg, borderColor: chipBorder }"
+              >
                 Rol: {{ ws.rol || '—' }}
               </span>
-
-              <!-- Muestra 'Todas las sucursales' cuando el header actual es 'all' -->
               <span
-                v-if="isAllSucursales || sucursalNombre"
+                v-if="ws.sucursalNombre"
                 class="ml-2 px-2 py-1 rounded-full border"
                 :style="{ background: chipBg, borderColor: chipBorder }"
               >
-                {{ isAllSucursales ? 'Sucursales: Todas' : `Sucursal: ${sucursalNombre}` }}
+                Sucursal: {{ ws.sucursalNombre }}
               </span>
             </div>
 
-            <!-- Selects Empresa/Sucursal -->
-            <div class="hidden md:flex items-center gap-2 mr-2">
+            <!-- Selects superuser -->
+            <div v-if="ws.isSuperuser" class="hidden md:flex items-center gap-2 mr-2">
               <select
                 v-model="tmpEmpresaId"
                 @change="onEmpresaSelect"
@@ -124,18 +127,16 @@
                 :style="selectStyle"
               >
                 <option disabled value="">Empresa…</option>
-                <option v-for="e in empresas" :key="e.id" :value="String(e.id)">{{ e.nombre }}</option>
+                <option v-for="e in empresas" :key="e.id" :value="e.id">{{ e.nombre }}</option>
               </select>
-
               <select
                 v-model="tmpSucursalId"
                 @change="onSucursalSelect"
                 class="h-9 text-xs rounded-md px-2"
                 :style="selectStyle"
-                :disabled="!tmpEmpresaId"
               >
-                <option value="all">Todas las sucursales</option>
-                <option v-for="s in sucursales" :key="s.id" :value="String(s.id)">{{ s.nombre }}</option>
+                <option disabled value="">Sucursal…</option>
+                <option v-for="s in sucursales" :key="s.id" :value="s.id">{{ s.nombre }}</option>
               </select>
             </div>
 
@@ -206,8 +207,7 @@ import { useAuthStore } from '@/stores/auth'
 import api from '@/api/services'
 import Toasts from '@/components/ui/Toasts.vue'
 import ConfirmDialog from '@/components/ui/ConfirmDialog.vue'
-import { useThemeCssVars } from '@/composables/useThemeCssVars'
-import { setEmpresaId, getEmpresaId, setSucursalId, getSucursalId } from '@/api/http'
+import { useThemeCssVars } from '@/composables/useThemeCssVars' 
 
 const route = useRoute()
 const router = useRouter()
@@ -222,7 +222,9 @@ const username = ref('')
 const empresas = ref([])
 const sucursales = ref([])
 
-/* THEME */
+/* =========================
+   THEME (desde uiConfigStore)
+========================= */
 const theme = computed(() => ({
   primary:   ui.theme?.primary   || '#2563eb',
   secondary: ui.theme?.secondary || '#10b981',
@@ -237,19 +239,10 @@ const theme = computed(() => ({
   bgSolid:   ui.theme?.bgSolid   || '#f6f7fb',
   subtext:   ui.theme?.subtext   || 'rgba(15,23,42,0.55)',
 }))
-const subtext = computed(() => theme.value.subtext)
-const iconColor = computed(() => '#64748b')
-const activeBg = computed(() => '#eef2ff')
-const topbarText = computed(() => theme.value.text)
-const chipBg = computed(() => '#f8fafc')
-const chipBorder = computed(() => 'rgba(15,23,42,0.08)')
-const topbarChipText = computed(() => 'rgba(15,23,42,.75)')
-const selectStyle = computed(() => ({
-  background: theme.value.cardBg,
-  color: theme.value.cardText,
-  border: '1px solid rgba(15,23,42,0.12)'
-}))
 
+const subtext = computed(() => theme.value.subtext)
+
+/* Inyecta variables CSS globales para que styles.css renderice el fondo */
 useThemeCssVars(() => ({
   primary: theme.value.primary,
   secondary: theme.value.secondary,
@@ -264,24 +257,23 @@ useThemeCssVars(() => ({
   bgSolid: theme.value.bgSolid,
 }))
 
-/* NAV */
+/* =========================
+   NAV
+========================= */
 const visibleNav = computed(() => Array.isArray(ui.menu) ? ui.menu : [])
+
 const currentTitle = computed(() => {
   const found = visibleNav.value.find(n => route.name === n.routeName)
   return found?.label || ui.appName || 'Dashboard'
 })
+
 function closeOnMobile () {
   if (window.innerWidth < 768) sidebarOpen.value = false
 }
 
-/* Labels en header */
-const empresaLabel = computed(() => ws.empresaNombre || ws.empresaId || getEmpresaId() || '—')
-const sucursalNombre = computed(() => ws.sucursalNombre || '')
-
-/* “Todas” helper para chip */
-const isAllSucursales = computed(() => (getSucursalId() || '') === 'all')
-
-/* Perfil / username */
+/* =========================
+   Perfil y selects
+========================= */
 async function loadProfileHeader () {
   try {
     const { data: pr } = await api.accounts.perfil()
@@ -289,41 +281,36 @@ async function loadProfileHeader () {
   } catch {}
 }
 
-/* Selects controlados (defaults desde localStorage o store) */
-const tmpEmpresaId = ref(ws.empresaId ? String(ws.empresaId) : (getEmpresaId() || ''))
-const tmpSucursalId = ref(getSucursalId() || (ws.sucursalId ? String(ws.sucursalId) : 'all'))
+const tmpEmpresaId = ref('')
+const tmpSucursalId = ref('')
 
 async function loadEmpresas () {
   try {
     const { data } = await api.empresas.list({ page_size: 200 })
     empresas.value = data?.results || data || []
-    // Set default si no hay
-    if (!tmpEmpresaId.value) tmpEmpresaId.value = getEmpresaId() || ''
+    tmpEmpresaId.value = ws.empresaId || ''
   } catch { empresas.value = [] }
 }
 
 async function loadSucursales () {
-  const empresa = tmpEmpresaId.value || getEmpresaId() || ws.empresaId
-  if (!empresa) { sucursales.value = []; tmpSucursalId.value = 'all'; return }
+  if (!tmpEmpresaId.value) { sucursales.value = []; return }
   try {
-    const { data } = await api.sucursales.list({ empresa, page_size: 200, ordering: 'nombre' })
+    const { data } = await api.sucursales.list({ empresa: tmpEmpresaId.value, page_size: 200 })
     sucursales.value = data?.results || data || []
-    // si no hay sucursal previa, default a 'all'
-    if (!getSucursalId() && !ws.sucursalId) tmpSucursalId.value = 'all'
+    tmpSucursalId.value = ws.sucursalId || ''
   } catch { sucursales.value = [] }
 }
 
 async function onEmpresaSelect () {
-  // Persistir empresa y resetear sucursal a 'all', recargar
-  setEmpresaId(tmpEmpresaId.value)
-  setSucursalId('all')
-  window.location.reload()
+  if (!ws.isSuperuser) return
+  await ws.changeEmpresa(tmpEmpresaId.value)
+  await ui.loadForActiveCompany() // refresca tema/menú al cambiar empresa
+  await loadSucursales()
 }
 
 function onSucursalSelect () {
-  // Guardar 'all' o id seleccionado, recargar
-  setSucursalId(tmpSucursalId.value || 'all')
-  window.location.reload()
+  if (!ws.isSuperuser) return
+  ws.changeSucursal(tmpSucursalId.value)
 }
 
 function onClickOutside (e) {
@@ -335,20 +322,36 @@ function logout () {
   router.replace({ name: 'Login' })
 }
 
-/* Lifecycle */
+/* =========================
+   Lifecycle
+========================= */
 onMounted(async () => {
   await ws.ensureEmpresaSet()
-  await ui.loadForActiveCompany()
-  await loadProfileHeader()
-
-  await loadEmpresas()
-  await loadSucursales()
-
+  await ui.loadForActiveCompany() // menú + tema + branding para empresa activa
+  loadProfileHeader()
+  if (ws.isSuperuser) {
+    await loadEmpresas()
+    await loadSucursales()
+  }
   document.addEventListener('click', onClickOutside)
 })
 </script>
 
 <style scoped>
+/* Variables útiles por si quieres reutilizarlas con @apply en otros componentes */
+:host {
+  --app-primary:    v-bind('theme.primary');
+  --app-secondary:  v-bind('theme.secondary');
+  --app-text:       v-bind('theme.text');
+  --app-card-bg:    v-bind('theme.cardBg');
+  --app-card-text:  v-bind('theme.cardText');
+  --app-top-start:  v-bind('theme.topStart');
+  --app-top-end:    v-bind('theme.topEnd');
+  --app-bg-start:   v-bind('theme.bgStart');
+  --app-bg-end:     v-bind('theme.bgEnd');
+}
+
+/* Card base reutilizable */
 .card {
   @apply rounded-2xl border shadow-sm;
   border-color: rgba(15, 23, 42, 0.08);
@@ -360,5 +363,10 @@ onMounted(async () => {
   border-color: rgba(15, 23, 42, 0.08);
   color: v-bind('theme.cardText');
 }
-.card-body { @apply p-4; color: v-bind('theme.cardText'); }
+.card-body {
+  @apply p-4;
+  color: v-bind('theme.cardText');
+}
+
+/* Derivados de color */
 </style>

@@ -1,3 +1,4 @@
+<!-- src/components/cliente-tabs/ClientePerfilTab.vue -->
 <template>
   <div class="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-5">
     <!-- Columna izquierda -->
@@ -27,13 +28,28 @@
           </div>
 
           <div class="field">
-            <span class="label">INICIO DE MEMBRESIA</span>
+            <span class="label">INICIO DE MEMBRESÍA</span>
             <span class="value">{{ f(resumen?.inscripcion) }}</span>
           </div>
 
-          <div class="field">
-            <span class="label">CONTACTO DE EMERGENCIA</span>
-            <span class="value">{{ emergencia || '—' }}</span>
+          <!-- CONTACTOS (chips) -->
+          <div class="sm:col-span-2 field">
+            <span class="label">CONTACTOS</span>
+            <div class="flex flex-wrap gap-2">
+              <template v-if="contactos.length">
+                <span
+                  v-for="(c, i) in contactos"
+                  :key="i"
+                  class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-xs"
+                  :class="chipClass(c.tipo)"
+                  :title="c.tipo"
+                >
+                  <i class="fa-solid" :class="iconoContacto(c.tipo)"></i>
+                  {{ c.valor }}
+                </span>
+              </template>
+              <span v-else class="value">—</span>
+            </div>
           </div>
 
           <div class="sm:col-span-2 field">
@@ -76,9 +92,9 @@
                     <td class="td">
                       <span
                         class="inline-flex px-2 py-0.5 rounded-full text-xs border"
-                        :class="p.estado==='en_tiempo' ? 'border-emerald-200 bg-emerald-50 text-emerald-700' :
-                                p.estado==='atrasado' ? 'border-rose-200 bg-rose-50 text-rose-700' :
-                                'border-gray-200 bg-gray-50 text-gray-700'"
+                        :class="p.estado==='en_tiempo' ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                                : p.estado==='atrasado' ? 'border-rose-200 bg-rose-50 text-rose-700'
+                                : 'border-gray-200 bg-gray-50 text-gray-700'"
                       >
                         {{ estadoTexto(p.estado) }}
                       </span>
@@ -132,22 +148,41 @@
         </div>
       </div>
 
-      <!-- Actividad reciente -->
+      <!-- Actividad reciente (tabla con scroll) -->
       <div class="card">
         <div class="card-head">Actividad reciente</div>
-        <div class="p-5 space-y-2">
+
+        <div class="p-5">
           <div v-if="loadingActividad" class="text-sm text-gray-600">Cargando…</div>
+
           <template v-else>
-            <div v-for="a in actividad" :key="a.id" class="row">
-              <div class="row-l">{{ a.titulo }}</div>
-              <div class="row-r">{{ a.fecha }}</div>
-            </div>
             <div v-if="!actividad.length" class="text-sm text-gray-600">Sin actividad reciente.</div>
+
+            <div v-else class="overflow-auto rounded-xl border border-gray-200 max-h-[360px]">
+              <table class="min-w-full text-sm">
+                <thead class="bg-gray-50 text-gray-500">
+                  <tr>
+                    <th class="th">Fecha</th>
+                    <th class="th">Tipo</th>
+                    <th class="th">Sede</th>
+                    <th class="th">Área</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="a in actividad" :key="a.id" class="border-t">
+                    <td class="td">{{ a.fecha_fmt }}</td>
+                    <td class="td">{{ a.tipo }}</td>
+                    <td class="td">{{ a.sucursal || '—' }}</td>
+                    <td class="td">{{ a.area || '—' }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </template>
         </div>
       </div>
 
-      <!-- Notas del staff (placeholder para tu flujo) -->
+      <!-- Notas del staff -->
       <div class="card">
         <div class="card-head flex items-center justify-between">
           <div>Notas del staff</div>
@@ -166,17 +201,18 @@ import { useWorkspaceStore } from '@/stores/workspace'
 
 const props = defineProps({
   clienteId: { type: Number, required: true },
-  resumen:   { type: Object, default: null }   // viene del padre (resumen endpoint)
+  resumen:   { type: Object, default: null }
 })
 
 const ws = useWorkspaceStore()
 
 /* Derivados Perfil */
-const email    = computed(() => props.resumen?.contacto?.email || props.resumen?.email || '')
-const telefono = computed(() => props.resumen?.contacto?.telefono || props.resumen?.contacto?.celular || '')
+const email     = computed(() => props.resumen?.contacto?.email || props.resumen?.email || '')
+const telefono  = computed(() => props.resumen?.contacto?.telefono || props.resumen?.contacto?.celular || '')
 const direccion = computed(() => props.resumen?.direccion || '')
-const emergencia = computed(() => props.resumen?.contacto_emergencia || '')
-const edad = computed(() => {
+const edad      = computed(() => {
+  // preferir edad calculada del backend; si no, calcula en front
+  if (props.resumen?.edad != null) return `${props.resumen.edad} años`
   const dob = props.resumen?.fecha_nacimiento
   if (!dob) return ''
   try {
@@ -188,6 +224,34 @@ const edad = computed(() => {
   } catch { return '' }
 })
 
+/* Contactos (chips) */
+const contactos = computed(() => {
+  const arr = Array.isArray(props.resumen?.contactos) ? props.resumen.contactos : []
+  const legacy = []
+  const c = props.resumen?.contacto || {}
+  if (c.email) legacy.push({ tipo:'correo', valor:c.email })
+  if (c.telefono) legacy.push({ tipo:'telefono', valor:c.telefono })
+  if (c.celular) legacy.push({ tipo:'celular', valor:c.celular })
+  return arr.length ? arr : legacy
+})
+function iconoContacto(tipo){
+  const t = String(tipo||'').toLowerCase()
+  if (t.includes('correo')) return 'fa-envelope'
+  if (t.includes('celular')) return 'fa-mobile-screen'
+  if (t.includes('telefono')) return 'fa-phone'
+  if (t.includes('facebook')) return 'fa-facebook'
+  if (t.includes('instagram')) return 'fa-instagram'
+  return 'fa-address-book'
+}
+function chipClass(tipo){
+  const t = String(tipo||'').toLowerCase()
+  if (t.includes('correo')) return 'border-blue-200 bg-blue-50 text-blue-700'
+  if (t.includes('celular')) return 'border-emerald-200 bg-emerald-50 text-emerald-700'
+  if (t.includes('telefono')) return 'border-amber-200 bg-amber-50 text-amber-700'
+  return 'border-gray-200 bg-gray-50 text-gray-700'
+}
+
+/* Utils */
 function f (v) { try { return v ? new Date(v).toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'}) : '—' } catch { return v || '—' } }
 function money (n) { return Number(n||0).toLocaleString('es-MX',{ style:'currency', currency:'MXN'}) }
 
@@ -215,21 +279,30 @@ const antiguedad = computed(() => {
   } catch { return 0 }
 })
 
-/* Pagos (ventas del cliente) */
-const pagos = ref([])
+/* KPIs auxiliares (puedes setearlos real desde endpoints específicos) */
+const asistencias = ref(0) // opcional: setea si tienes KPI
 const totalPagado = computed(() => pagos.value.reduce((a,b)=>a + Number(b.total||0), 0))
+
+/* Pagos */
+const pagos = ref([])
 const loadingPagos = ref(false)
 async function loadPagos () {
   loadingPagos.value = true
   try {
-    const { data } = await api.ventas.ventas.list({ empresa: ws.empresaId, cliente: props.clienteId, ordering: '-fecha', page_size: 20, item_tipo: 'PLAN', })
+    const { data } = await api.ventas.ventas.list({
+      empresa: ws.empresaId,
+      cliente: props.clienteId,
+      ordering: '-fecha',
+      page_size: 20,
+      item_tipo: 'PLAN',
+    })
     const arr = data?.results || data || []
     pagos.value = arr.map(v => ({
       id: v.id,
       fecha: v.fecha || v.created_at,
       total: v.total ?? v.importe ?? 0,
       metodo: v.metodo || v.metodo_pago || '',
-      estado: v.estado || '',      // 'en_tiempo' | 'atrasado' | …
+      estado: v.estado || '',
       concepto: v.concepto || v.observaciones || 'Mensualidad'
     }))
   } finally { loadingPagos.value = false }
@@ -241,9 +314,9 @@ function estadoTexto (s) {
   if (v) return v
   return '—'
 }
-function exportar(){ /* hook para exportar */ }
+function exportar(){ /* hook para exportar pagos */ }
 
-/* Actividad reciente (accesos del cliente) */
+/* Actividad reciente (accesos) → tabla con scroll */
 const actividad = ref([])
 const loadingActividad = ref(false)
 async function loadActividad(){
@@ -254,18 +327,23 @@ async function loadActividad(){
       empresa: ws.empresaId,
       cliente: props.clienteId,
       fecha_after: desde.toISOString(),
-      page_size: 10,
+      page_size: 50,
       ordering: '-fecha'
     })
     const arr = data?.results || data || []
     actividad.value = arr.map(a => ({
       id: a.id,
-      titulo: a.tipo || 'Check-in',
-      fecha: a.fecha ? new Date(a.fecha).toLocaleString('es-MX',{ day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' }) : '—'
+      tipo: (a.tipo_acceso || a.tipo || 'Acceso').toString(),
+      fecha_fmt: a.fecha ? new Date(a.fecha).toLocaleString('es-MX',{
+        day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit'
+      }) : '—',
+      sucursal: a.sucursal_nombre || a.sucursal?.nombre || '',
+      area: a.puerta || a.area || ''
     }))
   } finally { loadingActividad.value = false }
 }
 
+/* Carga */
 watch(() => props.clienteId, () => { loadPagos(); loadActividad() }, { immediate: true })
 onMounted(() => { if (props.clienteId) { loadPagos(); loadActividad() } })
 </script>
@@ -283,10 +361,6 @@ onMounted(() => { if (props.clienteId) { loadPagos(); loadActividad() } })
 .kpi{ @apply text-center rounded-xl border border-gray-200 bg-gray-50 py-3; }
 .kpi-top{ @apply text-base font-semibold; }
 .kpi-sub{ @apply text-[11px] text-gray-500; }
-
-.row{ @apply grid grid-cols-2 gap-3 text-sm; }
-.row-l{ @apply text-gray-700; }
-.row-r{ @apply text-gray-500 text-right; }
 
 .btn-light{ @apply px-3 py-2 rounded-xl bg-white border border-gray-200 hover:bg-gray-50 text-sm; }
 </style>

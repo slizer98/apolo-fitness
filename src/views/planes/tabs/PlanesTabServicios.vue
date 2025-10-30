@@ -1,87 +1,282 @@
 <template>
-  <div class="p-4">
+  <section class="space-y-4">
     <!-- Header -->
-    <div class="flex items-center justify-between mb-4">
-      <h1 class="text-2xl font-semibold text-gray-900">Servicios</h1>
-
+    <div class="flex items-center justify-between">
+      <h3 class="text-lg font-semibold text-gray-900">Servicios</h3>
       <button
+        type="button"
+        class="h-9 px-3 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700"
         @click="openNew"
-        class="rounded-lg px-4 py-2 bg-apolo-primary text-black hover:opacity-90 transition disabled:opacity-50"
-        :disabled="!empresaId"
-        :title="!empresaId ? 'Selecciona/activa una empresa para crear' : ''"
       >
-        + Nuevo
+        + Nuevo servicio
       </button>
     </div>
 
-    <!-- Card listado -->
-    <div class="rounded-2xl bg-white border border-gray-200 shadow-sm p-4">
-      <div class="flex items-center justify-between mb-3">
-        <h2 class="text-lg font-medium text-gray-900">Listado</h2>
+    <!-- Card de controles -->
+<div class="rounded-2xl border border-gray-200 bg-white p-3 overflow-hidden">
+  <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between md:gap-4">
+    <!-- Contadores -->
+    <div class="flex flex-wrap gap-2">
+      <span class="px-3 py-1 rounded-full text-[12px] border border-gray-200 bg-white text-gray-700">
+        {{ serviciosActivos.length }} activos
+      </span>
+      <span class="px-3 py-1 rounded-full text-[12px] border border-gray-200 bg-white text-gray-700">
+        {{ serviciosArchivados.length }} archivados
+      </span>
+      <span class="px-3 py-1 rounded-full text-[12px] border border-gray-200 bg-white text-gray-700">
+        {{ serviciosConBeneficios.length }} con beneficios
+      </span>
+    </div>
 
-        <!-- <div class="flex items-center gap-2">
-          <div
-            class="relative flex items-center rounded-lg border border-gray-300 bg-white px-2"
-          >
-            <i class="fa fa-search text-gray-500 text-sm mr-1"></i>
-            <input
-              v-model="q"
-              @keyup.enter="applyFilter"
-              placeholder="Buscar servicio…"
-              class="h-9 w-64 outline-none text-[14px] placeholder-gray-400"
-            />
+    <!-- Buscador + filtros + toggle -->
+    <div class="flex flex-wrap items-center gap-2 min-w-0">
+      <!-- Buscador -->
+      <div class="relative flex-1 min-w-[220px] md:min-w-[360px]">
+        <input
+          v-model.trim="svcSearch"
+          type="search"
+          placeholder="Buscar servicio"
+          class="h-9 w-full bg-white border border-gray-300 rounded-lg pl-9 pr-3 text-sm
+                 focus:outline-none focus:ring-2 focus:ring-apolo-primary/30"
+        />
+        <span class="absolute inset-y-0 left-0 grid place-items-center w-9 text-gray-400 pointer-events-none">
+          <i class="fa-solid fa-magnifying-glass"></i>
+        </span>
+      </div>
+
+      <!-- Filtro estado -->
+      <select
+        v-model="svcEstado"
+        class="h-9 shrink-0 bg-white border border-gray-300 rounded-lg px-2 text-sm
+               focus:outline-none focus:ring-2 focus:ring-apolo-primary/30"
+      >
+        <option value="todos">Todos</option>
+        <option value="activos">Activos</option>
+        <option value="archivados">Archivados</option>
+      </select>
+
+      <!-- Toggle vista -->
+      <div class="inline-flex shrink-0 rounded-lg overflow-hidden border border-gray-300">
+        <button
+          type="button"
+          class="h-9 px-3 text-sm transition"
+          :class="viewMode==='card'
+            ? 'bg-gray-100 text-gray-800'
+            : 'bg-white text-gray-700 hover:bg-gray-50'"
+          @click="viewMode='card'"
+        >
+          Tarjeta
+        </button>
+        <button
+          type="button"
+          class="h-9 px-3 text-sm border-l border-gray-300 transition"
+          :class="viewMode==='table'
+            ? 'bg-gray-100 text-gray-800'
+            : 'bg-white text-gray-700 hover:bg-gray-50'"
+          @click="viewMode='table'"
+        >
+          Lista
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+    <!-- VISTA TARJETA -->
+    <div v-if="viewMode==='card'" class="grid md:grid-cols-2 gap-4">
+      <!-- Skeleton -->
+      <div v-if="loading" class="col-span-full space-y-2">
+        <div class="animate-pulse h-28 bg-gray-100 rounded-2xl border border-gray-200"></div>
+        <div class="animate-pulse h-28 bg-gray-100 rounded-2xl border border-gray-200"></div>
+        <div class="animate-pulse h-28 bg-gray-100 rounded-2xl border border-gray-200"></div>
+      </div>
+
+      <div
+        v-for="s in serviciosFiltrados"
+        :key="s.id"
+        class="rounded-2xl border border-gray-200 bg-white p-4"
+        :class="(s.is_active ?? true) ? '' : 'opacity-60'"
+      >
+        <div class="flex items-start justify-between gap-4">
+          <div>
+            <div class="flex items-center gap-2">
+              <h4 class="text-sm font-semibold text-gray-900">{{ s.nombre }}</h4>
+              <span
+                class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] border"
+                :class="(s.is_active ?? true)
+                  ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                  : 'border-rose-200 bg-rose-50 text-rose-700'"
+              >
+                {{ (s.is_active ?? true) ? 'Activo' : 'Archivado' }}
+              </span>
+            </div>
+            <p class="text-xs text-gray-500 mt-1">{{ s.descripcion || '—' }}</p>
           </div>
+
+        <!-- Precio -->
+          <div class="text-right min-w-[160px]">
+            <div class="text-[13px] text-gray-400">Precio</div>
+            <div class="font-semibold text-gray-900">
+              {{ precioServicio(s) }}
+            </div>
+          </div>
+        </div>
+
+        <!-- Beneficios -->
+        <div class="mt-3">
+          <div class="text-[12px] text-gray-500 mb-1">Beneficios</div>
+          <div v-if="(beneficiosByServicio[s.id] || []).length" class="flex flex-wrap gap-1.5">
+            <span
+              v-for="b in beneficiosByServicio[s.id]"
+              :key="b.id"
+              class="px-2 py-1 rounded-full text-[11px] border border-gray-200 bg-gray-50 text-gray-700"
+            >
+              Beneficio: {{ b.nombre }}
+            </span>
+          </div>
+          <div v-else class="text-xs text-gray-400">—</div>
+        </div>
+
+        <!-- Acciones (borde gris) -->
+        <div class="mt-4 flex items-center justify-end gap-2">
           <button
-            @click="resetFilters"
-            class="px-3 h-9 rounded-lg border border-gray-300 hover:bg-gray-50 text-[14px] text-gray-700"
+            type="button"
+            class="px-3 py-1.5 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50"
+            @click="openEdit(s)"
           >
-            Limpiar
+            Editar
           </button>
-          <span v-if="!loading" class="hidden sm:inline text-sm text-gray-500">
-            {{ filteredRows.length }} registros
-          </span>
-        </div> -->
+          <button
+            type="button"
+            class="px-3 py-1.5 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50"
+            @click="duplicate(s)"
+          >
+            Duplicar
+          </button>
+          <button
+            type="button"
+            class="px-3 py-1.5 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50"
+            @click="toggleArchive(s)"
+          >
+            {{ (s.is_active ?? true) ? 'Archivar' : 'Activar' }}
+          </button>
+        </div>
       </div>
 
-      <!-- skeleton -->
-      <div v-if="loading" class="space-y-2">
-        <div
-          class="animate-pulse h-8 bg-gray-100 rounded"
-          v-for="i in 6"
-          :key="i"
-        ></div>
-      </div>
-
-      <!-- tabla -->
-      <div v-else>
-        <TableBasic :rows="filteredRows" :columns="columns" :initialPageSize="10" />
+      <div v-if="!loading && !serviciosFiltrados.length" class="col-span-full">
+        <div class="rounded-2xl border border-gray-200 bg-white p-6 text-center text-sm text-gray-500">
+          No hay servicios que coincidan con tu búsqueda/filtro.
+        </div>
       </div>
     </div>
 
-    <!-- Modal Crear/Editar -->
+    <!-- VISTA TABLA -->
+    <div v-else class="rounded-2xl border border-gray-200 bg-white overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead class="text-gray-500">
+          <tr class="border-b border-gray-200">
+            <th class="text-left py-2 px-3">Servicio</th>
+            <th class="text-left py-2 px-3">Precio</th>
+            <th class="text-left py-2 px-3">Beneficios</th>
+            <th class="text-left py-2 px-3">Estado</th>
+            <th class="text-right py-2 px-3">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-if="loading">
+            <td colspan="5" class="py-6">
+              <div class="animate-pulse h-6 bg-gray-100 rounded mx-3"></div>
+            </td>
+          </tr>
+
+          <tr
+            v-for="s in serviciosFiltrados"
+            :key="s.id"
+            class="border-b border-gray-100 hover:bg-gray-50"
+          >
+            <td class="py-3 px-3">
+              <div class="font-medium text-gray-900">{{ s.nombre }}</div>
+              <div class="text-[12px] text-gray-500">{{ s.descripcion || '—' }}</div>
+            </td>
+            <td class="py-3 px-3">{{ precioServicio(s) }}</td>
+            <td class="py-3 px-3">
+              <template v-if="(beneficiosByServicio[s.id] || []).length">
+                <span
+                  v-for="b in beneficiosByServicio[s.id]"
+                  :key="b.id"
+                  class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] border border-gray-200 bg-gray-50 text-gray-700 mr-1 mb-1"
+                >
+                  Beneficio: {{ b.nombre }}
+                </span>
+              </template>
+              <span v-else class="text-gray-400">—</span>
+            </td>
+            <td class="py-3 px-3">
+              <span
+                class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] border"
+                :class="(s.is_active ?? true)
+                  ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                  : 'border-rose-200 bg-rose-50 text-rose-700'"
+              >
+                {{ (s.is_active ?? true) ? 'Activo' : 'Archivado' }}
+              </span>
+            </td>
+            <td class="py-3 px-3">
+              <!-- Menú … -->
+              <div class="relative flex justify-end" data-menu-root>
+                <button
+                  class="h-9 w-9 rounded-lg border border-gray-300 bg-white hover:bg-gray-50"
+                  :aria-expanded="openMenuId===s.id"
+                  aria-haspopup="menu"
+                  title="Acciones"
+                  @click.stop="toggleMenu(s.id)"
+                >⋯</button>
+
+                <div
+                  v-if="openMenuId===s.id"
+                  class="absolute right-0 mt-1 w-48 rounded-xl border border-gray-200 bg-white shadow-lg p-1 z-20"
+                  role="menu"
+                >
+                  <button class="menu-item" role="menuitem" @click="openEdit(s); closeMenu()">Editar</button>
+                  <button class="menu-item" role="menuitem" @click="duplicate(s); closeMenu()">Duplicar</button>
+                  <button class="menu-item" role="menuitem" @click="toggleArchive(s); closeMenu()">
+                    {{ (s.is_active ?? true) ? 'Archivar' : 'Activar' }}
+                  </button>
+                </div>
+              </div>
+            </td>
+          </tr>
+
+          <tr v-if="!loading && !serviciosFiltrados.length">
+            <td colspan="5" class="py-6 text-center text-gray-500">Sin resultados</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- ===== MODAL CREAR/EDITAR — ESTILO BLANCO ===== -->
     <div
       v-if="showModal"
-      class="fixed inset-0 bg-black/30 backdrop-blur-[1px] flex items-center justify-center z-50 p-4"
+      class="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4"
       @click.self="closeModal"
     >
-      <div class="w-full max-w-xl bg-white border border-gray-200 rounded-2xl shadow-xl">
-        <div class="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
-          <h3 class="text-lg font-semibold text-gray-900">
-            {{ isEditing ? 'Editar servicio' : 'Nuevo servicio' }}
-          </h3>
-          <button @click="closeModal" class="h-8 w-8 rounded-lg border border-gray-200 hover:bg-gray-50">
+      <div class="w-full max-w-xl bg-white border border-gray-200 rounded-2xl shadow-2xl">
+        <div class="px-5 py-4 border-b border-gray-200 flex items-center justify-between">
+          <h3 class="text-lg font-semibold text-gray-900">{{ isEditing ? 'Editar servicio' : 'Nuevo servicio' }}</h3>
+          <button @click="closeModal" class="h-8 w-8 grid place-items-center rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50" aria-label="Cerrar">
             ✕
           </button>
         </div>
 
-        <form @submit.prevent="save" class="p-4 space-y-4" novalidate>
-          <div class="grid sm:grid-cols-1 gap-3">
+        <form @submit.prevent="save" class="p-5 space-y-4" novalidate>
+          <div class="grid sm:grid-cols-2 gap-3">
             <div>
               <label class="block text-xs text-gray-600 mb-1">Nombre *</label>
               <input
                 v-model.trim="form.nombre"
-                class="w-full h-10 rounded-lg border px-3"
-                :class="errors.nombre ? 'border-red-400' : 'border-gray-300 focus:border-gray-400'"
+                class="w-full bg-white border rounded px-3 py-2 text-gray-900"
+                :class="errors.nombre ? 'border-red-400' : 'border-gray-300'"
               />
               <p v-if="errors.nombre" class="text-red-600 text-xs mt-1">{{ errors.nombre }}</p>
             </div>
@@ -92,28 +287,20 @@
                 <input
                   v-model.trim="form.icono"
                   placeholder="lucide:dumbbell"
-                  class="flex-1 h-10 rounded-lg border border-gray-300 px-3 bg-gray-50"
-                  @focus="openIconPicker = true"
+                  class="flex-1 bg-white border rounded px-3 py-2 text-gray-900 border-gray-300"
                   readonly
+                  @focus="openIconPicker = true"
                 />
                 <button
                   type="button"
-                  class="px-3 h-10 rounded-lg border border-gray-300 hover:bg-gray-50"
+                  class="px-3 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50"
                   @click="openIconPicker = true"
-                >
-                  Elegir…
-                </button>
+                >Elegir…</button>
               </div>
               <div v-if="form.icono" class="mt-2 flex items-center gap-2 text-gray-700">
                 <Icon :icon="form.icono" class="w-5 h-5" />
                 <span class="text-xs">{{ form.icono }}</span>
-                <button
-                  type="button"
-                  class="text-xs text-gray-500 hover:text-gray-700"
-                  @click="form.icono = ''"
-                >
-                  Quitar
-                </button>
+                <button type="button" class="text-xs text-gray-500 hover:text-gray-700" @click="form.icono = ''">Quitar</button>
               </div>
             </div>
           </div>
@@ -123,7 +310,7 @@
             <textarea
               v-model="form.descripcion"
               rows="3"
-              class="w-full rounded-lg border border-gray-300 px-3 py-2"
+              class="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-900"
             ></textarea>
           </div>
 
@@ -131,16 +318,16 @@
             <button
               type="button"
               @click="closeModal"
-              class="px-4 h-10 rounded-lg border border-gray-300 hover:bg-gray-50"
+              class="px-4 py-2 rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
             >
               Cancelar
             </button>
             <button
               type="submit"
               :disabled="saving"
-              class="px-4 h-10 rounded-lg bg-apolo-primary text-black hover:opacity-90 disabled:opacity-60"
+              class="px-4 py-2 rounded-lg bg-apolo-primary text-white hover:opacity-90 disabled:opacity-60"
             >
-              {{ saving ? 'Guardando…' : 'Guardar' }}
+              {{ saving ? 'Guardando…' : (isEditing ? 'Guardar cambios' : 'Crear servicio') }}
             </button>
           </div>
         </form>
@@ -149,249 +336,218 @@
 
     <!-- Icon Picker -->
     <IconPicker v-if="openIconPicker" @close="openIconPicker=false" @select="onSelectIconify" />
-
-    <!-- Confirmación -->
-    <div
-      v-if="confirm.open"
-      class="fixed inset-0 bg-black/30 backdrop-blur-[1px] flex items-center justify-center z-50 p-4"
-      @click.self="confirm.open=false"
-    >
-      <div class="w-full max-w-sm bg-white border border-gray-200 rounded-2xl shadow-xl p-4">
-        <h3 class="text-lg font-semibold text-gray-900 mb-2">Confirmar</h3>
-        <p class="text-sm text-gray-700">
-          ¿Eliminar el servicio <span class="font-semibold">{{ confirm.target?.nombre }}</span>?
-        </p>
-        <div class="mt-4 flex items-center justify-end gap-2">
-          <button
-            @click="confirm.open=false"
-            class="px-4 h-10 rounded-lg border border-gray-300 hover:bg-gray-50"
-          >
-            Cancelar
-          </button>
-          <button
-            @click="remove()"
-            class="px-4 h-10 rounded-lg bg-red-600 text-white hover:bg-red-700"
-          >
-            Eliminar
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Toast -->
-    <transition name="fade">
-      <div
-        v-if="toast.show"
-        class="fixed bottom-4 right-4 bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm shadow-xl z-50 text-gray-800"
-      >
-        {{ toast.message }}
-      </div>
-    </transition>
-  </div>
+  </section>
 </template>
 
 <script setup>
-import { h, ref, onMounted, onBeforeUnmount, computed } from 'vue'
-import { Icon } from '@iconify/vue'
-import TableBasic from '@/components/TableBasic.vue'
-import { createColumnHelper } from '@tanstack/vue-table'
+import { ref, reactive, computed, onMounted, onBeforeUnmount } from 'vue'
 import api from '@/api/services'
 import { useWorkspaceStore } from '@/stores/workspace'
 import IconPicker from '@/components/IconPicker.vue'
+import { Icon } from '@iconify/vue'
 
 const ws = useWorkspaceStore()
-const empresaId = computed(() => ws.empresaId)
 
+/* ===== Estado ===== */
 const loading = ref(true)
-const rows = ref([])
-const q = ref('')
+const servicios = ref([])
 
-const filteredRows = computed(() => {
-  const term = q.value.trim().toLowerCase()
-  if (!term) return rows.value
-  return rows.value.filter(r =>
-    (r.nombre || '').toLowerCase().includes(term) ||
-    (r.descripcion || '').toLowerCase().includes(term) ||
-    (r.icono || '').toLowerCase().includes(term)
-  )
-})
+/* Beneficios por servicio: { [idServicio]: [{id, nombre}] } */
+const beneficiosByServicio = reactive({})
 
-const showModal = ref(false)
-const openIconPicker = ref(false)
-const isEditing = ref(false)
-const saving = ref(false)
-const errors = ref({})
-const form = ref({ id:null, nombre:'', descripcion:'', icono:'' })
+/* ===== Vista ===== */
+const viewMode = ref('card') // 'card' | 'table'
 
-const confirm = ref({ open:false, target:null })
-const toast = ref({ show:false, message:'' })
-function showToast (msg) { toast.value = { show:true, message: msg }; setTimeout(() => (toast.value.show = false), 2000) }
+/* ===== Filtros ===== */
+const svcSearch = ref('')
+const svcEstado = ref('todos') // 'todos' | 'activos' | 'archivados'
 
+/* ===== Menú “…” en tabla ===== */
 const openMenuId = ref(null)
-function toggleMenu (id) { openMenuId.value = openMenuId.value === id ? null : id }
-function closeMenu () { openMenuId.value = null }
-function onDocClick (e) { const inside = e.target.closest?.('[data-menu-root]'); if (!inside) closeMenu() }
-function onEsc (e) { if (e.key === 'Escape') closeMenu() }
+function toggleMenu(id){ openMenuId.value = openMenuId.value===id ? null : id }
+function closeMenu(){ openMenuId.value = null }
+function onDocClick(e){ if(!e.target.closest?.('[data-menu-root]')) closeMenu() }
+function onEsc(e){ if(e.key==='Escape') closeMenu() }
+onMounted(()=>{ document.addEventListener('click', onDocClick); document.addEventListener('keydown', onEsc) })
+onBeforeUnmount(()=>{ document.removeEventListener('click', onDocClick); document.removeEventListener('keydown', onEsc) })
 
-onMounted(async () => {
-  await fetchAllClientSide()
-  document.addEventListener('click', onDocClick)
-  document.addEventListener('keydown', onEsc)
-})
-onBeforeUnmount(() => {
-  document.removeEventListener('click', onDocClick)
-  document.removeEventListener('keydown', onEsc)
-})
-
-async function fetchAllClientSide () {
+/* ===== Carga ===== */
+async function fetchServicios () {
   loading.value = true
   try {
     const pageSize = 200
     let page = 1
-    const maxTotal = 2000
     const out = []
-    while (out.length < maxTotal) {
+    while (true) {
       const { data } = await api.servicios.list({ page, page_size: pageSize, ordering: '-id' })
       const chunk = data?.results || data || []
       if (!chunk.length) break
       out.push(...chunk)
-      const total = data?.count
-      if (total && out.length >= total) break
+      if (data?.count && page * pageSize >= data.count) break
       if (chunk.length < pageSize) break
       page += 1
     }
-    rows.value = out.map(r => ({
-      id: r.id,
-      nombre: r.nombre ?? '',
-      descripcion: r.descripcion ?? '',
-      icono: r.icono ?? '',
-      __raw: r
-    }))
-  } finally { loading.value = false }
+    servicios.value = out
+  } finally {
+    loading.value = false
+  }
 }
 
-function applyFilter(){ /* computed ya filtra */ }
-function resetFilters(){ q.value = '' }
+async function loadServicioBeneficios () {
+  try {
+    const tmp = {}
+    const pageSize = 200
+    let page = 1
+    while (true) {
+      const { data } = await api.servicioBeneficios.list({ page, page_size: pageSize, ordering: '-id' })
+      const chunk = data?.results || data || []
+      if (!chunk.length) break
+      for (const r of chunk) {
+        const sid = r.servicio ?? r.servicio_id
+        if (!sid) continue
+        if (!tmp[sid]) tmp[sid] = []
+        tmp[sid].push({
+          id: r.beneficio,
+          nombre: r.beneficio_nombre || r.nombre || `#${r.beneficio}`
+        })
+      }
+      if (data?.count && page * pageSize >= data.count) break
+      if (chunk.length < pageSize) break
+      page += 1
+    }
+    Object.keys(beneficiosByServicio).forEach(k => delete beneficiosByServicio[k])
+    Object.entries(tmp).forEach(([k, v]) => { beneficiosByServicio[Number(k)] = v })
+  } catch (e) {
+    console.warn('No se pudieron cargar beneficios de servicios', e)
+  }
+}
 
-function openNew(){ isEditing.value=false; errors.value={}; form.value={ id:null, nombre:'', descripcion:'', icono:'' }; showModal.value=true }
-function openEdit(s){ isEditing.value=true; errors.value={}; form.value={ id:s.id, nombre:s.nombre||'', descripcion:s.descripcion||'', icono:s.icono||'' }; showModal.value=true }
-function closeModal(){ showModal.value=false }
-function onSelectIconify(name){ form.value.icono = name; openIconPicker.value = false }
+onMounted(async () => {
+  await ws.ensureEmpresaSet()
+  await fetchServicios()
+  await loadServicioBeneficios()
+})
+
+/* ===== Derivados ===== */
+const serviciosActivos = computed(() => servicios.value.filter(s => (s.is_active ?? true)))
+const serviciosArchivados = computed(() => servicios.value.filter(s => !(s.is_active ?? true)))
+const serviciosConBeneficios = computed(() => servicios.value.filter(s => (beneficiosByServicio[s.id] || []).length > 0))
+
+const serviciosFiltrados = computed(() => {
+  const term = svcSearch.value.toLowerCase()
+  let base = servicios.value
+  if (svcEstado.value === 'activos') base = base.filter(s => (s.is_active ?? true))
+  if (svcEstado.value === 'archivados') base = base.filter(s => !(s.is_active ?? true))
+  if (term) {
+    base = base.filter(s =>
+      (s.nombre || '').toLowerCase().includes(term) ||
+      (s.descripcion || '').toLowerCase().includes(term)
+    )
+  }
+  return base.slice().sort((a, b) => Number(b.is_active ?? true) - Number(a.is_active ?? true))
+})
+
+/* ===== Helpers ===== */
+function precioServicio (s) {
+  const val = s.precio ?? s.precio_mensual ?? s.total ?? null
+  if (val === null || val === undefined || val === '') return '$ 0.00 / mensual'
+  try {
+    return Number(val).toLocaleString('es-MX', { style: 'currency', currency: 'MXN', maximumFractionDigits: 2 }) + ' / mensual'
+  } catch {
+    return `$ ${val} / mensual`
+  }
+}
+
+/* ===== Modal crear/editar ===== */
+const showModal = ref(false)
+const isEditing = ref(false)
+const saving = ref(false)
+const errors = reactive({})
+const form = reactive({ id:null, nombre:'', descripcion:'', icono:'' })
+
+const openIconPicker = ref(false)
+function onSelectIconify(name){ form.icono = name; openIconPicker.value = false }
+
+function openNew(){
+  isEditing.value = false
+  Object.keys(errors).forEach(k => delete errors[k])
+  Object.assign(form, { id:null, nombre:'', descripcion:'', icono:'' })
+  showModal.value = true
+}
+function openEdit(s){
+  isEditing.value = true
+  Object.keys(errors).forEach(k => delete errors[k])
+  Object.assign(form, {
+    id: s.id,
+    nombre: s.nombre || '',
+    descripcion: s.descripcion || '',
+    icono: s.icono || ''
+  })
+  showModal.value = true
+}
+function closeModal(){ showModal.value = false }
 
 function validate(){
   const e = {}
-  if(!form.value.nombre?.trim()) e.nombre = 'El nombre es obligatorio'
-  if(!empresaId.value && !isEditing.value) e.empresa = 'No hay empresa activa. Selecciona una antes de crear.'
-  errors.value = e
+  if(!form.nombre?.trim()) e.nombre = 'El nombre es obligatorio'
+  Object.keys(errors).forEach(k => delete errors[k])
+  Object.assign(errors, e)
   return Object.keys(e).length === 0
 }
 
 async function save(){
-  if(!validate()){ if(errors.value.empresa) showToast(errors.value.empresa); return }
+  if(!validate()) return
   saving.value = true
   try{
     const payload = {
-      nombre: form.value.nombre.trim(),
-      descripcion: form.value.descripcion?.trim() || '',
-      icono: form.value.icono?.trim() || ''
+      nombre: form.nombre.trim(),
+      descripcion: (form.descripcion || '').trim(),
+      icono: (form.icono || '').trim()
     }
-    if(isEditing.value && form.value.id){
-      await api.servicios.update(form.value.id, payload)
-      showToast('Servicio actualizado')
+    if(isEditing.value && form.id){
+      await api.servicios.update(form.id, payload)
     } else {
-      await api.servicios.create({ ...payload, empresa: empresaId.value })
-      showToast('Servicio creado')
+      const empresa = ws.empresaId
+      await api.servicios.create({ ...payload, empresa })
     }
     showModal.value = false
-    await fetchAllClientSide()
+    await fetchServicios()
   } catch(e){
-    const msg = e?.response?.data?.detail
-      || e?.response?.data?.nombre?.[0]
-      || e?.response?.data?.empresa?.[0]
-      || 'Error al guardar'
-    showToast(msg)
-  } finally { saving.value = false }
-}
-
-function confirmRemove(s){ confirm.value = { open:true, target:s } }
-async function remove(){
-  try{
-    await api.servicios.delete(confirm.value.target.id)
-    confirm.value = { open:false, target:null }
-    await fetchAllClientSide()
-    showToast('Servicio eliminado')
-  } catch(e){
-    showToast(e?.response?.data?.detail || 'No se pudo eliminar')
+    const msg = e?.response?.data?.detail || e?.response?.data?.nombre?.[0] || 'Error al guardar'
+    alert(msg)
+  } finally {
+    saving.value = false
   }
 }
 
-/* --------- Columnas TableBasic --------- */
-const col = createColumnHelper()
-
-const columns = [
-  col.accessor('nombre', {
-    header: () => 'Nombre',
-    enableSorting: true,
-    cell: ({ getValue }) => h('span', { class:'text-gray-900 font-medium' }, getValue())
-  }),
-  col.accessor('descripcion', {
-    header: () => 'Descripción',
-    cell: ({ getValue }) => h('span', { class:'text-gray-700' }, getValue() || '—'),
-    enableSorting: true
-  }),
-  col.display({
-    id: 'icono',
-    header: () => 'Icono',
-    cell: ({ row }) => {
-      const n = row.original.icono
-      return n
-        ? h('div', { class: 'flex items-center gap-2 text-gray-800' }, [
-            h(Icon, { icon: n, class: 'w-5 h-5' }),
-            h('span', n.replace(/^.*:/, ''))
-          ])
-        : h('span', '—')
+/* ===== Acciones fila ===== */
+async function duplicate(s){
+  try{
+    const empresa = ws.empresaId
+    const payload = {
+      empresa,
+      nombre: `${s.nombre} (copia)`,
+      descripcion: s.descripcion || '',
+      icono: s.icono || ''
     }
-  }),
-  col.display({
-    id: 'acciones',
-    header: () => h('div', { class: 'text-right' }, 'Acciones'),
-    cell: ({ row }) => {
-      const s = row.original
-      return h(
-        'div',
-        { class: 'relative flex justify-end', 'data-menu-root': '' },
-        [
-          h('button', {
-            class: 'px-2 py-1 rounded-lg border border-gray-300 hover:bg-gray-50',
-            onClick: (e) => { e.stopPropagation(); toggleMenu(s.id) },
-            'aria-expanded': openMenuId.value === s.id,
-            'aria-haspopup': 'menu'
-          }, '⋯'),
-          openMenuId.value === s.id
-            ? h('div', {
-                class: 'absolute right-0 mt-1 w-48 bg-white border border-gray-200 rounded-xl shadow-lg p-1 z-20',
-                role: 'menu'
-              }, [
-                h('button', {
-                  class: 'w-full text-left px-3 py-2 rounded-lg hover:bg-gray-50',
-                  role: 'menuitem',
-                  onClick: () => openEdit(s)
-                }, 'Editar'),
-                h('button', {
-                  class: 'w-full text-left px-3 py-2 rounded-lg hover:bg-red-50 text-red-700',
-                  role: 'menuitem',
-                  onClick: () => confirmRemove(s)
-                }, 'Eliminar'),
-              ])
-            : null
-        ]
-      )
-    }
-  })
-]
+    await api.servicios.create(payload)
+    await fetchServicios()
+  } catch(e){
+    alert(e?.response?.data?.detail || 'No se pudo duplicar')
+  }
+}
+async function toggleArchive(s){
+  try{
+    await api.servicios.patch(s.id, { is_active: !(s.is_active ?? true) })
+    await fetchServicios()
+  } catch(e){
+    alert(e?.response?.data?.detail || 'No se pudo actualizar el estado')
+  }
+}
 </script>
 
 <style scoped>
-.fade-enter-active, .fade-leave-active { transition: opacity .15s }
-.fade-enter-from, .fade-leave-to { opacity: 0 }
+.menu-item{
+  @apply w-full text-left px-3 py-2 rounded-lg text-[14px] text-[#223] hover:bg-[#f5f7fa];
+}
 </style>
