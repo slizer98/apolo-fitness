@@ -464,7 +464,11 @@ const altasPlan = {
 
 const accesos = {
   list(params){ return http.get("accesos/", { params }) },
+  resumen(params){ return http.get("accesos/resumen/", { params }) },
   create(payload){ return http.post("accesos/", payload) },
+  update(id, payload){ return http.put(`accesos/${id}/`, payload) },
+  patch(id, payload){ return http.patch(`accesos/${id}/`, payload) },
+  delete(id){ return http.delete(`accesos/${id}/`) },
 }
 
 // INVENTARIO
@@ -667,6 +671,37 @@ const finanzas = {
 };
 
 
+const documentos = {
+  list(params) {
+    return http.get('clientes/documentos/', { params })
+  },
+  create(formData) {
+    return http.post('clientes/documentos/', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+  },
+  remove(id) {
+    return http.delete(`clientes/documentos/${id}/`)
+  },
+}
+
+const notas = {
+  list(params) {
+    // ?cliente, ?prioridad, ?estado, ?search, ?page, ?page_size, ?ordering
+    return http.get('clientes/notas/', { params })
+  },
+  create(payload) {
+    // { cliente, titulo, contenido, prioridad, estado }
+    return http.post('clientes/notas/', payload)
+  },
+  update(id, payload) {
+    return http.patch(`clientes/notas/${id}/`, payload)
+  },
+  remove(id) {
+    return http.delete(`clientes/notas/${id}/`)
+  },
+}
+
 const api = {
   auth,
   accounts,
@@ -682,7 +717,7 @@ const api = {
   servicios, beneficios, servicioBeneficios,
   planesServicios, planesBeneficios,
   disciplinas, disciplinasPlanes, horariosDisciplinas,
-  altasPlan, accesos, inventario, ventas, finanzas,
+  altasPlan, accesos, inventario, ventas, finanzas, documentos, notas,
   // exporta helpers por si los necesitas en UI
   _helpers: { saveTokens, getTokens, clearTokens, setEmpresa: system.setEmpresa },
 };
