@@ -255,87 +255,16 @@
       </table>
     </div>
 
-    <!-- ===== MODAL CREAR/EDITAR — ESTILO BLANCO ===== -->
-    <div
-      v-if="showModal"
-      class="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4"
-      @click.self="closeModal"
-    >
-      <div class="w-full max-w-xl bg-white border border-gray-200 rounded-2xl shadow-2xl">
-        <div class="px-5 py-4 border-b border-gray-200 flex items-center justify-between">
-          <h3 class="text-lg font-semibold text-gray-900">{{ isEditing ? 'Editar servicio' : 'Nuevo servicio' }}</h3>
-          <button @click="closeModal" class="h-8 w-8 grid place-items-center rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50" aria-label="Cerrar">
-            ✕
-          </button>
-        </div>
-
-        <form @submit.prevent="save" class="p-5 space-y-4" novalidate>
-          <div class="grid sm:grid-cols-2 gap-3">
-            <div>
-              <label class="block text-xs text-gray-600 mb-1">Nombre *</label>
-              <input
-                v-model.trim="form.nombre"
-                class="w-full bg-white border rounded px-3 py-2 text-gray-900"
-                :class="errors.nombre ? 'border-red-400' : 'border-gray-300'"
-              />
-              <p v-if="errors.nombre" class="text-red-600 text-xs mt-1">{{ errors.nombre }}</p>
-            </div>
-
-            <div>
-              <label class="block text-xs text-gray-600 mb-1">Icono (opcional)</label>
-              <div class="flex items-center gap-2">
-                <input
-                  v-model.trim="form.icono"
-                  placeholder="lucide:dumbbell"
-                  class="flex-1 bg-white border rounded px-3 py-2 text-gray-900 border-gray-300"
-                  readonly
-                  @focus="openIconPicker = true"
-                />
-                <button
-                  type="button"
-                  class="px-3 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50"
-                  @click="openIconPicker = true"
-                >Elegir…</button>
-              </div>
-              <div v-if="form.icono" class="mt-2 flex items-center gap-2 text-gray-700">
-                <Icon :icon="form.icono" class="w-5 h-5" />
-                <span class="text-xs">{{ form.icono }}</span>
-                <button type="button" class="text-xs text-gray-500 hover:text-gray-700" @click="form.icono = ''">Quitar</button>
-              </div>
-            </div>
-          </div>
-
-          <div>
-            <label class="block text-xs text-gray-600 mb-1">Descripción</label>
-            <textarea
-              v-model="form.descripcion"
-              rows="3"
-              class="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-900"
-            ></textarea>
-          </div>
-
-          <div class="flex items-center justify-end gap-2 pt-1">
-            <button
-              type="button"
-              @click="closeModal"
-              class="px-4 py-2 rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              :disabled="saving"
-              class="px-4 py-2 rounded-lg bg-apolo-primary text-white hover:opacity-90 disabled:opacity-60"
-            >
-              {{ saving ? 'Guardando…' : (isEditing ? 'Guardar cambios' : 'Crear servicio') }}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-
-    <!-- Icon Picker -->
-    <IconPicker v-if="openIconPicker" @close="openIconPicker=false" @select="onSelectIconify" />
+    <ServicioFormModal
+      :open="showModal"
+      :is-editing="isEditing"
+      :saving="saving"
+      :initial-data="form"
+      :errors="errors"
+      show-icon
+      @close="closeModal"
+      @submit="handleModalSubmit"
+    />
   </section>
 </template>
 
@@ -343,8 +272,8 @@
 import { ref, reactive, computed, onMounted, onBeforeUnmount } from 'vue'
 import api from '@/api/services'
 import { useWorkspaceStore } from '@/stores/workspace'
-import IconPicker from '@/components/IconPicker.vue'
 import { Icon } from '@iconify/vue'
+import ServicioFormModal from '@/components/servicios/ServicioFormModal.vue'
 
 const ws = useWorkspaceStore()
 
@@ -465,18 +394,17 @@ const saving = ref(false)
 const errors = reactive({})
 const form = reactive({ id:null, nombre:'', descripcion:'', icono:'' })
 
-const openIconPicker = ref(false)
-function onSelectIconify(name){ form.icono = name; openIconPicker.value = false }
+function clearModalErrors(){ Object.keys(errors).forEach(k => delete errors[k]) }
 
 function openNew(){
   isEditing.value = false
-  Object.keys(errors).forEach(k => delete errors[k])
+  clearModalErrors()
   Object.assign(form, { id:null, nombre:'', descripcion:'', icono:'' })
   showModal.value = true
 }
 function openEdit(s){
   isEditing.value = true
-  Object.keys(errors).forEach(k => delete errors[k])
+  clearModalErrors()
   Object.assign(form, {
     id: s.id,
     nombre: s.nombre || '',
@@ -487,34 +415,40 @@ function openEdit(s){
 }
 function closeModal(){ showModal.value = false }
 
-function validate(){
-  const e = {}
-  if(!form.nombre?.trim()) e.nombre = 'El nombre es obligatorio'
-  Object.keys(errors).forEach(k => delete errors[k])
-  Object.assign(errors, e)
-  return Object.keys(e).length === 0
-}
-
-async function save(){
-  if(!validate()) return
+async function handleModalSubmit(payload){
+  clearModalErrors()
+  const nombre = payload?.nombre?.trim()
+  if (!nombre) {
+    errors.nombre = 'El nombre es obligatorio'
+    return
+  }
+  if (!ws.empresaId && !isEditing.value) {
+    errors.general = 'Selecciona una empresa activa para crear servicios.'
+    return
+  }
   saving.value = true
   try{
-    const payload = {
-      nombre: form.nombre.trim(),
-      descripcion: (form.descripcion || '').trim(),
-      icono: (form.icono || '').trim()
+    const basePayload = {
+      nombre,
+      descripcion: (payload?.descripcion || '').trim(),
+      icono: (payload?.icono || '').trim()
     }
-    if(isEditing.value && form.id){
-      await api.servicios.update(form.id, payload)
+    const targetId = payload?.id ?? form.id
+    if(isEditing.value && targetId){
+      await api.servicios.update(targetId, basePayload)
     } else {
       const empresa = ws.empresaId
-      await api.servicios.create({ ...payload, empresa })
+      await api.servicios.create({ ...basePayload, empresa })
     }
     showModal.value = false
     await fetchServicios()
   } catch(e){
-    const msg = e?.response?.data?.detail || e?.response?.data?.nombre?.[0] || 'Error al guardar'
-    alert(msg)
+    const msg = e?.response?.data
+    if (msg?.nombre?.[0]) {
+      errors.nombre = msg.nombre[0]
+    } else {
+      errors.general = msg?.detail || 'Error al guardar'
+    }
   } finally {
     saving.value = false
   }

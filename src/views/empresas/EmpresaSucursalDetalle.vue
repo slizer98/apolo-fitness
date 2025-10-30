@@ -2,6 +2,8 @@
 import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api from '@/api/services'
+import AlmacenFormModal from '@/components/inventario/AlmacenFormModal.vue'
+import ServicioFormModal from '@/components/servicios/ServicioFormModal.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -47,8 +49,8 @@ const almacenForm = reactive({
   descripcion: '',
   is_active: true,
 })
-
-const canSubmitAlmacen = computed(() => !!almacenForm.nombre?.trim())
+const almacenErrors = reactive({})
+const almacenSaving = ref(false)
 
 const showServicioModal = ref(false)
 const isEditingServicio = ref(false)
@@ -58,10 +60,11 @@ const servicioForm = reactive({
   sucursal: sucursalId,
   nombre: '',
   descripcion: '',
+  icono: '',
   is_active: true,
 })
-
-const canSubmitServicio = computed(() => !!servicioForm.nombre?.trim())
+const servicioErrors = reactive({})
+const servicioSaving = ref(false)
 
 const showAccesoModal = ref(false)
 const isEditingAcceso = ref(false)
@@ -100,7 +103,12 @@ const filteredAccesos = computed(() => {
   })
 })
 
+function clearErrors(state) {
+  Object.keys(state).forEach((key) => delete state[key])
+}
+
 function resetAlmacenForm() {
+  clearErrors(almacenErrors)
   Object.assign(almacenForm, {
     id: null,
     empresa: empresaId,
@@ -119,6 +127,7 @@ function openNewAlmacen() {
 
 function openEditAlmacen(item) {
   isEditingAlmacen.value = true
+  clearErrors(almacenErrors)
   Object.assign(almacenForm, {
     id: item.id,
     empresa: item.empresa,
@@ -131,12 +140,14 @@ function openEditAlmacen(item) {
 }
 
 function resetServicioForm() {
+  clearErrors(servicioErrors)
   Object.assign(servicioForm, {
     id: null,
     empresa: empresaId,
     sucursal: sucursalId,
     nombre: '',
     descripcion: '',
+    icono: '',
     is_active: true,
   })
 }
@@ -149,12 +160,14 @@ function openNewServicio() {
 
 function openEditServicio(item) {
   isEditingServicio.value = true
+  clearErrors(servicioErrors)
   Object.assign(servicioForm, {
     id: item.id,
     empresa: normalizeId(item.empresa, empresaId),
     sucursal: normalizeId(item.sucursal, sucursalId),
     nombre: item.nombre || '',
     descripcion: item.descripcion || '',
+    icono: item.icono || '',
     is_active: item.is_active !== false,
   })
   showServicioModal.value = true
@@ -263,21 +276,25 @@ async function fetchAlmacenes() {
   }
 }
 
-async function saveAlmacen() {
-  if (!canSubmitAlmacen.value) {
-    alert('Escribe el nombre del almacén')
+async function saveAlmacen(modalPayload) {
+  clearErrors(almacenErrors)
+  const nombre = modalPayload?.nombre?.trim()
+  if (!nombre) {
+    almacenErrors.nombre = 'Escribe el nombre del almacén'
     return
   }
   const payload = {
-    empresa: almacenForm.empresa,
-    sucursal: almacenForm.sucursal,
-    nombre: almacenForm.nombre?.trim(),
-    descripcion: almacenForm.descripcion?.trim() || '',
-    is_active: !!almacenForm.is_active,
+    empresa: empresaId,
+    sucursal: sucursalId,
+    nombre,
+    descripcion: modalPayload?.descripcion?.trim() || '',
+    is_active: modalPayload?.is_active !== false,
   }
+  const targetId = modalPayload?.id ?? almacenForm.id
+  almacenSaving.value = true
   try {
-    if (isEditingAlmacen.value && almacenForm.id) {
-      await api.inventario.almacenes.update(almacenForm.id, payload)
+    if (isEditingAlmacen.value && targetId) {
+      await api.inventario.almacenes.update(targetId, payload)
     } else {
       await api.inventario.almacenes.create(payload)
     }
@@ -285,7 +302,13 @@ async function saveAlmacen() {
     await fetchAlmacenes()
   } catch (e) {
     const msg = e?.response?.data
-    alert(msg?.detail || msg?.non_field_errors?.[0] || msg?.nombre?.[0] || 'Error al guardar almacén')
+    if (msg?.nombre?.[0]) {
+      almacenErrors.nombre = msg.nombre[0]
+    } else {
+      almacenErrors.general = msg?.detail || msg?.non_field_errors?.[0] || 'Error al guardar almacén'
+    }
+  } finally {
+    almacenSaving.value = false
   }
 }
 
@@ -298,21 +321,26 @@ async function toggleAlmacenActive(item) {
   }
 }
 
-async function saveServicio() {
-  if (!canSubmitServicio.value) {
-    alert('Escribe el nombre del servicio')
+async function saveServicio(modalPayload) {
+  clearErrors(servicioErrors)
+  const nombre = modalPayload?.nombre?.trim()
+  if (!nombre) {
+    servicioErrors.nombre = 'Escribe el nombre del servicio'
     return
   }
   const payload = {
-    empresa: normalizeId(servicioForm.empresa, empresaId),
-    sucursal: normalizeId(servicioForm.sucursal, sucursalId),
-    nombre: servicioForm.nombre?.trim(),
-    descripcion: servicioForm.descripcion?.trim() || '',
-    is_active: !!servicioForm.is_active,
+    empresa: normalizeId(modalPayload?.empresa, empresaId) || empresaId,
+    sucursal: normalizeId(modalPayload?.sucursal, sucursalId) || sucursalId,
+    nombre,
+    descripcion: modalPayload?.descripcion?.trim() || '',
+    icono: modalPayload?.icono?.trim() || '',
+    is_active: modalPayload?.is_active !== false,
   }
+  const targetId = modalPayload?.id ?? servicioForm.id
+  servicioSaving.value = true
   try {
-    if (isEditingServicio.value && servicioForm.id) {
-      await api.servicios.update(servicioForm.id, payload)
+    if (isEditingServicio.value && targetId) {
+      await api.servicios.update(targetId, payload)
     } else {
       await api.servicios.create(payload)
     }
@@ -320,7 +348,13 @@ async function saveServicio() {
     await fetchServicios()
   } catch (e) {
     const msg = e?.response?.data
-    alert(msg?.detail || msg?.non_field_errors?.[0] || msg?.nombre?.[0] || 'Error al guardar servicio')
+    if (msg?.nombre?.[0]) {
+      servicioErrors.nombre = msg.nombre[0]
+    } else {
+      servicioErrors.general = msg?.detail || msg?.non_field_errors?.[0] || 'Error al guardar servicio'
+    }
+  } finally {
+    servicioSaving.value = false
   }
 }
 
@@ -760,61 +794,27 @@ onMounted(async () => {
       </div>
     </div>
 
-    <!-- Modal Almacén -->
-    <div v-if="showAlmacenModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" @click.self="showAlmacenModal = false">
-      <div class="w-full max-w-lg bg-white border border-gray-200 rounded-2xl shadow-xl">
-        <div class="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
-          <h3 class="text-lg font-semibold text-gray-800">{{ isEditingAlmacen ? 'Editar almacén' : 'Nuevo almacén' }}</h3>
-          <button class="text-gray-500 hover:text-gray-700" @click="showAlmacenModal = false">✕</button>
-        </div>
-        <form class="p-4 space-y-4" @submit.prevent="saveAlmacen">
-          <div>
-            <label class="text-sm text-gray-500">Nombre</label>
-            <input v-model.trim="almacenForm.nombre" class="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white text-gray-700 focus:border-apolo-primary focus:ring-1 focus:ring-apolo-primary/50" required />
-          </div>
-          <div>
-            <label class="text-sm text-gray-500">Descripción</label>
-            <textarea v-model.trim="almacenForm.descripcion" rows="3" class="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white text-gray-700 focus:border-apolo-primary focus:ring-1 focus:ring-apolo-primary/50"></textarea>
-          </div>
-          <div class="flex items-center gap-2">
-            <input id="almacen_activo" type="checkbox" v-model="almacenForm.is_active" class="accent-apolo-primary" />
-            <label for="almacen_activo" class="text-sm text-gray-700">Activo</label>
-          </div>
-          <div class="flex items-center justify-end gap-2">
-            <button type="button" class="px-3 py-2 border border-gray-300 rounded-lg text-gray-600 hover:border-apolo-primary hover:text-apolo-primary transition" @click="showAlmacenModal = false">Cancelar</button>
-            <button type="submit" class="px-4 py-2 rounded-lg text-white bg-apolo-primary hover:bg-apolo-secondary transition" :disabled="!canSubmitAlmacen">Guardar</button>
-          </div>
-        </form>
-      </div>
-    </div>
+    <AlmacenFormModal
+      :open="showAlmacenModal"
+      :is-editing="isEditingAlmacen"
+      :saving="almacenSaving"
+      :initial-data="almacenForm"
+      :errors="almacenErrors"
+      @close="showAlmacenModal = false"
+      @submit="saveAlmacen"
+    />
 
-    <!-- Modal Servicio -->
-    <div v-if="showServicioModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" @click.self="showServicioModal = false">
-      <div class="w-full max-w-lg bg-white border border-gray-200 rounded-2xl shadow-xl">
-        <div class="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
-          <h3 class="text-lg font-semibold text-gray-800">{{ isEditingServicio ? 'Editar servicio' : 'Nuevo servicio' }}</h3>
-          <button class="text-gray-500 hover:text-gray-700" @click="showServicioModal = false">✕</button>
-        </div>
-        <form class="p-4 space-y-4" @submit.prevent="saveServicio">
-          <div>
-            <label class="text-sm text-gray-500">Nombre</label>
-            <input v-model.trim="servicioForm.nombre" class="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white text-gray-700 focus:border-apolo-primary focus:ring-1 focus:ring-apolo-primary/50" required />
-          </div>
-          <div>
-            <label class="text-sm text-gray-500">Descripción</label>
-            <textarea v-model.trim="servicioForm.descripcion" rows="3" class="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white text-gray-700 focus:border-apolo-primary focus:ring-1 focus:ring-apolo-primary/50"></textarea>
-          </div>
-          <div class="flex items-center gap-2">
-            <input id="servicio_activo" type="checkbox" v-model="servicioForm.is_active" class="accent-apolo-primary" />
-            <label for="servicio_activo" class="text-sm text-gray-700">Activo</label>
-          </div>
-          <div class="flex items-center justify-end gap-2">
-            <button type="button" class="px-3 py-2 border border-gray-300 rounded-lg text-gray-600 hover:border-apolo-primary hover:text-apolo-primary transition" @click="showServicioModal = false">Cancelar</button>
-            <button type="submit" class="px-4 py-2 rounded-lg text-white bg-apolo-primary hover:bg-apolo-secondary transition" :disabled="!canSubmitServicio">Guardar</button>
-          </div>
-        </form>
-      </div>
-    </div>
+    <ServicioFormModal
+      :open="showServicioModal"
+      :is-editing="isEditingServicio"
+      :saving="servicioSaving"
+      :initial-data="servicioForm"
+      :errors="servicioErrors"
+      :show-icon="false"
+      show-is-active
+      @close="showServicioModal = false"
+      @submit="saveServicio"
+    />
 
     <!-- Modal Acceso -->
     <div v-if="showAccesoModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" @click.self="showAccesoModal = false">
