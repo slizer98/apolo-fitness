@@ -1732,10 +1732,6 @@ watch(
   position: relative;
 }
 
-.grid-stack {
-  min-height: 360px;
-}
-
 .grid-stack.is-editing .grid-stack-item {
   cursor: move;
 }
