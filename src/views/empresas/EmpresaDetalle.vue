@@ -183,33 +183,33 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="p-4 space-y-6 text-white">
+  <div class="p-4 space-y-6">
     <!-- Header -->
     <div class="flex items-center justify-between">
       <div class="space-y-1">
-        <div class="text-xs text-apolo-gray-light">
+        <div class="text-xs text-gray-500">
           <router-link to="/empresas" class="underline text-apolo-secondary hover:text-apolo-primary">← Volver</router-link>
         </div>
-        <h2 class="text-xl text-white font-semibold">
+        <h2 class="text-xl font-semibold text-gray-800">
           {{ loadingEmpresa ? 'Cargando…' : (empresa?.nombre || '—') }}
         </h2>
-        <div class="text-sm text-apolo-gray-light">
+        <div class="text-sm text-gray-500">
           {{ empresa?.razon_social || '—' }}
         </div>
       </div>
       <div class="flex items-center gap-2">
         <span
           class="text-[11px] px-2 py-0.5 rounded-full"
-          :class="empresa?.is_active !== false ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30' : 'bg-rose-500/15 text-rose-300 border border-rose-500/30'"
+          :class="empresa?.is_active !== false ? 'bg-emerald-50 text-emerald-600 border border-emerald-200' : 'bg-rose-50 text-rose-600 border border-rose-200'"
         >
           {{ empresa?.is_active !== false ? 'Activa' : 'Inactiva' }}
         </span>
-        <button class="px-3 py-2 border border-apolo-primary/40 rounded text-white hover:border-apolo-secondary hover:text-apolo-secondary transition-colors" @click="openEditEmpresa">
+        <button class="px-3 py-2 border border-gray-300 rounded text-gray-600 hover:border-apolo-primary hover:text-apolo-primary transition" @click="openEditEmpresa">
           Editar empresa
         </button>
         <button
-          class="px-3 py-2 border rounded transition-colors"
-          :class="empresa?.is_active !== false ? 'border-apolo-secondary text-apolo-secondary hover:bg-apolo-secondary/10' : 'border-emerald-500/40 text-emerald-300 hover:bg-emerald-500/10'"
+          class="px-3 py-2 border rounded transition"
+          :class="empresa?.is_active !== false ? 'border-apolo-secondary text-apolo-secondary hover:bg-apolo-secondary/10' : 'border-emerald-200 text-emerald-600 hover:bg-emerald-50'"
           @click="toggleEmpresaActive"
         >
           {{ empresa?.is_active !== false ? 'Desactivar' : 'Activar' }}
@@ -218,72 +218,72 @@ onMounted(async () => {
     </div>
 
     <!-- Info empresa -->
-    <div class="border border-apolo-primary/30 rounded-xl p-4 bg-apolo-dark/80 text-sm text-apolo-gray-light">
+    <div class="border border-gray-200 rounded-xl p-4 bg-white text-sm text-gray-600">
       <div class="grid md:grid-cols-3 gap-3">
-        <div><span class="text-apolo-gray-light">RFC:</span> <span class="text-white">{{ empresa?.rfc || '—' }}</span></div>
-        <div><span class="text-apolo-gray-light">Correo:</span> <span class="text-white">{{ empresa?.correo || '—' }}</span></div>
-        <div><span class="text-apolo-gray-light">Teléfono:</span> <span class="text-white">{{ empresa?.telefono || '—' }}</span></div>
-        <div class="md:col-span-3"><span class="text-apolo-gray-light">Dirección:</span> <span class="text-white">{{ empresa?.direccion || '—' }}</span></div>
-        <div class="md:col-span-3"><span class="text-apolo-gray-light">Sitio web:</span> <span class="text-white">{{ empresa?.sitio_web || '—' }}</span></div>
+        <div><span class="text-gray-500">RFC:</span> <span class="text-gray-800">{{ empresa?.rfc || '—' }}</span></div>
+        <div><span class="text-gray-500">Correo:</span> <span class="text-gray-800">{{ empresa?.correo || '—' }}</span></div>
+        <div><span class="text-gray-500">Teléfono:</span> <span class="text-gray-800">{{ empresa?.telefono || '—' }}</span></div>
+        <div class="md:col-span-3"><span class="text-gray-500">Dirección:</span> <span class="text-gray-800">{{ empresa?.direccion || '—' }}</span></div>
+        <div class="md:col-span-3"><span class="text-gray-500">Sitio web:</span> <span class="text-gray-800">{{ empresa?.sitio_web || '—' }}</span></div>
       </div>
     </div>
 
     <!-- Sucursales -->
     <div class="flex items-center justify-between">
-      <h3 class="text-lg text-white">Sucursales</h3>
-      <button class="px-3 py-2 rounded-lg border border-apolo-primary bg-apolo-primary text-apolo-dark font-medium hover:bg-apolo-secondary hover:border-apolo-secondary transition-colors" @click="openNewSuc">
+      <h3 class="text-lg font-semibold text-gray-800">Sucursales</h3>
+      <button class="px-3 py-2 rounded-lg border border-apolo-primary bg-apolo-primary text-white font-medium hover:bg-apolo-secondary hover:border-apolo-secondary transition-colors" @click="openNewSuc">
         Nueva sucursal
       </button>
     </div>
 
-    <div class="border border-apolo-primary/30 rounded-xl p-3 bg-apolo-dark/80">
-      <div v-if="loadingSuc" class="py-10 text-center text-apolo-gray-light">Cargando…</div>
+    <div class="border border-gray-200 rounded-xl p-3 bg-white shadow-sm">
+      <div v-if="loadingSuc" class="py-10 text-center text-gray-500">Cargando…</div>
 
       <div v-else class="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
         <div
           v-for="s in sucursales"
           :key="s.id"
-          class="border border-apolo-primary/30 rounded-lg p-3 bg-apolo-gray-dark hover:border-apolo-secondary transition-colors cursor-pointer"
+          class="border border-gray-200 rounded-lg p-3 bg-white hover:border-apolo-primary hover:shadow-md transition cursor-pointer"
           @click="$router.push({ name: 'EmpresaSucursalDetalle', params: { id: empresaId, sucursalId: s.id } })"
         >
           <div class="flex items-start justify-between">
             <div>
-              <div class="font-medium text-white">{{ s.nombre }}</div>
-              <div class="text-xs text-apolo-gray-light">{{ s.empresa_nombre }}</div>
+              <div class="font-medium text-gray-800">{{ s.nombre }}</div>
+              <div class="text-xs text-gray-500">{{ s.empresa_nombre }}</div>
             </div>
             <span
               class="text-[11px] px-2 py-0.5 rounded-full"
-              :class="s.is_active !== false ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30' : 'bg-rose-500/15 text-rose-300 border border-rose-500/30'"
+              :class="s.is_active !== false ? 'bg-emerald-50 text-emerald-600 border border-emerald-200' : 'bg-rose-50 text-rose-600 border border-rose-200'"
             >
               {{ s.is_active !== false ? 'Activa' : 'Inactiva' }}
             </span>
           </div>
 
-          <div class="mt-2 text-xs text-apolo-gray-light space-y-0.5">
-            <div>Tel: <b class="text-white">{{ s.telefono || '—' }}</b></div>
-            <div>Correo: <b class="text-white">{{ s.correo || '—' }}</b></div>
-            <div>Resp.: <b class="text-white">{{ s.responsable || '—' }}</b></div>
+          <div class="mt-2 text-xs text-gray-500 space-y-0.5">
+            <div>Tel: <b class="text-gray-700">{{ s.telefono || '—' }}</b></div>
+            <div>Correo: <b class="text-gray-700">{{ s.correo || '—' }}</b></div>
+            <div>Resp.: <b class="text-gray-700">{{ s.responsable || '—' }}</b></div>
           </div>
-          <div class="mt-2 text-xs text-apolo-gray-light">
+          <div class="mt-2 text-xs text-gray-500">
             {{ s.direccion || '—' }}
           </div>
           <div class="mt-3 flex items-center justify-between">
-            <div class="text-[11px] text-apolo-gray-light">
+            <div class="text-[11px] text-gray-500">
               {{ s.horario_apertura || '—' }} - {{ s.horario_cierre || '—' }}
             </div>
             <div class="flex gap-2">
-              <button class="px-2 py-1 border border-apolo-primary/40 rounded text-white hover:border-apolo-secondary hover:text-apolo-secondary transition-colors" @click.stop="openEditSuc(s)">
+              <button class="px-2 py-1 border border-gray-300 rounded text-gray-600 hover:border-apolo-primary hover:text-apolo-primary transition" @click.stop="openEditSuc(s)">
                 Editar
               </button>
               <button
-                class="px-2 py-1 border rounded transition-colors"
-                :class="s.is_active !== false ? 'border-apolo-secondary text-apolo-secondary hover:bg-apolo-secondary/10' : 'border-emerald-500/40 text-emerald-300 hover:bg-emerald-500/10'"
+                class="px-2 py-1 border rounded transition"
+                :class="s.is_active !== false ? 'border-apolo-secondary text-apolo-secondary hover:bg-apolo-secondary/10' : 'border-emerald-200 text-emerald-600 hover:bg-emerald-50'"
                 @click.stop="toggleSucursalActive(s)"
               >
                 {{ s.is_active !== false ? 'Desactivar' : 'Activar' }}
               </button>
               <button
-                class="px-2 py-1 border border-apolo-primary/40 rounded text-apolo-secondary hover:border-apolo-secondary hover:bg-apolo-secondary/10 transition-colors"
+                class="px-2 py-1 border border-apolo-secondary rounded text-apolo-secondary hover:bg-apolo-secondary/10 transition"
                 @click.stop="$router.push({ name: 'EmpresaSucursalDetalle', params: { id: empresaId, sucursalId: s.id } })"
               >
                 Ver detalle
@@ -297,50 +297,50 @@ onMounted(async () => {
 
     <!-- ========================== Modales Empresa / Sucursal ========================== -->
     <!-- Modal Empresa -->
-    <div v-if="showEmpresaModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4" @click.self="showEmpresaModal=false">
-      <div class="w-full max-w-2xl bg-apolo-dark border border-apolo-primary/40 rounded-2xl shadow-xl">
-        <div class="px-4 py-3 border-b border-apolo-primary/30 flex items-center justify-between">
-          <h3 class="text-lg text-white">Editar empresa</h3>
-          <button @click="showEmpresaModal=false" class="text-apolo-gray-light hover:text-white">✕</button>
+    <div v-if="showEmpresaModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" @click.self="showEmpresaModal=false">
+      <div class="w-full max-w-2xl bg-white border border-gray-200 rounded-2xl shadow-xl">
+        <div class="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
+          <h3 class="text-lg font-semibold text-gray-800">Editar empresa</h3>
+          <button @click="showEmpresaModal=false" class="text-gray-500 hover:text-gray-700">✕</button>
         </div>
 
         <form @submit.prevent="saveEmpresa" class="p-4 grid sm:grid-cols-2 gap-3">
           <div class="sm:col-span-2">
-            <label class="text-sm text-apolo-gray-light">Nombre</label>
-            <input v-model.trim="eForm.nombre" required class="w-full border border-apolo-primary/40 rounded-lg px-3 py-2 bg-apolo-dark text-white focus:border-apolo-secondary focus:ring-1 focus:ring-apolo-secondary/60"/>
+            <label class="text-sm text-gray-500">Nombre</label>
+            <input v-model.trim="eForm.nombre" required class="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white text-gray-700 focus:border-apolo-primary focus:ring-1 focus:ring-apolo-primary/50"/>
           </div>
           <div>
-            <label class="text-sm text-apolo-gray-light">Razón social</label>
-            <input v-model.trim="eForm.razon_social" class="w-full border border-apolo-primary/40 rounded-lg px-3 py-2 bg-apolo-dark text-white focus:border-apolo-secondary focus:ring-1 focus:ring-apolo-secondary/60"/>
+            <label class="text-sm text-gray-500">Razón social</label>
+            <input v-model.trim="eForm.razon_social" class="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white text-gray-700 focus:border-apolo-primary focus:ring-1 focus:ring-apolo-primary/50"/>
           </div>
           <div>
-            <label class="text-sm text-apolo-gray-light">RFC</label>
-            <input v-model.trim="eForm.rfc" class="w-full border border-apolo-primary/40 rounded-lg px-3 py-2 bg-apolo-dark text-white focus:border-apolo-secondary focus:ring-1 focus:ring-apolo-secondary/60"/>
+            <label class="text-sm text-gray-500">RFC</label>
+            <input v-model.trim="eForm.rfc" class="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white text-gray-700 focus:border-apolo-primary focus:ring-1 focus:ring-apolo-primary/50"/>
           </div>
           <div class="sm:col-span-2">
-            <label class="text-sm text-apolo-gray-light">Dirección</label>
-            <textarea v-model.trim="eForm.direccion" rows="2" class="w-full border border-apolo-primary/40 rounded-lg px-3 py-2 bg-apolo-dark text-white focus:border-apolo-secondary focus:ring-1 focus:ring-apolo-secondary/60"></textarea>
+            <label class="text-sm text-gray-500">Dirección</label>
+            <textarea v-model.trim="eForm.direccion" rows="2" class="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white text-gray-700 focus:border-apolo-primary focus:ring-1 focus:ring-apolo-primary/50"></textarea>
           </div>
           <div>
-            <label class="text-sm text-apolo-gray-light">Teléfono</label>
-            <input v-model.trim="eForm.telefono" class="w-full border border-apolo-primary/40 rounded-lg px-3 py-2 bg-apolo-dark text-white focus:border-apolo-secondary focus:ring-1 focus:ring-apolo-secondary/60"/>
+            <label class="text-sm text-gray-500">Teléfono</label>
+            <input v-model.trim="eForm.telefono" class="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white text-gray-700 focus:border-apolo-primary focus:ring-1 focus:ring-apolo-primary/50"/>
           </div>
           <div>
-            <label class="text-sm text-apolo-gray-light">Correo</label>
-            <input v-model.trim="eForm.correo" type="email" class="w-full border border-apolo-primary/40 rounded-lg px-3 py-2 bg-apolo-dark text-white focus:border-apolo-secondary focus:ring-1 focus:ring-apolo-secondary/60"/>
+            <label class="text-sm text-gray-500">Correo</label>
+            <input v-model.trim="eForm.correo" type="email" class="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white text-gray-700 focus:border-apolo-primary focus:ring-1 focus:ring-apolo-primary/50"/>
           </div>
           <div class="sm:col-span-2">
-            <label class="text-sm text-apolo-gray-light">Sitio web</label>
-            <input v-model.trim="eForm.sitio_web" class="w-full border border-apolo-primary/40 rounded-lg px-3 py-2 bg-apolo-dark text-white focus:border-apolo-secondary focus:ring-1 focus:ring-apolo-secondary/60"/>
+            <label class="text-sm text-gray-500">Sitio web</label>
+            <input v-model.trim="eForm.sitio_web" class="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white text-gray-700 focus:border-apolo-primary focus:ring-1 focus:ring-apolo-primary/50"/>
           </div>
           <div class="sm:col-span-2 flex items-center justify-between">
-            <label class="flex items-center gap-2 text-white">
-              <input type="checkbox" v-model="eForm.is_active" class="accent-white"/>
+            <label class="flex items-center gap-2 text-gray-700">
+              <input type="checkbox" v-model="eForm.is_active" class="accent-apolo-primary"/>
               Activa
             </label>
             <div class="flex gap-2">
-              <button type="button" @click="showEmpresaModal=false" class="px-3 py-2 border border-apolo-primary/40 rounded-lg text-white hover:border-apolo-secondary hover:text-apolo-secondary transition-colors">Cancelar</button>
-              <button type="submit" class="px-4 py-2 rounded-lg text-apolo-dark bg-apolo-primary hover:bg-apolo-secondary transition-colors">Guardar</button>
+              <button type="button" @click="showEmpresaModal=false" class="px-3 py-2 border border-gray-300 rounded-lg text-gray-600 hover:border-apolo-primary hover:text-apolo-primary transition">Cancelar</button>
+              <button type="submit" class="px-4 py-2 rounded-lg text-white bg-apolo-primary hover:bg-apolo-secondary transition">Guardar</button>
             </div>
           </div>
         </form>
@@ -348,51 +348,51 @@ onMounted(async () => {
     </div>
 
     <!-- Modal Sucursal -->
-    <div v-if="showSucModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4" @click.self="showSucModal=false">
-      <div class="w-full max-w-xl bg-apolo-dark border border-apolo-primary/40 rounded-2xl shadow-xl">
-        <div class="px-4 py-3 border-b border-apolo-primary/30 flex items-center justify-between">
-          <h3 class="text-lg text-white">{{ isEditingSuc ? 'Editar sucursal' : 'Nueva sucursal' }}</h3>
-          <button @click="showSucModal=false" class="text-apolo-gray-light hover:text-white">✕</button>
+    <div v-if="showSucModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" @click.self="showSucModal=false">
+      <div class="w-full max-w-xl bg-white border border-gray-200 rounded-2xl shadow-xl">
+        <div class="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
+          <h3 class="text-lg font-semibold text-gray-800">{{ isEditingSuc ? 'Editar sucursal' : 'Nueva sucursal' }}</h3>
+          <button @click="showSucModal=false" class="text-gray-500 hover:text-gray-700">✕</button>
         </div>
 
         <form @submit.prevent="saveSucursal" class="p-4 grid sm:grid-cols-2 gap-3">
           <div class="sm:col-span-2">
-            <label class="text-sm text-apolo-gray-light">Nombre</label>
-            <input v-model.trim="sForm.nombre" required class="w-full border border-apolo-primary/40 rounded-lg px-3 py-2 bg-apolo-dark text-white focus:border-apolo-secondary focus:ring-1 focus:ring-apolo-secondary/60"/>
+            <label class="text-sm text-gray-500">Nombre</label>
+            <input v-model.trim="sForm.nombre" required class="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white text-gray-700 focus:border-apolo-primary focus:ring-1 focus:ring-apolo-primary/50"/>
           </div>
           <div class="sm:col-span-2">
-            <label class="text-sm text-apolo-gray-light">Dirección</label>
-            <textarea v-model.trim="sForm.direccion" rows="2" class="w-full border border-apolo-primary/40 rounded-lg px-3 py-2 bg-apolo-dark text-white focus:border-apolo-secondary focus:ring-1 focus:ring-apolo-secondary/60"></textarea>
+            <label class="text-sm text-gray-500">Dirección</label>
+            <textarea v-model.trim="sForm.direccion" rows="2" class="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white text-gray-700 focus:border-apolo-primary focus:ring-1 focus:ring-apolo-primary/50"></textarea>
           </div>
           <div>
-            <label class="text-sm text-apolo-gray-light">Teléfono</label>
-            <input v-model.trim="sForm.telefono" class="w-full border border-apolo-primary/40 rounded-lg px-3 py-2 bg-apolo-dark text-white focus:border-apolo-secondary focus:ring-1 focus:ring-apolo-secondary/60"/>
+            <label class="text-sm text-gray-500">Teléfono</label>
+            <input v-model.trim="sForm.telefono" class="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white text-gray-700 focus:border-apolo-primary focus:ring-1 focus:ring-apolo-primary/50"/>
           </div>
           <div>
-            <label class="text-sm text-apolo-gray-light">Correo</label>
-            <input v-model.trim="sForm.correo" type="email" class="w-full border border-apolo-primary/40 rounded-lg px-3 py-2 bg-apolo-dark text-white focus:border-apolo-secondary focus:ring-1 focus:ring-apolo-secondary/60"/>
+            <label class="text-sm text-gray-500">Correo</label>
+            <input v-model.trim="sForm.correo" type="email" class="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white text-gray-700 focus:border-apolo-primary focus:ring-1 focus:ring-apolo-primary/50"/>
           </div>
           <div class="sm:col-span-2">
-            <label class="text-sm text-apolo-gray-light">Responsable</label>
-            <input v-model.trim="sForm.responsable" class="w-full border border-apolo-primary/40 rounded-lg px-3 py-2 bg-apolo-dark text-white focus:border-apolo-secondary focus:ring-1 focus:ring-apolo-secondary/60"/>
+            <label class="text-sm text-gray-500">Responsable</label>
+            <input v-model.trim="sForm.responsable" class="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white text-gray-700 focus:border-apolo-primary focus:ring-1 focus:ring-apolo-primary/50"/>
           </div>
           <div>
-            <label class="text-sm text-apolo-gray-light">Apertura</label>
-            <input v-model="sForm.horario_apertura" type="time" class="w-full border border-apolo-primary/40 rounded-lg px-3 py-2 bg-apolo-dark text-white focus:border-apolo-secondary focus:ring-1 focus:ring-apolo-secondary/60"/>
+            <label class="text-sm text-gray-500">Apertura</label>
+            <input v-model="sForm.horario_apertura" type="time" class="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white text-gray-700 focus:border-apolo-primary focus:ring-1 focus:ring-apolo-primary/50"/>
           </div>
           <div>
-            <label class="text-sm text-apolo-gray-light">Cierre</label>
-            <input v-model="sForm.horario_cierre" type="time" class="w-full border border-apolo-primary/40 rounded-lg px-3 py-2 bg-apolo-dark text-white focus:border-apolo-secondary focus:ring-1 focus:ring-apolo-secondary/60"/>
+            <label class="text-sm text-gray-500">Cierre</label>
+            <input v-model="sForm.horario_cierre" type="time" class="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white text-gray-700 focus:border-apolo-primary focus:ring-1 focus:ring-apolo-primary/50"/>
           </div>
 
           <div class="sm:col-span-2 flex items-center justify-between mt-1">
-            <label class="flex items-center gap-2 text-white">
-              <input type="checkbox" v-model="sForm.is_active" class="accent-white"/>
+            <label class="flex items-center gap-2 text-gray-700">
+              <input type="checkbox" v-model="sForm.is_active" class="accent-apolo-primary"/>
               Activa
             </label>
             <div class="flex gap-2">
-              <button type="button" @click="showSucModal=false" class="px-3 py-2 border border-apolo-primary/40 rounded-lg text-white hover:border-apolo-secondary hover:text-apolo-secondary transition-colors">Cancelar</button>
-              <button type="submit" class="px-4 py-2 rounded-lg text-apolo-dark bg-apolo-primary hover:bg-apolo-secondary transition-colors">Guardar</button>
+              <button type="button" @click="showSucModal=false" class="px-3 py-2 border border-gray-300 rounded-lg text-gray-600 hover:border-apolo-primary hover:text-apolo-primary transition">Cancelar</button>
+              <button type="submit" class="px-4 py-2 rounded-lg text-white bg-apolo-primary hover:bg-apolo-secondary transition">Guardar</button>
             </div>
           </div>
         </form>
