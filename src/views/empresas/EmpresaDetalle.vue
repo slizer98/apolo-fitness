@@ -188,7 +188,7 @@ onMounted(async () => {
     <div class="flex items-center justify-between">
       <div class="space-y-1">
         <div class="text-xs text-gray-500">
-          <router-link to="/empresas" class="underline text-apolo-secondary hover:text-apolo-primary">← Volver</router-link>
+          <router-link :to="{ name: 'EmpresasLista' }" class="underline text-apolo-secondary hover:text-apolo-primary">← Volver</router-link>
         </div>
         <h2 class="text-xl font-semibold text-gray-800">
           {{ loadingEmpresa ? 'Cargando…' : (empresa?.nombre || '—') }}
