@@ -13,6 +13,13 @@ if (!empresaId || !sucursalId) {
   router.replace({ name: 'EmpresasLista' })
 }
 
+const tabs = [
+  { key: 'almacenes', label: 'Almacenes' },
+  { key: 'servicios', label: 'Servicios' },
+  { key: 'accesos', label: 'Accesos' },
+]
+const activeTab = ref('almacenes')
+
 const empresa = ref(null)
 const sucursal = ref(null)
 const loadingEmpresa = ref(false)
@@ -24,9 +31,11 @@ const almacenesSearch = ref('')
 
 const servicios = ref([])
 const loadingServicios = ref(false)
+const serviciosSearch = ref('')
 
 const accesos = ref([])
 const loadingAccesos = ref(false)
+const accesosSearch = ref('')
 
 const showAlmacenModal = ref(false)
 const isEditingAlmacen = ref(false)
@@ -68,6 +77,28 @@ const accesoForm = reactive({
 })
 
 const canSubmitAcceso = computed(() => !!accesoForm.cliente && !!accesoForm.fecha)
+
+const filteredServicios = computed(() => {
+  const term = serviciosSearch.value.trim().toLowerCase()
+  if (!term) return servicios.value
+  return servicios.value.filter((item) => {
+    const nombre = item?.nombre?.toLowerCase() || ''
+    const descripcion = item?.descripcion?.toLowerCase() || ''
+    return nombre.includes(term) || descripcion.includes(term)
+  })
+})
+
+const filteredAccesos = computed(() => {
+  const term = accesosSearch.value.trim().toLowerCase()
+  if (!term) return accesos.value
+  return accesos.value.filter((item) => {
+    const cliente = `${item?.cliente_nombre || ''}`.toLowerCase()
+    const clienteId = `${item?.cliente || ''}`.toLowerCase()
+    const tipo = `${item?.tipo_acceso || item?.tipo || ''}`.toLowerCase()
+    const nota = `${item?.nota || ''}`.toLowerCase()
+    return cliente.includes(term) || clienteId.includes(term) || tipo.includes(term) || nota.includes(term)
+  })
+})
 
 function resetAlmacenForm() {
   Object.assign(almacenForm, {
@@ -176,6 +207,13 @@ function datetimeLocalToISO(value) {
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return null
   return date.toISOString()
+}
+
+function formatDisplayDate(value) {
+  if (!value) return '—'
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return '—'
+  return date.toLocaleString()
 }
 
 function normalizeId(value, fallback = null) {
@@ -427,164 +465,300 @@ onMounted(async () => {
       </div>
     </div>
 
-    <!-- Almacenes -->
-    <section class="space-y-3">
-      <div class="flex items-center justify-between">
-        <h3 class="text-lg font-semibold text-gray-800">Almacenes de la sucursal</h3>
-        <div class="flex items-center gap-2">
-          <input
-            v-model="almacenesSearch"
-            @keyup.enter="fetchAlmacenes"
-            type="search"
-            placeholder="Buscar almacén…"
-            class="border border-gray-300 rounded-lg px-3 py-2 bg-white text-gray-700 placeholder:text-gray-400 focus:border-apolo-primary focus:ring-1 focus:ring-apolo-primary/50"
-          />
-          <button class="px-3 py-2 rounded-lg border border-apolo-primary bg-apolo-primary text-white font-medium hover:bg-apolo-secondary hover:border-apolo-secondary transition-colors" @click="fetchAlmacenes">
-            Buscar
-          </button>
-          <button class="px-3 py-2 rounded-lg border border-apolo-secondary text-apolo-secondary hover:bg-apolo-secondary/10 transition" @click="openNewAlmacen">
-            Nuevo almacén
-          </button>
-        </div>
-      </div>
+    <div class="bg-white border border-gray-200 rounded-2xl shadow-sm">
+      <nav class="flex flex-wrap gap-2 px-4 pt-4 border-b border-gray-200">
+        <button
+          v-for="tab in tabs"
+          :key="tab.key"
+          class="px-4 py-2 rounded-xl text-sm font-medium transition"
+          :class="
+            activeTab === tab.key
+              ? 'bg-apolo-primary text-white shadow-sm'
+              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+          "
+          @click="activeTab = tab.key"
+        >
+          {{ tab.label }}
+        </button>
+      </nav>
 
-      <div class="border border-gray-200 rounded-xl p-4 bg-white shadow-sm">
-        <div v-if="loadingAlmacenes" class="py-10 text-center text-gray-500">Cargando almacenes…</div>
-        <div v-else-if="!almacenes.length" class="py-6 text-center text-gray-500">Sin almacenes registrados.</div>
-        <div v-else class="space-y-3">
-          <div
-            v-for="alm in almacenes"
-            :key="alm.id"
-            class="border border-gray-200 rounded-lg p-3 bg-white flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between shadow-sm"
-          >
-            <div>
-              <div class="flex items-center gap-2">
-                <h4 class="font-medium text-gray-800">{{ alm.nombre }}</h4>
-                <span v-if="alm.is_active === false" class="text-[11px] px-2 py-0.5 rounded-full border border-gray-300 text-gray-500">Inactivo</span>
+      <div class="p-4 space-y-6">
+        <section v-if="activeTab === 'almacenes'" class="space-y-4">
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <h3 class="text-lg font-semibold text-gray-800">Almacenes</h3>
+            <div class="flex flex-wrap items-center gap-2">
+              <div class="relative">
+                <span class="pointer-events-none absolute inset-y-0 left-3 flex items-center text-gray-400">
+                  <i class="fa-solid fa-magnifying-glass"></i>
+                </span>
+                <input
+                  v-model="almacenesSearch"
+                  @keyup.enter="fetchAlmacenes"
+                  type="search"
+                  placeholder="Buscar almacén…"
+                  class="pl-9 pr-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-700 placeholder:text-gray-400 focus:border-apolo-primary focus:ring-1 focus:ring-apolo-primary/50"
+                />
               </div>
-              <p v-if="alm.descripcion" class="text-sm text-gray-500">{{ alm.descripcion }}</p>
-            </div>
-            <div class="flex items-center gap-2">
-              <button class="px-3 py-1 border border-gray-300 rounded text-gray-600 hover:border-apolo-primary hover:text-apolo-primary transition" @click="openEditAlmacen(alm)">
-                Editar
+              <button
+                class="h-10 px-3 rounded-lg border border-apolo-primary bg-apolo-primary text-white font-medium hover:bg-apolo-secondary hover:border-apolo-secondary transition-colors"
+                @click="fetchAlmacenes"
+              >
+                Buscar
               </button>
               <button
-                class="px-3 py-1 border rounded transition"
-                :class="alm.is_active !== false ? 'border-apolo-secondary text-apolo-secondary hover:bg-apolo-secondary/10' : 'border-emerald-200 text-emerald-600 hover:bg-emerald-50'"
-                @click="toggleAlmacenActive(alm)"
+                class="h-10 px-3 rounded-lg border border-apolo-secondary text-apolo-secondary hover:bg-apolo-secondary/10 transition"
+                @click="openNewAlmacen"
               >
-                {{ alm.is_active !== false ? 'Desactivar' : 'Reactivar' }}
+                Nuevo almacén
               </button>
             </div>
           </div>
-        </div>
-      </div>
-    </section>
 
-    <!-- Servicios -->
-    <section class="space-y-3">
-      <div class="flex flex-wrap items-center justify-between gap-2">
-        <h3 class="text-lg font-semibold text-gray-800">Servicios asignados</h3>
-        <div class="flex items-center gap-2">
-          <button class="px-3 py-2 rounded-lg border border-gray-300 text-gray-600 hover:border-apolo-primary hover:text-apolo-primary transition" @click="fetchServicios">
-            Actualizar
-          </button>
-          <button class="px-3 py-2 rounded-lg border border-apolo-secondary text-apolo-secondary hover:bg-apolo-secondary/10 transition" @click="openNewServicio">
-            Nuevo servicio
-          </button>
-        </div>
-      </div>
-      <div class="border border-gray-200 rounded-xl p-4 bg-white shadow-sm">
-        <div v-if="loadingServicios" class="py-6 text-center text-gray-500">Cargando servicios…</div>
-        <div v-else-if="!servicios.length" class="text-gray-500">No hay servicios asociados a esta sucursal.</div>
-        <div v-else class="space-y-3">
-          <div
-            v-for="srv in servicios"
-            :key="srv.id"
-            class="border border-gray-200 rounded-lg p-3 bg-white flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between shadow-sm"
-          >
-            <div>
-              <div class="flex items-center gap-2">
-                <p class="font-medium text-gray-800">{{ srv.nombre }}</p>
-                <span v-if="srv.is_active === false" class="text-[11px] px-2 py-0.5 rounded-full border border-gray-300 text-gray-500">Inactivo</span>
-              </div>
-              <p v-if="srv.descripcion" class="text-sm text-gray-500">{{ srv.descripcion }}</p>
+          <div class="border border-gray-200 rounded-xl overflow-hidden">
+            <div v-if="loadingAlmacenes" class="py-10 text-center text-gray-500">Cargando almacenes…</div>
+            <div v-else-if="!almacenes.length" class="py-8 text-center text-gray-500">Sin almacenes registrados.</div>
+            <div v-else class="overflow-x-auto">
+              <table class="min-w-full divide-y divide-gray-200 text-sm text-left">
+                <thead class="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
+                  <tr>
+                    <th class="px-4 py-3 font-medium">Nombre</th>
+                    <th class="px-4 py-3 font-medium">Descripción</th>
+                    <th class="px-4 py-3 font-medium">Estado</th>
+                    <th class="px-4 py-3 font-medium text-right">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                  <tr v-for="alm in almacenes" :key="alm.id" class="bg-white">
+                    <td class="px-4 py-3 text-gray-800 font-medium">{{ alm.nombre }}</td>
+                    <td class="px-4 py-3 text-gray-600">{{ alm.descripcion || '—' }}</td>
+                    <td class="px-4 py-3">
+                      <span
+                        class="text-xs px-2 py-1 rounded-full border"
+                        :class="
+                          alm.is_active !== false
+                            ? 'border-emerald-200 bg-emerald-50 text-emerald-600'
+                            : 'border-gray-200 bg-gray-100 text-gray-500'
+                        "
+                      >
+                        {{ alm.is_active !== false ? 'Activo' : 'Inactivo' }}
+                      </span>
+                    </td>
+                    <td class="px-4 py-3">
+                      <div class="flex justify-end gap-2">
+                        <button
+                          class="px-3 py-1 border border-gray-300 rounded-lg text-gray-600 hover:border-apolo-primary hover:text-apolo-primary transition"
+                          @click="openEditAlmacen(alm)"
+                        >
+                          Editar
+                        </button>
+                        <button
+                          class="px-3 py-1 rounded-lg transition"
+                          :class="
+                            alm.is_active !== false
+                              ? 'border border-apolo-secondary text-apolo-secondary hover:bg-apolo-secondary/10'
+                              : 'border border-emerald-200 text-emerald-600 hover:bg-emerald-50'
+                          "
+                          @click="toggleAlmacenActive(alm)"
+                        >
+                          {{ alm.is_active !== false ? 'Desactivar' : 'Reactivar' }}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
-            <div class="flex items-center gap-2">
-              <button class="px-3 py-1 border border-gray-300 rounded text-gray-600 hover:border-apolo-primary hover:text-apolo-primary transition" @click="openEditServicio(srv)">
-                Editar
+          </div>
+        </section>
+
+        <section v-else-if="activeTab === 'servicios'" class="space-y-4">
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <h3 class="text-lg font-semibold text-gray-800">Servicios</h3>
+            <div class="flex flex-wrap items-center gap-2">
+              <div class="relative">
+                <span class="pointer-events-none absolute inset-y-0 left-3 flex items-center text-gray-400">
+                  <i class="fa-solid fa-magnifying-glass"></i>
+                </span>
+                <input
+                  v-model="serviciosSearch"
+                  type="search"
+                  placeholder="Buscar servicio…"
+                  class="pl-9 pr-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-700 placeholder:text-gray-400 focus:border-apolo-primary focus:ring-1 focus:ring-apolo-primary/50"
+                />
+              </div>
+              <button
+                class="h-10 px-3 rounded-lg border border-gray-300 text-gray-600 hover:border-apolo-primary hover:text-apolo-primary transition"
+                @click="fetchServicios"
+              >
+                Actualizar
               </button>
               <button
-                class="px-3 py-1 border rounded transition"
-                :class="srv.is_active !== false ? 'border-apolo-secondary text-apolo-secondary hover:bg-apolo-secondary/10' : 'border-emerald-200 text-emerald-600 hover:bg-emerald-50'"
-                @click="toggleServicioActive(srv)"
+                class="h-10 px-3 rounded-lg border border-apolo-secondary text-apolo-secondary hover:bg-apolo-secondary/10 transition"
+                @click="openNewServicio"
               >
-                {{ srv.is_active !== false ? 'Desactivar' : 'Reactivar' }}
+                Nuevo servicio
               </button>
             </div>
           </div>
-        </div>
-      </div>
-    </section>
 
-    <!-- Accesos -->
-    <section class="space-y-3">
-      <div class="flex flex-wrap items-center justify-between gap-2">
-        <h3 class="text-lg font-semibold text-gray-800">Accesos recientes</h3>
-        <div class="flex items-center gap-2">
-          <button class="px-3 py-2 rounded-lg border border-gray-300 text-gray-600 hover:border-apolo-primary hover:text-apolo-primary transition" @click="fetchAccesos">
-            Actualizar
-          </button>
-          <button class="px-3 py-2 rounded-lg border border-apolo-secondary text-apolo-secondary hover:bg-apolo-secondary/10 transition" @click="openNewAcceso">
-            Registrar acceso
-          </button>
-        </div>
-      </div>
-      <div class="border border-gray-200 rounded-xl p-4 bg-white shadow-sm">
-        <div v-if="loadingAccesos" class="py-6 text-center text-gray-500">Cargando accesos…</div>
-        <div v-else-if="!accesos.length" class="text-gray-500">Sin accesos registrados recientemente.</div>
-        <div v-else class="space-y-3 text-sm text-gray-600">
-          <div
-            v-for="acc in accesos"
-            :key="acc.id"
-            class="border border-gray-200 rounded-lg p-3 bg-white flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between shadow-sm"
-          >
-            <div class="space-y-1">
-              <div class="flex items-center gap-2 text-gray-800">
-                <span class="font-medium">{{ acc.cliente_nombre || 'Cliente' }}</span>
-                <span v-if="acc.is_active === false" class="text-[11px] px-2 py-0.5 rounded-full border border-gray-300 text-gray-500">Inactivo</span>
-              </div>
-              <div class="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500">
-                <span>{{ acc.fecha || acc.created_at || '—' }}</span>
-                <span v-if="acc.tipo_acceso || acc.tipo">{{ acc.tipo_acceso || acc.tipo }}</span>
-                <span v-if="acc.usuario_nombre">{{ acc.usuario_nombre }}</span>
-                <span v-if="acc.puerta || acc.area">{{ acc.puerta || acc.area }}</span>
-              </div>
-              <p v-if="acc.nota" class="text-xs text-gray-500">{{ acc.nota }}</p>
+          <div class="border border-gray-200 rounded-xl overflow-hidden">
+            <div v-if="loadingServicios" class="py-8 text-center text-gray-500">Cargando servicios…</div>
+            <div v-else-if="!filteredServicios.length" class="py-8 text-center text-gray-500">
+              {{ servicios.length ? 'Sin coincidencias para la búsqueda.' : 'No hay servicios asociados a esta sucursal.' }}
             </div>
-            <div class="flex items-center gap-2">
-              <button class="px-3 py-1 border border-gray-300 rounded text-gray-600 hover:border-apolo-primary hover:text-apolo-primary transition" @click="openEditAcceso(acc)">
-                Editar
+            <div v-else class="overflow-x-auto">
+              <table class="min-w-full divide-y divide-gray-200 text-sm text-left">
+                <thead class="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
+                  <tr>
+                    <th class="px-4 py-3 font-medium">Nombre</th>
+                    <th class="px-4 py-3 font-medium">Descripción</th>
+                    <th class="px-4 py-3 font-medium">Estado</th>
+                    <th class="px-4 py-3 font-medium text-right">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                  <tr v-for="srv in filteredServicios" :key="srv.id" class="bg-white">
+                    <td class="px-4 py-3 text-gray-800 font-medium">{{ srv.nombre }}</td>
+                    <td class="px-4 py-3 text-gray-600">{{ srv.descripcion || '—' }}</td>
+                    <td class="px-4 py-3">
+                      <span
+                        class="text-xs px-2 py-1 rounded-full border"
+                        :class="
+                          srv.is_active !== false
+                            ? 'border-emerald-200 bg-emerald-50 text-emerald-600'
+                            : 'border-gray-200 bg-gray-100 text-gray-500'
+                        "
+                      >
+                        {{ srv.is_active !== false ? 'Activo' : 'Inactivo' }}
+                      </span>
+                    </td>
+                    <td class="px-4 py-3">
+                      <div class="flex justify-end gap-2">
+                        <button
+                          class="px-3 py-1 border border-gray-300 rounded-lg text-gray-600 hover:border-apolo-primary hover:text-apolo-primary transition"
+                          @click="openEditServicio(srv)"
+                        >
+                          Editar
+                        </button>
+                        <button
+                          class="px-3 py-1 rounded-lg transition"
+                          :class="
+                            srv.is_active !== false
+                              ? 'border border-apolo-secondary text-apolo-secondary hover:bg-apolo-secondary/10'
+                              : 'border border-emerald-200 text-emerald-600 hover:bg-emerald-50'
+                          "
+                          @click="toggleServicioActive(srv)"
+                        >
+                          {{ srv.is_active !== false ? 'Desactivar' : 'Reactivar' }}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <section v-else class="space-y-4">
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <h3 class="text-lg font-semibold text-gray-800">Accesos</h3>
+            <div class="flex flex-wrap items-center gap-2">
+              <div class="relative">
+                <span class="pointer-events-none absolute inset-y-0 left-3 flex items-center text-gray-400">
+                  <i class="fa-solid fa-magnifying-glass"></i>
+                </span>
+                <input
+                  v-model="accesosSearch"
+                  type="search"
+                  placeholder="Buscar acceso…"
+                  class="pl-9 pr-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-700 placeholder:text-gray-400 focus:border-apolo-primary focus:ring-1 focus:ring-apolo-primary/50"
+                />
+              </div>
+              <button
+                class="h-10 px-3 rounded-lg border border-gray-300 text-gray-600 hover:border-apolo-primary hover:text-apolo-primary transition"
+                @click="fetchAccesos"
+              >
+                Actualizar
               </button>
               <button
-                v-if="acc.is_active !== false"
-                class="px-3 py-1 border border-rose-200 text-rose-600 rounded hover:bg-rose-50 transition"
-                @click="deactivateAcceso(acc)"
+                class="h-10 px-3 rounded-lg border border-apolo-secondary text-apolo-secondary hover:bg-apolo-secondary/10 transition"
+                @click="openNewAcceso"
               >
-                Desactivar
-              </button>
-              <button
-                v-else
-                class="px-3 py-1 border border-emerald-200 text-emerald-600 rounded hover:bg-emerald-50 transition"
-                @click="reactivateAcceso(acc)"
-              >
-                Reactivar
+                Registrar acceso
               </button>
             </div>
           </div>
-        </div>
+
+          <div class="border border-gray-200 rounded-xl overflow-hidden">
+            <div v-if="loadingAccesos" class="py-8 text-center text-gray-500">Cargando accesos…</div>
+            <div v-else-if="!filteredAccesos.length" class="py-8 text-center text-gray-500">
+              {{ accesos.length ? 'Sin coincidencias para la búsqueda.' : 'Sin accesos registrados.' }}
+            </div>
+            <div v-else class="overflow-x-auto">
+              <table class="min-w-full divide-y divide-gray-200 text-sm text-left">
+                <thead class="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
+                  <tr>
+                    <th class="px-4 py-3 font-medium">Fecha</th>
+                    <th class="px-4 py-3 font-medium">Cliente</th>
+                    <th class="px-4 py-3 font-medium">Tipo</th>
+                    <th class="px-4 py-3 font-medium">Nota</th>
+                    <th class="px-4 py-3 font-medium">Estado</th>
+                    <th class="px-4 py-3 font-medium text-right">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                  <tr v-for="acc in filteredAccesos" :key="acc.id" class="bg-white">
+                    <td class="px-4 py-3 text-gray-700">{{ formatDisplayDate(acc.fecha || acc.created_at) }}</td>
+                    <td class="px-4 py-3 text-gray-800 font-medium">
+                      {{ acc.cliente_nombre || acc.cliente || '—' }}
+                    </td>
+                    <td class="px-4 py-3 text-gray-600">{{ acc.tipo_acceso || acc.tipo || '—' }}</td>
+                    <td class="px-4 py-3 text-gray-600">{{ acc.nota || '—' }}</td>
+                    <td class="px-4 py-3">
+                      <span
+                        class="text-xs px-2 py-1 rounded-full border"
+                        :class="
+                          acc.is_active !== false
+                            ? 'border-emerald-200 bg-emerald-50 text-emerald-600'
+                            : 'border-gray-200 bg-gray-100 text-gray-500'
+                        "
+                      >
+                        {{ acc.is_active !== false ? 'Activo' : 'Inactivo' }}
+                      </span>
+                    </td>
+                    <td class="px-4 py-3">
+                      <div class="flex justify-end gap-2">
+                        <button
+                          class="px-3 py-1 border border-gray-300 rounded-lg text-gray-600 hover:border-apolo-primary hover:text-apolo-primary transition"
+                          @click="openEditAcceso(acc)"
+                        >
+                          Editar
+                        </button>
+                        <button
+                          v-if="acc.is_active !== false"
+                          class="px-3 py-1 rounded-lg border border-rose-200 text-rose-600 hover:bg-rose-50 transition"
+                          @click="deactivateAcceso(acc)"
+                        >
+                          Desactivar
+                        </button>
+                        <button
+                          v-else
+                          class="px-3 py-1 rounded-lg border border-emerald-200 text-emerald-600 hover:bg-emerald-50 transition"
+                          @click="reactivateAcceso(acc)"
+                        >
+                          Reactivar
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
       </div>
-    </section>
+    </div>
 
     <!-- Modal Almacén -->
     <div v-if="showAlmacenModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" @click.self="showAlmacenModal = false">
