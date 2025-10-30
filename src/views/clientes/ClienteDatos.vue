@@ -126,6 +126,9 @@ import ClientePerfilTab from '@/components/cliente-tabs/ClientePerfilTab.vue'
 import ClienteTabsPagos from '@/components/cliente-tabs/ClienteTabsPagos.vue'
 import TabServicios from '@/components/cliente-tabs/TabServicios.vue'
 import TabAsistencias from '@/components/cliente-tabs/TabAsistencias.vue'
+import ClienteTabsCompras from '@/components/cliente-tabs/ClienteTabsCompras.vue'
+import ClienteTabsDocumentos from '@/components/cliente-tabs/ClienteTabsDocumentos.vue'
+import ClienteTabsNotas from '@/components/cliente-tabs/ClienteTabsNotas.vue'
 
 const route = useRoute()
 const clienteId = computed(() => Number(route.params.id))
@@ -161,9 +164,9 @@ const tabs = [
   { key: 'pagos', label: 'Pagos', component: ClienteTabsPagos },
   { key: 'asistencias', label: 'Asistencias', component: TabAsistencias },
   { key: 'servicios', label: 'Servicios', component: TabServicios },
-  { key: 'compras', label: 'Compras', component: null },
-  { key: 'documentos', label: 'Documentos', component: null },
-  { key: 'notas', label: 'Notas', component: null },
+  { key: 'compras', label: 'Compras', component: ClienteTabsCompras },
+  { key: 'documentos', label: 'Documentos', component: ClienteTabsDocumentos },
+  { key: 'notas', label: 'Notas', component: ClienteTabsNotas },
 ]
 const currentTab = ref('perfil')
 const currentComponent = computed(() => {
